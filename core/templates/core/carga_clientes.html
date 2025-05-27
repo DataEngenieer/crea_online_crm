@@ -1,0 +1,41 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Carga Masiva de Clientes</h2>
+        <a href="{% static 'core/plantilla_clientes.xlsx' %}" class="btn btn-outline-secondary" download>
+            <i class="bi bi-file-earmark-arrow-down"></i> Descargar plantilla
+        </a>
+    </div>
+    <form method="post" enctype="multipart/form-data" class="card p-4 mb-4 shadow-sm">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Selecciona archivo Excel (.xlsx o .csv)</label>
+            <input type="file" name="archivo" accept=".xlsx,.csv" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> Subir y procesar</button>
+    </form>
+    {% if errores %}
+    <div class="alert alert-danger">
+        <strong>Errores encontrados:</strong>
+        <ul class="mb-0">
+            {% for error in errores %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    {% if resumen %}
+    <div class="alert alert-success">
+        <strong>Carga exitosa:</strong>
+        <ul class="mb-0">
+            <li>Nuevos clientes: {{ resumen.nuevos }}</li>
+            <li>Actualizados: {{ resumen.actualizados }}</li>
+            <li>Duplicados ignorados: {{ resumen.duplicados }}</li>
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

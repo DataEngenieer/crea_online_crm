@@ -1,0 +1,137 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container-fluid px-0" style="max-width: 1400px;">
+    <h2 class="mb-3 mt-2 fw-bold text-primary">Comprobantes</h2>
+    <!-- Formulario de filtros -->
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body py-3">
+            <form method="get" class="row g-3 align-items-end mb-0">
+                {% if user.groups.all.0.name == "Administrador" or user.is_superuser %}
+                    <!-- Filtros para administradores -->
+                    <div class="col-md-3">
+                        <label for="documento" class="form-label">Documento empleado</label>
+                        <input type="text" class="form-control" id="documento" name="documento" value="{{ filtros.documento }}" placeholder="Documento">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="nombre" class="form-label">Nombre empleado</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" value="{{ filtros.nombre }}" placeholder="Nombre o apellido">
+                    </div>
+                {% endif %}
+                
+                <!-- Filtro de mes/período visible para todos -->
+                <div class="{% if user.groups.all.0.name == 'Administrador' or user.is_superuser %}col-md-3{% else %}col-md-6{% endif %}">
+                    <label for="mes_periodo" class="form-label">Mes/Periodo</label>
+                    <select class="form-select" id="mes_periodo" name="mes_periodo">
+                        <option value="">Todos</option>
+                        {% for periodo in periodos %}
+                            <option value="{{ periodo }}" {% if filtros.mes_periodo == periodo %}selected{% endif %}>{{ periodo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-primary">Filtrar <i class="bi bi-funnel ms-1"></i></button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    <div class="table-responsive rounded shadow-sm">
+        <table class="table table-bordered table-hover table-striped align-middle mb-0" style="vertical-align: top;">
+            <thead class="table-primary sticky-top shadow-sm">
+                <tr class="align-middle">
+                    <th class="text-center">ID</th>
+                    <th class="text-center">Documento</th>
+                    <th>Nombre empleado</th>
+                    <th class="text-center">Mes/Periodo</th>
+                    <th class="text-center">Fecha comprobante</th>
+
+                    <th class="text-center">Fecha registro</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for comprobante in page_obj %}
+                <tr>
+                    <td class="text-center fw-semibold">{{ comprobante.id }}</td>
+                    <td class="text-center">{{ comprobante.identificacion_empleado }}</td>
+                    <td>{{ comprobante.nombre_empleado }}</td>
+                    <td class="text-center">{{ comprobante.mes_periodo }}</td>
+                    <td class="text-center">{{ comprobante.fecha_comprobante|date:'d/m/Y' }}</td>
+                    <td class="text-center">{{ comprobante.fecha_registro|date:'d/m/Y H:i' }}</td>
+                    <td class="text-center">
+                        <a href="{% url 'descargar_comprobante' comprobante.id %}" class="btn btn-sm btn-outline-success me-1" title="Descargar PDF">
+                            <i class="bi bi-download"></i>
+                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-primary" title="Enviar por correo" data-bs-toggle="modal" data-bs-target="#modalCorreo{{ comprobante.id }}">
+    <i class="bi bi-envelope"></i>
+</button>
+<!-- Modal para enviar por correo -->
+<div class="modal fade" id="modalCorreo{{ comprobante.id }}" tabindex="-1" aria-labelledby="modalCorreoLabel{{ comprobante.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form action="{% url 'enviar_comprobante' comprobante.id %}" method="post">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalCorreoLabel{{ comprobante.id }}">Enviar comprobante por correo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="correoDestino{{ comprobante.id }}" class="form-label">Destinatario</label>
+            <input type="email" class="form-control" id="correoDestino{{ comprobante.id }}" name="correo_destino" value="{{ request.user.email }}" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Enviar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" class="text-center text-muted">No hay comprobantes registrados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <!-- Paginación -->
+    <nav aria-label="Paginación de comprobantes" class="mt-3">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endblock %}

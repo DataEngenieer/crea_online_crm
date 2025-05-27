@@ -1,0 +1,41 @@
+{% extends 'core/base_login.html' %}
+{% load static %}
+{% block content %}
+<div class="d-flex justify-content-center align-items-center" style="min-height:100vh;background:#f6f8fb;">
+  <div class="card p-5 shadow" style="width: 400px;max-width:90vw;">
+    <div class="text-center mb-4">
+      <img src="{% static 'core/img/logo_letra_blanca.png' %}" alt="Logo Corporativo" style="height:90px;">
+    </div>
+    <form method="POST" autocomplete="off">
+      {% if form.errors %}
+        <div class="alert alert-danger text-center">
+          Usuario o contraseña incorrectos.
+        </div>
+      {% endif %}
+      {% csrf_token %}
+      <div class="mb-3 text-start">
+        <label for="id_username" class="form-label fw-bold">E-MAIL</label>
+        <input type="email" class="form-control" id="id_username" name="username" required autofocus>
+      </div>
+      <div class="mb-2 text-start">
+        <label for="id_password" class="form-label fw-bold">CLAVE</label>
+        <a href="{% url 'password_reset' %}" class="float-end small text-primary">¿Olvidaste tu Clave?</a>
+        <div class="input-group">
+          <input type="password" class="form-control" id="id_password" name="password" required>
+          <button type="button" class="btn btn-outline-secondary" tabindex="-1" onclick="togglePassword()"><i class="bi bi-eye"></i></button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary w-100 mt-3"><i class="bi bi-box-arrow-in-right me-2"></i>Ingresar</button>
+    </form>
+    <div class="text-center mt-3">
+      <a href="{% url 'registro' %}" class="btn btn-outline-secondary w-100">¿No tienes cuenta? Regístrate</a>
+    </div>
+  </div>
+</div>
+<script>
+function togglePassword() {
+  var pwd = document.getElementById('id_password');
+  pwd.type = pwd.type === 'password' ? 'text' : 'password';
+}
+</script>
+{% endblock %}

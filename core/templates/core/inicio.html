@@ -1,0 +1,29 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-5 fw-bold mb-3">Bienvenido, {{ user.get_full_name|default:user.first_name }}</h1>
+        <p class="mb-0">Seleccione una opción para comenzar</p>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <!-- Tarjeta de Mi Perfil (siempre visible) -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center p-4">
+            <div class="mb-3">
+                <span class="d-inline-block rounded-circle" style="background:#2176ff;width:56px;height:56px;line-height:56px;">
+                    <i class="bi bi-person text-white" style="font-size:2rem;"></i>
+                </span>
+            </div>
+            <h5 class="fw-bold">Mi Perfil</h5>
+            <p>Actualiza tu información personal y preferencias de usuario.</p>
+            <a href="{% url 'perfil' %}" class="btn btn-primary w-75 card-btn-effect">
+                <i class="bi bi-person-check"></i> Ver Perfil
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

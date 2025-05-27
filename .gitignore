@@ -1,0 +1,122 @@
+# Entornos virtuales
+venv/
+env/
+ENV/
+.env
+.venv
+
+# Archivos de entorno
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+media/
+*.pyc
+__pycache__/
+
+# Archivos de base de datos
+*.sqlite3
+*.db
+
+# Archivos de entorno de Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Directorios de medios y archivos estáticos
+/media/
+/staticfiles/
+/static/
+
+# Archivos de desarrollo
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Archivos de PyCharm
+.idea/
+.idea/*
+.idea/workspace.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+.idea/inspectionProfiles/
+.idea/inspectionProfiles/*
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+
+# Archivos de Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Archivos de Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Archivos de Python específicos de Windows
+*.manifest
+*.spec
+
+# Archivos de entorno virtual de Python
+.python-version
+
+# Archivos de entorno virtual de Pipenv
+Pipfile.lock
+Pipfile
+
+# Archivos de entorno virtual de Poetry
+poetry.lock
+pyproject.toml
+
+# Archivos de entorno virtual de Pip
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Archivos de entorno virtual de pipenv
+#   Nota: si usas pipenv, deberías agregar 'Pipfile.lock' a tu control de versiones
+#   si tu proyecto es una aplicación.
+#   https://pipenv.python.org/en/latest/basics/#general-recommendations-version-control
+
+# Archivos de entorno virtual de pip-tools
+*.pot
+
+# Archivos de entorno virtual de VS Code
+.vscode/
+
+# Archivos de entorno virtual de VS Code
+.vscode/

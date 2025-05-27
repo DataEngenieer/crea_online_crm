@@ -1,0 +1,108 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="container-fluid px-0" style="max-width: 1400px;">
+    <h2 class="mb-3 mt-2 fw-bold text-primary">Administración de Usuarios</h2>
+    <!-- Formulario de filtros -->
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body py-3">
+            <form method="get" class="row g-3 align-items-end mb-0">
+                <div class="col-md-5">
+                    <label for="q" class="form-label">Usuario o email</label>
+                    <input type="text" name="q" id="q" value="{{ q }}" class="form-control" placeholder="Buscar por usuario o email">
+                </div>
+                <div class="col-md-5">
+                    <label for="grupo" class="form-label">Grupo</label>
+                    <select name="grupo" id="grupo" class="form-select">
+                        <option value="">Todos los grupos</option>
+                        {% for grupo in grupos %}
+                            <option value="{{ grupo.name }}" {% if grupo.name == grupo_filtro %}selected{% endif %}>{{ grupo.name|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button class="btn btn-primary" type="submit">Filtrar <i class="bi bi-funnel ms-1"></i></button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="table-responsive rounded shadow-sm">
+        <table class="table table-bordered table-hover table-striped align-middle mb-0" style="vertical-align: top;">
+            <thead class="table-primary sticky-top shadow-sm">
+                <tr class="align-middle">
+                    <th>Usuario</th>
+                    <th>Email</th>
+                    <th>Grupo</th>
+                    <th class="text-center">Cambiar grupo</th>
+<th class="text-center">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in page_obj %}
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        {% for grupo in user.groups.all %}
+                            <span class="badge bg-info">{{ grupo.name }}</span>
+                        {% empty %}
+                            <span class="text-muted">Sin grupo</span>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        <form method="post" class="d-flex align-items-center justify-content-center">
+    {% csrf_token %}
+    <input type="hidden" name="user_id" value="{{ user.id }}">
+    <select name="grupo_id" class="form-select me-2">
+        {% for grupo in grupos %}
+            <option value="{{ grupo.id }}" {% if grupo in user.groups.all %}selected{% endif %}>{{ grupo.name|title }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-success btn-sm">Guardar</button>
+</form>
+</td>
+<td class="text-center">
+    <a href="{% url 'detalle_usuario' user.id %}" class="btn btn-sm {% if user.is_active %}btn-outline-success{% else %}btn-outline-secondary{% endif %}">
+        <i class="bi bi-{% if user.is_active %}check-circle{% else %}x-circle{% endif %}"></i>
+        {% if user.is_active %}Activo{% else %}Inactivo{% endif %}
+    </a>
+    <span class="badge bg-{% if user.is_active %}success{% else %}danger{% endif %} ms-2">
+        {% if user.is_active %}Activo{% else %}Inactivo{% endif %}
+    </span>
+</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted">No se encontraron usuarios.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <!-- Paginación -->
+    <nav aria-label="Paginación de usuarios" class="mt-3">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ q }}&grupo={{ grupo_filtro }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="?q={{ q }}&grupo={{ grupo_filtro }}&page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ q }}&grupo={{ grupo_filtro }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endblock %}

@@ -1,0 +1,164 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Detalle de Cliente</h2>
+        <a href="{% url 'clientes' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver a la lista
+        </a>
+    </div>
+    <form method="post" class="card p-4 shadow-sm">
+        {% csrf_token %}
+        <!-- Información básica -->        
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-person-vcard me-2"></i>Información Básica</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Documento</label>
+                        <input type="text" class="form-control" name="documento" value="{{ cliente.documento }}" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Referencia</label>
+                        <input type="text" class="form-control" name="referencia" value="{{ cliente.referencia }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Estado</label>
+                        <select class="form-select" name="estado">
+                            <option value="Activo" {% if cliente.estado == 'Activo' %}selected{% endif %}>Activo</option>
+                            <option value="Inactivo" {% if cliente.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option>
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Nombre Completo</label>
+                        <input type="text" class="form-control" name="nombre_completo" value="{{ cliente.nombre_completo }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Ciudad</label>
+                        <input type="text" class="form-control" name="ciudad" value="{{ cliente.ciudad }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información de contacto -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-telephone me-2"></i>Información de Contacto</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Teléfono 1</label>
+                        <input type="text" class="form-control" name="telefono_1" value="{{ cliente.telefono_1 }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Teléfono 2</label>
+                        <input type="text" class="form-control" name="telefono_2" value="{{ cliente.telefono_2 }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Teléfono 3</label>
+                        <input type="text" class="form-control" name="telefono_3" value="{{ cliente.telefono_3 }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Celular 1</label>
+                        <input type="text" class="form-control" name="celular_1" value="{{ cliente.celular_1 }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Celular 2</label>
+                        <input type="text" class="form-control" name="celular_2" value="{{ cliente.celular_2 }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email" value="{{ cliente.email }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información financiera -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Información Financiera</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Días Mora</label>
+                        <input type="text" class="form-control" name="dias_mora_caso_sas" value="{{ cliente.dias_mora_caso_sas }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Días Mora Originador</label>
+                        <input type="text" class="form-control" name="dias_mora_originador" value="{{ cliente.dias_mora_originador }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Total Días Mora</label>
+                        <input type="text" class="form-control" name="total_dias_mora" value="{{ cliente.total_dias_mora }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Años Mora</label>
+                        <input type="text" class="form-control" name="anios_mora" value="{{ cliente.anios_mora }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Principal</label>
+                        <input type="text" class="form-control" name="principal" value="{{ cliente.principal }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Deuda Principal K</label>
+                        <input type="text" class="form-control" name="deuda_principal_k" value="{{ cliente.deuda_principal_k }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Deuda Total</label>
+                        <input type="text" class="form-control" name="deuda_total" value="{{ cliente.deuda_total }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Direcciones -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Direcciones</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Dirección 1</label>
+                        <input type="text" class="form-control" name="direccion_1" value="{{ cliente.direccion_1 }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Dirección 2</label>
+                        <input type="text" class="form-control" name="direccion_2" value="{{ cliente.direccion_2 }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Dirección 3</label>
+                        <input type="text" class="form-control" name="direccion_3" value="{{ cliente.direccion_3 }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+        <div class="mt-4 d-flex justify-content-end">
+            <button type="submit" class="btn btn-success"><i class="bi bi-save"></i> Guardar Cambios</button>
+        </div>
+        {% if errores %}
+        <div class="alert alert-danger mt-3">
+            <ul class="mb-0">
+                {% for error in errores %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% if mensaje %}
+        <div class="alert alert-success mt-3">
+            {{ mensaje }}
+        </div>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

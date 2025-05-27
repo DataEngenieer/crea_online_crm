@@ -1,0 +1,81 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="container-fluid px-0" style="max-width: 800px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Detalle de Usuario</h2>
+        <a href="{% url 'admin_usuarios' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Volver a la lista
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <h4 class="mb-3">{{ usuario.get_full_name|default:usuario.username }}</h4>
+                    <p class="mb-1"><strong>Usuario:</strong> {{ usuario.username }}</p>
+                    <p class="mb-1"><strong>Email:</strong> {{ usuario.email }}</p>
+                    <p class="mb-1">
+                        <strong>Estado:</strong>
+                        {% if usuario.is_active %}
+                            <span class="badge bg-success">Activo</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inactivo</span>
+                        {% endif %}
+                    </p>
+                    <p class="mb-1">
+                        <strong>Grupos:</strong>
+                        {% for grupo in usuario.groups.all %}
+                            <span class="badge bg-info">{{ grupo.name }}</span>
+                        {% empty %}
+                            <span class="text-muted">Sin grupo</span>
+                        {% endfor %}
+                    </p>
+                    <p class="mb-0">
+                        <strong>Último inicio de sesión:</strong>
+                        {% if usuario.last_login %}
+                            {{ usuario.last_login|date:"d/m/Y H:i" }}
+                        {% else %}
+                            <span class="text-muted">Nunca ha iniciado sesión</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-grid gap-2">
+                        <form method="post" class="d-inline" onsubmit="return confirm('¿Estás seguro de que deseas {% if usuario.is_active %}desactivar{% else %}activar{% endif %} a este usuario?')">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="toggle_activo">
+                            {% if usuario.is_active %}
+                                <button type="submit" class="btn btn-outline-danger w-100 mb-2">
+                                    <i class="bi bi-person-x me-1"></i> Desactivar Usuario
+                                </button>
+                            {% else %}
+                                <button type="submit" class="btn btn-outline-success w-100 mb-2">
+                                    <i class="bi bi-person-check me-1"></i> Activar Usuario
+                                </button>
+                            {% endif %}
+                        </form>
+                        <a href="{% url 'admin_usuarios' %}?q={{ usuario.username }}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-arrow-return-left me-1"></i> Volver a la lista
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-top pt-3 mt-3">
+                <h5 class="mb-3">Información Adicional</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Fecha de registro:</strong> {{ usuario.date_joined|date:"d/m/Y H:i" }}</p>
+                        <p class="mb-1"><strong>Superusuario:</strong> {% if usuario.is_superuser %}Sí{% else %}No{% endif %}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Nombre:</strong> {{ usuario.first_name|default:"No especificado" }}</p>
+                        <p class="mb-1"><strong>Apellido:</strong> {{ usuario.last_name|default:"No especificado" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
