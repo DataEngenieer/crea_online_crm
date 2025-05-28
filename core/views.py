@@ -3,7 +3,7 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django import forms
 from django.contrib.auth.models import User, Group
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django.utils import timezone
 from django.http import HttpResponseForbidden, FileResponse, Http404
 from django.core.mail import EmailMessage
@@ -23,9 +23,11 @@ from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.core.paginator import Paginator
 from django.contrib.auth import get_user_model
+from decimal import Decimal
+from django.db import IntegrityError
 
 from .models import *
-from .forms import EmailAuthenticationForm
+from .forms import EmailAuthenticationForm, ClienteForm
 
 from django.contrib.auth.views import LoginView, LogoutView
 
@@ -138,20 +140,112 @@ def es_admin(user):
     return user.is_superuser or user.groups.filter(name__iexact='Administrador').exists()
 
 @login_required
-@user_passes_test(es_admin)
 def clientes(request):
     q = request.GET.get('q', '').strip()
-    clientes = Cliente.objects.all().order_by('-fecha_registro')
+
+    # Obtener todos los clientes, ordenados para que el 'representante' del grupo sea el más reciente
+    clientes_lista_completa = Cliente.objects.all().order_by('documento', '-fecha_registro')
+
     if q:
-        clientes = clientes.filter(
+        # Filtrar basado en el término de búsqueda q sobre campos individuales de las referencias
+        clientes_lista_completa = clientes_lista_completa.filter(
             Q(nombre_completo__icontains=q) |
             Q(documento__icontains=q) |
-            Q(referencia__icontains=q)
+            Q(referencia__icontains=q) | # Permite buscar una referencia específica y encontrar el grupo
+            Q(email__icontains=q) |
+            Q(telefono_celular__icontains=q)
         )
-    paginator = Paginator(clientes, 20)
+
+    clientes_info_agrupada = {}
+    documentos_ya_procesados_por_q = set() # Para asegurar que un documento aparezca solo una vez si q coincide con múltiples referencias
+
+    for cliente_ref in clientes_lista_completa:
+        doc = cliente_ref.documento
+        if q and doc in documentos_ya_procesados_por_q and doc in clientes_info_agrupada:
+            # Si estamos filtrando y ya hemos añadido este documento (a través de otra referencia que coincidió con q)
+            # solo incrementamos el contador de referencias del grupo existente.
+            clientes_info_agrupada[doc]['num_referencias_coincidentes_q'] = clientes_info_agrupada[doc].get('num_referencias_coincidentes_q', 0) +1
+            continue # Ya hemos tomado los datos del representante de este documento.
+        
+        if doc not in clientes_info_agrupada:
+            clientes_info_agrupada[doc] = {
+                'documento': doc,
+                'nombre_completo': cliente_ref.nombre_completo, # Nombre de la referencia más reciente del grupo
+                'email': cliente_ref.email, # Email de la referencia más reciente del grupo
+                'num_referencias': 0, # Este será el conteo total de referencias para este documento
+                'fecha_registro_grupo': cliente_ref.fecha_registro, # Fecha de la ref más reciente del grupo
+                # 'id_representativo': cliente_ref.id # Podríamos usar el documento para el enlace a detalle
+            }
+            if q:
+                documentos_ya_procesados_por_q.add(doc)
+        
+        # El conteo de num_referencias se hará después, sobre el queryset sin filtro q, para obtener el total real.
+
+    # Obtener el conteo total de referencias para cada documento que está en nuestra lista filtrada (si q existe)
+    documentos_en_vista = list(clientes_info_agrupada.keys())
+    
+    if documentos_en_vista:
+        conteos_referencias = Cliente.objects.filter(documento__in=documentos_en_vista).values('documento').annotate(total_refs=Count('id'))
+        mapa_conteos = {item['documento']: item['total_refs'] for item in conteos_referencias}
+        for doc_key in clientes_info_agrupada:
+            clientes_info_agrupada[doc_key]['num_referencias'] = mapa_conteos.get(doc_key, 0)
+    
+    lista_para_paginar = sorted(list(clientes_info_agrupada.values()), key=lambda x: x['fecha_registro_grupo'], reverse=True)
+
+    paginator = Paginator(lista_para_paginar, 15) # Muestra 15 grupos de clientes por página
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    return render(request, 'core/clientes.html', {'page_obj': page_obj})
+
+    form_nuevo_cliente = ClienteForm()
+
+    context = {
+        'page_obj': page_obj,
+        'q': q,
+        'is_grouped_view': True,
+        'form_nuevo_cliente': form_nuevo_cliente
+    }
+    return render(request, 'core/clientes.html', context)
+
+@login_required
+def crear_cliente_view(request):
+    if request.method == 'POST':
+        form = ClienteForm(request.POST)
+        if form.is_valid():
+            try:
+                form.save()
+                messages.success(request, '¡Cliente creado exitosamente!')
+                return redirect('clientes') # Redirige a la lista de clientes
+            except IntegrityError: # Captura el error si la combinación documento-referencia ya existe
+                # Esto es importante debido al unique_together = (('documento', 'referencia'),)
+                # Si 'referencia' es opcional y se guarda como None o '', necesitas asegurar que la lógica de unicidad lo maneje bien.
+                # O podrías necesitar una lógica más compleja si un cliente (documento) puede existir sin referencia inicialmente,
+                # y luego se le añaden referencias.
+                # Por ahora, asumimos que una referencia vacía/nula es válida para la unicidad si es la primera vez para ese documento.
+                form.add_error(None, 'Error al guardar: Ya existe un cliente con el mismo documento y referencia (si aplica). Verifique los datos.')
+        else:
+            # Si el formulario no es válido, se mostrarán los errores en el template.
+            # Para un modal, esto requeriría AJAX o recargar la página mostrando el modal con errores.
+            # Por simplicidad inicial, si hay errores, la redirección no ocurrirá y el flujo normal del template (si no es modal AJAX) mostraría errores.
+            # Si se usa AJAX, se devolvería un JSON con errores.
+            messages.error(request, 'Por favor corrige los errores en el formulario.')
+    else:
+        form = ClienteForm()
+    
+    # Esta vista está pensada para ser llamada y renderizar su formulario dentro de un modal en la página de 'clientes'.
+    # Por lo tanto, no renderiza una página completa por sí misma directamente, sino que el form se pasa al contexto de 'clientes.html'.
+    # O, si se quiere una página dedicada (no modal), se haría: return render(request, 'core/crear_cliente.html', {'form': form})
+    # Para el modal, la lógica de pasar el 'form' al contexto de 'clientes.html' se hará en la vista 'clientes'.
+    # Si esta vista se llama vía AJAX, debería retornar JsonResponse.
+    
+    # Para un enfoque SIN AJAX y recarga de página con modal abierto (más simple inicialmente):
+    # Si hay un error en POST, la vista 'clientes' necesitará saber que debe mostrar el modal con este form con errores.
+    # Podríamos usar sesiones o un parámetro GET para indicar esto, o manejarlo completamente con AJAX.
+
+    # Por ahora, esta vista está preparada para una redirección simple en caso de éxito POST.
+    # El manejo de errores POST para un modal se abordará mejor con JavaScript/AJAX en el frontend.
+    # Si no se usa AJAX, y hay un error, la página 'clientes' se recargaría y el modal no se mostraría con errores
+    # a menos que la vista 'clientes' se modifique para manejar esto.
+    return redirect('clientes') # Redirección temporal en caso de GET o error POST no manejado por AJAX
 
 @login_required
 @user_passes_test(es_admin)
@@ -178,278 +272,202 @@ def carga_clientes(request):
                 df = pd.read_excel(archivo)
             else:  # CSV
                 df = pd.read_csv(archivo)
-                
-            # Depuración simple
-            print("Archivo cargado con éxito. Columnas detectadas:", df.columns.tolist())
             
-            # Crear diccionario de mapeo directo entre columnas Excel y campos del modelo
-            # Estos son los mapeos exactos que se usarán
-            mapeo_directo = {
-                'DOCUMENTO': 'documento',
-                'NOMBRE COMPLETO': 'nombre_completo',
-                'REFERENCIA': 'referencia',
-                'CIUDAD': 'ciudad',
-                'CC': 'tipo_documento',
-                'DIAS MORA ORIGINADOR': 'dias_mora_originador',
-                'DIAS MORA CASO SAS': 'dias_mora_caso_sas',  
-                'TOTAL DIAS MORA': 'total_dias_mora',
-                'AÑOS MORA': 'anios_mora',
-                'PRINCIPAL': 'principal',
-                'DEUDA PRINCIPAL K': 'deuda_principal_k',
-                'DEUDA TOTAL': 'deuda_total',
-                'INTERESES': 'intereses',
-                'TECNOLOGIA': 'tecnologia',
-                'SEGURO': 'seguro',
-                'OTROS CARGOS': 'otros_cargos',
-                'TOTAL PAGADO': 'total_pagado',
-                'DCTO PAGO CONTADO 50%': 'dcto_pago_contado_50',
-                'DCTO PAGO CONTADO 70% MAX. 30%': 'dcto_pago_contado_70_max_30',
-                'TELEFONO 1': 'telefono_1',
-                'TELEFONO 2': 'telefono_2',
-                'TELEFONO 3': 'telefono_3',
-                'TELEFONO CELULAR': 'celular_1',
-                'CELULAR_1': 'celular_1',
-                'CELULAR_2': 'celular_2',
-                'CELULAR_3': 'celular_3',
-                'CELULAR_4': 'celular_4',
-                'CELULAR_5': 'celular_5',
-                'EMAIL': 'email',
-                'EMAIL 1': 'email_1',
-                'EMAIL 2': 'email_2',
-                'EMAIL 3': 'email_3',
-                'DIRECCION 1': 'direccion_1',
-                'DIRECCION 2': 'direccion_2',
-                'DIRECCION 3': 'direccion_3',
-                'FECHA CESION': 'fecha_cesion',
-                'FECHA ACT': 'fecha_act'
-            }
-            
-            # Procesar datos
+            # Procesar datos directamente con los nombres del modelo
             nuevos = 0
             actualizados = 0
-            errores = []
+            errores = [] # Para errores específicos de fila durante el procesamiento
+            conversion_errores = [] # Para errores/avisos de conversión de datos
+
+            # Renombrar columnas del DataFrame a minúsculas y quitar espacios/acentos para evitar errores
+            df.columns = [c.strip().lower().replace('%', '').replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ñ', 'n').replace(' ', '_') for c in df.columns]
             
-            # Crear un nuevo DataFrame para almacenar los datos procesados
-            df_procesado = pd.DataFrame()
+            campos_modelo = [
+                'fecha_cesion','fecha_act','documento','referencia','tipo_documento','nombre_completo','ciudad',
+                'dias_mora_originador','dias_mora_caso_sas','total_dias_mora','anios_mora','principal','deuda_principal_k',
+                'intereses','tecnologia','seguro','otros_cargos','total_pagado','dcto_pago_contado_50','dcto_pago_contado_70_max_30',
+                'deuda_total','telefono_celular','email','celular_1','celular_2','celular_3','direccion_1','direccion_2','direccion_3',
+                'email_1','email_2','telefono_1','telefono_2'
+            ]
             
-            # Procesar cada columna usando el mapeo directo
-            for col_excel, campo_modelo in mapeo_directo.items():
-                if col_excel in df.columns:
-                    # Copiar la columna con el nuevo nombre
-                    df_procesado[campo_modelo] = df[col_excel].copy()
-                    print(f"Mapeando: '{col_excel}' -> '{campo_modelo}'")
-            
-            # Procesamiento específico para ciertos tipos de campos
-            # Limpiar valores monetarios
-            campos_monetarios = ['principal', 'deuda_principal_k', 'deuda_total', 'intereses', 'tecnologia', 
-                               'seguro', 'otros_cargos', 'total_pagado', 'dcto_pago_contado_50', 'dcto_pago_contado_70_max_30']
-            
-            for campo in campos_monetarios:
-                if campo in df_procesado.columns:
-                    # Convertir a string para poder realizar operaciones de texto
-                    df_procesado[campo] = df_procesado[campo].astype(str)
-                    # Eliminar símbolos y dar formato
-                    df_procesado[campo] = df_procesado[campo].str.replace('$', '', regex=False)
-                    df_procesado[campo] = df_procesado[campo].str.replace(' ', '', regex=False)
-                    # Manejo especial para DEUDA TOTAL
-                    if campo == 'deuda_total':
-                        # Intentar mantener el formato decimal original
-                        df_procesado[campo] = df_procesado[campo].apply(lambda x: 
-                            float(x.replace('.', '').replace(',', '.')) if isinstance(x, str) else float(x))
-                    else:
-                        # Para otros campos monetarios, convertir a entero
-                        try:
-                            df_procesado[campo] = df_procesado[campo].apply(lambda x: 
-                                int(float(x.replace('.', '').replace(',', '.'))) if isinstance(x, str) else int(float(x)))
-                        except Exception as e:
-                            print(f"Error al procesar campo monetario {campo}: {str(e)}")
-            
-            # Procesar campos de fecha
-            campos_fecha = ['fecha_cesion', 'fecha_act']
-            for campo in campos_fecha:
-                if campo in df_procesado.columns:
-                    try:
-                        df_procesado[campo] = pd.to_datetime(df_procesado[campo], format='%d/%m/%Y', errors='coerce')
-                    except Exception as e:
-                        print(f"Error al convertir fecha {campo}: {str(e)}")
-            
-            # Procesar campos enteros
-            campos_enteros = ['dias_mora_caso_sas', 'dias_mora_originador', 'total_dias_mora', 'anios_mora']
-            for campo in campos_enteros:
-                if campo in df_procesado.columns:
-                    try:
-                        df_procesado[campo] = df_procesado[campo].astype(str).str.replace(',', '.', regex=False)
-                        df_procesado[campo] = pd.to_numeric(df_procesado[campo], errors='coerce')
-                        df_procesado[campo] = df_procesado[campo].fillna(0).astype(int)
-                    except Exception as e:
-                        print(f"Error al convertir entero {campo}: {str(e)}")
-            
-            # Mostrar datos procesados
-            print("\nDatos procesados:")
-            print(df_procesado.head())
-            
-            # Convertir a registros para procesar
-            registros = df_procesado.to_dict('records')
-            print(f"Procesando {len(registros)} registros...")
-            
-            # Validar documento - campo obligatorio
-            for idx, registro in enumerate(registros):
-                if 'documento' not in registro or pd.isna(registro['documento']):
-                    errores.append(f"Fila {idx + 2}: Falta el documento")
-                    continue
-                    
-                # Preparar datos para crear o actualizar el cliente
+            columnas_presentes_en_df = [c for c in campos_modelo if c in df.columns]
+            if not columnas_presentes_en_df:
+                messages.error(request, "El archivo no contiene ninguna de las columnas esperadas. Por favor, revisa el formato del archivo.")
+                # Asegurarse que context['errores'] exista antes de añadir.
+                if 'errores' not in context:
+                    context['errores'] = []
+                context['errores'].append("Formato de archivo incorrecto: no se encontraron columnas de datos válidas.")
+                return render(request, 'core/carga_clientes.html', context)
+
+            df_procesado = df[columnas_presentes_en_df].copy()
+
+            campos_monetarios_a_entero = ['principal', 'intereses', 'tecnologia', 'seguro', 'otros_cargos', 'total_pagado']
+            campo_decimal_grande = 'deuda_total'
+            LIMITE_ENTERO_GRANDE = 2147483647
+
+            def limpiar_valor_monetario(valor_original, campo_nombre, idx, es_decimal_field=False):
+                if pd.isna(valor_original) or str(valor_original).strip().lower() in ('-', '', 'nan', 'none'):
+                    return Decimal('0.00') if es_decimal_field else 0
+                
+                val_str = str(valor_original).replace('$', '').strip()
+                
+                if '.' in val_str and ',' in val_str:
+                    if val_str.rfind('.') < val_str.rfind(','):
+                        val_str = val_str.replace('.', '').replace(',', '.')
+                elif ',' in val_str:
+                    val_str = val_str.replace(',', '.')
+                
                 try:
-                    documento = str(registro.get('documento', '')).strip()
-                    nombre = str(registro.get('nombre_completo', '')).strip()
-                    
-                    # Validar datos mínimos
-                    if not documento or not nombre:
-                        errores.append(f"Fila {idx + 2}: Documento y nombre completo son obligatorios")
-                        continue
-                        
-                    # Crear o actualizar cliente
+                    valor_float = float(val_str)
+                    if es_decimal_field:
+                        return Decimal(str(valor_float))
+                    else:
+                        valor_redondeado = int(round(valor_float))
+                        if abs(valor_redondeado) > LIMITE_ENTERO_GRANDE:
+                            conversion_errores.append(f"Advertencia Fila {idx + 2}, Campo '{campo_nombre}': Valor '{valor_original}' ({valor_redondeado}) excede límite. Se usará {'el límite.' if LIMITE_ENTERO_GRANDE else '0'}")
+                            return LIMITE_ENTERO_GRANDE if valor_redondeado > 0 else -LIMITE_ENTERO_GRANDE
+                        return valor_redondeado
+                except ValueError:
+                    conversion_errores.append(f"Advertencia Fila {idx + 2}, Campo '{campo_nombre}': No se pudo convertir '{valor_original}' a número. Se usará 0.")
+                    return Decimal('0.00') if es_decimal_field else 0
+
+            for campo in campos_monetarios_a_entero:
+                if campo in df_procesado.columns:
+                    df_procesado[campo] = [limpiar_valor_monetario(val, campo, idx, es_decimal_field=False) for idx, val in enumerate(df_procesado[campo])]
+            
+            if campo_decimal_grande in df_procesado.columns:
+                 df_procesado[campo_decimal_grande] = [limpiar_valor_monetario(val, campo_decimal_grande, idx, es_decimal_field=True) for idx, val in enumerate(df_procesado[campo_decimal_grande])]
+
+            campos_numericos_simples = ['dias_mora_originador','dias_mora_caso_sas','total_dias_mora','anios_mora']
+            for campo in campos_numericos_simples:
+                if campo in df_procesado.columns:
+                    df_procesado[campo] = pd.to_numeric(df_procesado[campo], errors='coerce').fillna(0).astype(int)
+            
+            campos_texto_a_numero_opcional = ['celular_1','celular_2','celular_3','telefono_celular','telefono_1','telefono_2']
+            for campo in campos_texto_a_numero_opcional:
+                 df_procesado[campo] = df_procesado[campo].astype(str).str.replace(r'[^\d\+]', '', regex=True)
+                 df_procesado[campo] = df_procesado[campo].replace(r'^\+?$', None, regex=True)
+
+            for campo_fecha in ['fecha_cesion', 'fecha_act']:
+                if campo_fecha in df_procesado.columns:
+                    df_procesado[campo_fecha] = pd.to_datetime(df_procesado[campo_fecha], format='%d/%m/%Y', errors='coerce')
+
+            registros = df_procesado.to_dict('records')
+            
+            print(f"[DEBUG] Iniciando procesamiento de {len(registros)} registros del archivo.")
+
+            for idx, registro_original in enumerate(registros):
+                registro = registro_original.copy()
+                documento = str(registro.get('documento', '')).strip()
+                referencia_actual = str(registro.get('referencia', '')).strip()
+                nombre = str(registro.get('nombre_completo', '')).strip()
+
+                if not documento or not nombre:
+                    errores.append(f"Fila {idx + 2}: Documento ('{documento}') y/o nombre ('{nombre}') son obligatorios y no pueden estar vacíos.")
+                    continue
+                
+                defaults_data = {}
+                for k, v in registro.items():
+                    if k not in ['documento', 'referencia']:
+                        if pd.isna(v):
+                            defaults_data[k] = None
+                        else:
+                            defaults_data[k] = v
+                
+                referencia_para_db = referencia_actual if referencia_actual else None
+
+                print(f"[DEBUG] Fila {idx + 2}: Intentando update_or_create para Documento='{documento}', Referencia='{referencia_para_db}'")
+
+                try:
                     cliente, created = Cliente.objects.update_or_create(
                         documento=documento,
-                        defaults=registro
+                        referencia=referencia_para_db, 
+                        defaults=defaults_data
                     )
-                    
                     if created:
                         nuevos += 1
                     else:
                         actualizados += 1
-                        
+                except IntegrityError as ie:
+                    errores.append(f"Fila {idx + 2} (Doc: {documento}, Ref: {referencia_actual}): Error de integridad - {str(ie)}.")
                 except Exception as e:
-                    errores.append(f"Fila {idx + 2}: {str(e)}")
-
-            # Preparar resumen para mostrar
+                    errores.append(f"Fila {idx + 2} (Doc: {documento}, Ref: {referencia_actual}): Error al guardar - {str(e)}")
+            
             context['resumen'] = {
                 'nuevos': nuevos,
                 'actualizados': actualizados,
-                'duplicados': duplicados
+                'duplicados': 0 
             }
-            
             if errores:
-                context['errores'] = errores
-                messages.warning(request, f'Carga completada con {len(errores)} errores')
-            else:
-                messages.success(request, f'Carga exitosa: {nuevos} nuevos, {actualizados} actualizados')
-                
+                context.setdefault('errores', []).extend(errores)
+                messages.warning(request, f'Carga completada. {nuevos} nuevos, {actualizados} actualizados. Se encontraron {len(errores)} errores.')
+            if conversion_errores:
+                context.setdefault('advertencias_conversion', []).extend(conversion_errores)
+
+            if not errores and not conversion_errores:
+                messages.success(request, f'Carga exitosa: {nuevos} nuevos, {actualizados} actualizados.')
+            elif not errores and conversion_errores:
+                 messages.info(request, f'Carga completada con advertencias: {nuevos} nuevos, {actualizados} actualizados. {len(conversion_errores)} advertencias.')
         except Exception as e:
             messages.error(request, f'Error al procesar el archivo: {str(e)}')
     
+    # Inicializar context aquí si no se entró al POST, para evitar UnboundLocalError
+    if 'resumen' not in context:
+        context['resumen'] = {}
+    if 'errores' not in context:
+        context['errores'] = []
+        
     return render(request, 'core/carga_clientes.html', context)
 
 @login_required
 @user_passes_test(es_admin)
-def detalle_cliente(request, cliente_id):
-    """Vista para ver y editar detalles de un cliente"""
-    # Usamos get_object_or_404 que automáticamente lanzará Http404 si el cliente no existe
-    cliente = get_object_or_404(Cliente, id=cliente_id)
+def detalle_cliente(request, documento_cliente):
+    """Vista para ver detalles de un cliente (agrupado por documento) y sus referencias."""
     
-    context = {'cliente': cliente}
+    # Obtener todas las referencias para el documento dado, ordenadas por fecha de registro o como prefieras
+    referencias_cliente = Cliente.objects.filter(documento=documento_cliente).order_by('-fecha_registro', 'referencia')
     
-    if request.method == 'POST':
-        # Obtener datos básicos del formulario
-        nombre = request.POST.get('nombre_completo', '').strip()
-        referencia = request.POST.get('referencia', '').strip()
-        ciudad = request.POST.get('ciudad', '').strip()
-        estado = request.POST.get('estado', 'Activo').strip()
-        
-        # Información de contacto
-        telefono_1 = request.POST.get('telefono_1', '').strip()
-        telefono_2 = request.POST.get('telefono_2', '').strip()
-        telefono_3 = request.POST.get('telefono_3', '').strip()
-        celular_1 = request.POST.get('celular_1', '').strip()
-        celular_2 = request.POST.get('celular_2', '').strip()
-        email = request.POST.get('email', '').strip()
-        
-        # Información financiera
-        dias_mora_caso_sas = request.POST.get('dias_mora_caso_sas', 0)
-        dias_mora_originador = request.POST.get('dias_mora_originador', 0)
-        total_dias_mora = request.POST.get('total_dias_mora', 0)
-        anios_mora = request.POST.get('anios_mora', 0)
-        principal = request.POST.get('principal', 0)
-        deuda_principal_k = request.POST.get('deuda_principal_k', 0)
-        deuda_total = request.POST.get('deuda_total', 0)
-        
-        # Direcciones
-        direccion_1 = request.POST.get('direccion_1', '').strip()
-        direccion_2 = request.POST.get('direccion_2', '').strip()
-        direccion_3 = request.POST.get('direccion_3', '').strip()
-        
-        # Validar datos
-        errores = []
-        if not nombre:
-            errores.append('El nombre completo es obligatorio')
-        
-        if not errores:
-            # Actualizar información básica
-            cliente.nombre_completo = nombre
-            cliente.referencia = referencia
-            cliente.ciudad = ciudad
-            cliente.estado = estado
-            
-            # Actualizar información de contacto
-            cliente.telefono_1 = telefono_1
-            cliente.telefono_2 = telefono_2
-            cliente.telefono_3 = telefono_3
-            cliente.celular_1 = celular_1
-            cliente.celular_2 = celular_2
-            cliente.email = email
-            
-            # Actualizar información financiera - manejo seguro de conversiones
-            try:
-                cliente.dias_mora_caso_sas = int(dias_mora_caso_sas) if dias_mora_caso_sas and dias_mora_caso_sas.strip() else cliente.dias_mora_caso_sas
-            except (ValueError, TypeError):
-                # Mantener el valor original si hay error
-                pass
-                
-            try:
-                cliente.dias_mora_originador = int(dias_mora_originador) if dias_mora_originador and dias_mora_originador.strip() else cliente.dias_mora_originador
-            except (ValueError, TypeError):
-                pass
-                
-            try:
-                cliente.total_dias_mora = int(total_dias_mora) if total_dias_mora and total_dias_mora.strip() else cliente.total_dias_mora
-            except (ValueError, TypeError):
-                pass
-                
-            try:
-                cliente.anios_mora = int(anios_mora) if anios_mora and anios_mora.strip() else cliente.anios_mora
-            except (ValueError, TypeError):
-                pass
-            
-            try:
-                cliente.principal = float(principal) if principal and principal.strip() else cliente.principal
-            except (ValueError, TypeError):
-                pass
-                
-            try:
-                cliente.deuda_principal_k = float(deuda_principal_k) if deuda_principal_k and deuda_principal_k.strip() else cliente.deuda_principal_k
-            except (ValueError, TypeError):
-                pass
-                
-            try:
-                cliente.deuda_total = float(deuda_total) if deuda_total and deuda_total.strip() else cliente.deuda_total
-            except (ValueError, TypeError):
-                pass
-            
-            # Actualizar direcciones
-            cliente.direccion_1 = direccion_1
-            cliente.direccion_2 = direccion_2
-            cliente.direccion_3 = direccion_3
-            
-            # Guardar cambios
-            cliente.save()
-            
-            messages.success(request, 'Cliente actualizado correctamente')
-            context['mensaje'] = 'Cliente actualizado correctamente'
-        else:
-            context['errores'] = errores
+    if not referencias_cliente.exists():
+        raise Http404(f"No se encontraron clientes con el documento {documento_cliente}")
     
+    # Usar la primera referencia (o la más reciente según el orden) como la "principal" para datos generales
+    cliente_representativo = referencias_cliente.first()
+    
+    # Calcular totales financieros sumando los campos de todas las referencias
+    # Asegúrate de que los campos sean numéricos y maneja posibles None con Coalesce si es necesario
+    # from django.db.models.functions import Coalesce # Importar si se usa Coalesce
+    
+    totales_financieros = referencias_cliente.aggregate(
+        total_principal=Sum('principal'), # Asumiendo que 'principal' es un campo numérico en el modelo Cliente
+        total_deuda_principal_k=Sum('deuda_principal_k'),
+        total_deuda_total=Sum('deuda_total')
+        # Agrega aquí otros campos financieros que necesites sumar
+    )
+    
+    context = {
+        'cliente_representativo': cliente_representativo, # Para mostrar info general del cliente
+        'referencias_cliente': referencias_cliente,       # Lista de todas las referencias para la pestaña
+        'documento_cliente': documento_cliente,           # Para mostrar en la plantilla o usar en enlaces
+        'totales_financieros': totales_financieros,       # Diccionario con los totales
+        'is_detail_view': True                            # Para la plantilla, si es necesario diferenciar
+    }
+    
+    # ----- Lógica de POST (Actualización) -----
+    # Por ahora, deshabilitaremos la edición directa desde esta vista agrupada para simplificar.
+    # La edición podría manejarse a nivel de referencia individual o con una estrategia definida.
+    # Si se decide mantener la edición, se necesitará una lógica cuidadosa para determinar
+    # qué referencia(s) actualizar.
+    
+    # if request.method == 'POST':
+    #     # ... lógica de actualización compleja ...
+    #     # Por ejemplo, si se edita el nombre, ¿se actualiza en todas las referencias?
+    #     # ¿O solo en la 'cliente_representativo'?
+    #     # messages.warning(request, "La edición de datos agrupados aún no está implementada.")
+    #     pass # No hacer nada en POST por ahora
+        
     return render(request, 'core/detalle_cliente.html', context)
 
+@login_required
 def solo_admin(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
@@ -457,8 +475,6 @@ def solo_admin(view_func):
             return redirect('inicio')
         return view_func(request, *args, **kwargs)
     return _wrapped_view
-
-
 
 @login_required
 def perfil_usuario(request):

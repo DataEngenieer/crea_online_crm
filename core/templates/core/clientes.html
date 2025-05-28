@@ -1,66 +1,72 @@
 {% extends 'core/base.html' %}
 {% load static %}
+{% load widget_tweaks %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="px-0">
+    <div class="d-flex justify-content-between align-items-center mb-4 page-title-header">
         <h2 class="mb-0">Clientes</h2>
         <div>
-            <a href="{% url 'carga_clientes' %}" class="btn btn-outline-primary me-2">
-                <i class="bi bi-upload"></i> Carga Masiva
+            <a href="{% url 'carga_clientes' %}" class="btn btn-light me-2">
+                <i class="bi bi-cloud-upload"></i> Carga Masiva
             </a>
-            <a href="#" class="btn btn-primary">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente">
                 <i class="bi bi-plus-lg"></i> Nuevo Cliente
-            </a>
-        </div>
-    </div>
-    <form method="get" class="row g-2 mb-3">
-        <div class="col-md-4">
-            <input type="text" name="q" value="{{ request.GET.q }}" class="form-control" placeholder="Buscar por nombre, documento o referencia">
-        </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-outline-primary w-100">
-                <i class="bi bi-search"></i> Buscar
             </button>
         </div>
-    </form>
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead class="table-light">
+    </div>
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body py-3">
+            <form method="get" class="row g-3 align-items-end mb-0">
+                <div class="col-md-3">
+                    <label for="documento" class="form-label">Documento</label>
+                    <input type="text" name="documento" id="documento" class="form-control" value="{{ request.GET.documento }}" placeholder="Buscar por Documento">
+                </div>
+                <div class="col-md-3">
+                    <label for="nombre" class="form-label">Nombre Cliente</label>
+                    <input type="text" name="nombre" id="nombre" class="form-control" value="{{ request.GET.nombre }}" placeholder="Buscar por Nombre">
+                </div>
+                <div class="col-md-3">
+                    <label for="telefono" class="form-label">Teléfono</label>
+                    <input type="text" name="telefono" id="telefono" class="form-control" value="{{ request.GET.telefono }}" placeholder="Buscar por Teléfono">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                    <a href="{% url 'clientes' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="table-responsive rounded">
+        <table class="table table-bordered table-hover table-striped align-middle">
+            <thead class="table-header-crea sticky-top shadow-sm">
                 <tr>
                     <th>Documento</th>
-                    <th>Referencia</th>
-                    <th>Nombre Completo</th>
-                    <th>Ciudad</th>
-                    <th>Días Mora</th>
-                    <th>Teléfono</th>
-                    <th>Estado</th>
-                    <th></th>
+                    <th>Nombre Cliente</th> {# Nombre del cliente de la referencia más reciente del grupo #}
+                    <th>Email Cliente</th> {# Email del cliente de la referencia más reciente del grupo #}
+                    <th class="text-center">Nº Productos</th>
+                    <th></th> {# Para el botón de acciones #}
                 </tr>
             </thead>
             <tbody>
-            {% for cliente in page_obj %}
+            {% for grupo_cliente in page_obj %}
                 <tr>
-                    <td>{{ cliente.documento }}</td>
-                    <td>{{ cliente.referencia|default:'-' }}</td>
-                    <td>{{ cliente.nombre_completo }}</td>
-                    <td>{{ cliente.ciudad|default:'-' }}</td>
-                    <td>{{ cliente.dias_mora_caso_sas }}</td>
-                    <td>{{ cliente.telefono_1|default:'-' }}</td>
+                    <td>{{ grupo_cliente.documento }}</td>
+                    <td>{{ grupo_cliente.nombre_completo|default:'-' }}</td>
+                    <td>{{ grupo_cliente.email|default:'-' }}</td>
+                    <td class="text-center">{{ grupo_cliente.num_referencias }}</td>
                     <td>
-                        {% if cliente.estado == 'Activo' %}
-                            <span class="badge bg-success">Activo</span>
-                        {% else %}
-                            <span class="badge bg-secondary">{{ cliente.estado }}</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="{% url 'detalle_cliente' cliente.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                        {# Ajustamos el enlace para pasar el documento en lugar del ID #}
+                        <a href="{% url 'detalle_cliente' grupo_cliente.documento %}" class="btn btn-sm btn-outline-primary" title="Ver detalle del cliente {{ grupo_cliente.documento }}"><i class="bi bi-eye"></i></a>
                     </td>
                 </tr>
             {% empty %}
                 <tr>
-                    <td colspan="8" class="text-center text-muted">No se encontraron clientes.</td>
+                    <td colspan="5" class="text-center text-muted">No se encontraron clientes.</td> {# Ajustado colspan #}
                 </tr>
             {% endfor %}
             </tbody>
@@ -68,12 +74,176 @@
     </div>
     <div class="d-flex justify-content-center mt-3">
         {% if page_obj.has_previous %}
-            <a href="?q={{ request.GET.q }}&page={{ page_obj.previous_page_number }}" class="btn btn-outline-secondary btn-sm me-1">Anterior</a>
+            <a href="?documento={{ request.GET.documento|default:'' }}&nombre={{ request.GET.nombre|default:'' }}&telefono={{ request.GET.telefono|default:'' }}&page={{ page_obj.previous_page_number }}" class="btn btn-outline-secondary btn-sm me-1">Anterior</a>
         {% endif %}
         <span class="align-middle px-2">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
         {% if page_obj.has_next %}
-            <a href="?q={{ request.GET.q }}&page={{ page_obj.next_page_number }}" class="btn btn-outline-secondary btn-sm ms-1">Siguiente</a>
+            <a href="?documento={{ request.GET.documento|default:'' }}&nombre={{ request.GET.nombre|default:'' }}&telefono={{ request.GET.telefono|default:'' }}&page={{ page_obj.next_page_number }}" class="btn btn-outline-secondary btn-sm ms-1">Siguiente</a>
         {% endif %}
     </div>
 </div>
+
+<!-- Modal para Nuevo Cliente -->
+<div class="modal fade" id="modalNuevoCliente" tabindex="-1" aria-labelledby="modalNuevoClienteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <form method="post" action="{% url 'crear_cliente' %}" id="crearClienteForm">
+                {% csrf_token %}
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title" id="modalNuevoClienteLabel">
+                        <i class="fas fa-user-plus me-2"></i>Crear Nuevo Cliente
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {% if form_nuevo_cliente.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form_nuevo_cliente.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Fila 1: Documento, Tipo Documento, Referencia -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="{{ form_nuevo_cliente.documento.id_for_label }}" class="form-label">{{ form_nuevo_cliente.documento.label }}{% if not form_nuevo_cliente.documento.field.required %} (Opcional){% endif %}</label>
+                            {% render_field form_nuevo_cliente.documento %}
+                            {% if form_nuevo_cliente.documento.errors %}<div class="invalid-feedback d-block">{{ form_nuevo_cliente.documento.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form_nuevo_cliente.tipo_documento.id_for_label }}" class="form-label">{{ form_nuevo_cliente.tipo_documento.label }}{% if not form_nuevo_cliente.tipo_documento.field.required %} (Opcional){% endif %}</label>
+                            {% render_field form_nuevo_cliente.tipo_documento %}
+                            {% if form_nuevo_cliente.tipo_documento.errors %}<div class="invalid-feedback d-block">{{ form_nuevo_cliente.tipo_documento.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form_nuevo_cliente.referencia.id_for_label }}" class="form-label">{{ form_nuevo_cliente.referencia.label }}{% if not form_nuevo_cliente.referencia.field.required %} (Opcional){% endif %}</label>
+                            {% render_field form_nuevo_cliente.referencia %}
+                            {% if form_nuevo_cliente.referencia.errors %}<div class="invalid-feedback d-block">{{ form_nuevo_cliente.referencia.errors|join:", " }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Fila 2: Deuda Principal, Deuda Total, Fecha Cesión -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="{{ form_nuevo_cliente.principal.id_for_label }}" class="form-label">{{ form_nuevo_cliente.principal.label }}{% if not form_nuevo_cliente.principal.field.required %} (Opcional){% endif %}</label>
+                            {% render_field form_nuevo_cliente.principal %}
+                            {% if form_nuevo_cliente.principal.errors %}<div class="invalid-feedback d-block">{{ form_nuevo_cliente.principal.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form_nuevo_cliente.deuda_total.id_for_label }}" class="form-label">{{ form_nuevo_cliente.deuda_total.label }}{% if not form_nuevo_cliente.deuda_total.field.required %} (Opcional){% endif %}</label>
+                            {% render_field form_nuevo_cliente.deuda_total %}
+                            {% if form_nuevo_cliente.deuda_total.errors %}<div class="invalid-feedback d-block">{{ form_nuevo_cliente.deuda_total.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form_nuevo_cliente.fecha_cesion.id_for_label }}" class="form-label">{{ form_nuevo_cliente.fecha_cesion.label }}{% if not form_nuevo_cliente.fecha_cesion.field.required %} (Opcional){% endif %}</label>
+                            {% render_field form_nuevo_cliente.fecha_cesion %}
+                            {% if form_nuevo_cliente.fecha_cesion.errors %}<div class="invalid-feedback d-block">{{ form_nuevo_cliente.fecha_cesion.errors|join:", " }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Fila 3: Nombre Completo -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="{{ form_nuevo_cliente.nombre_completo.id_for_label }}" class="form-label">{{ form_nuevo_cliente.nombre_completo.label }}{% if not form_nuevo_cliente.nombre_completo.field.required %} (Opcional){% endif %}</label>
+                            {% render_field form_nuevo_cliente.nombre_completo %}
+                            {% if form_nuevo_cliente.nombre_completo.errors %}<div class="invalid-feedback d-block">{{ form_nuevo_cliente.nombre_completo.errors|join:", " }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Fila 4: Ciudad, Celular -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form_nuevo_cliente.ciudad.id_for_label }}" class="form-label">{{ form_nuevo_cliente.ciudad.label }}{% if not form_nuevo_cliente.ciudad.field.required %} (Opcional){% endif %}</label>
+                            {% render_field form_nuevo_cliente.ciudad %}
+                            {% if form_nuevo_cliente.ciudad.errors %}<div class="invalid-feedback d-block">{{ form_nuevo_cliente.ciudad.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form_nuevo_cliente.celular_1.id_for_label }}" class="form-label">{{ form_nuevo_cliente.celular_1.label }}{% if not form_nuevo_cliente.celular_1.field.required %} (Opcional){% endif %}</label>
+                            {% render_field form_nuevo_cliente.celular_1 %}
+                            {% if form_nuevo_cliente.celular_1.errors %}<div class="invalid-feedback d-block">{{ form_nuevo_cliente.celular_1.errors|join:", " }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Fila 5: Email, Dirección -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form_nuevo_cliente.email.id_for_label }}" class="form-label">{{ form_nuevo_cliente.email.label }}{% if not form_nuevo_cliente.email.field.required %} (Opcional){% endif %}</label>
+                            {% render_field form_nuevo_cliente.email %}
+                            {% if form_nuevo_cliente.email.errors %}<div class="invalid-feedback d-block">{{ form_nuevo_cliente.email.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form_nuevo_cliente.direccion_1.id_for_label }}" class="form-label">{{ form_nuevo_cliente.direccion_1.label }}{% if not form_nuevo_cliente.direccion_1.field.required %} (Opcional){% endif %}</label>
+                            {% render_field form_nuevo_cliente.direccion_1 %}
+                            {% if form_nuevo_cliente.direccion_1.errors %}<div class="invalid-feedback d-block">{{ form_nuevo_cliente.direccion_1.errors|join:", " }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Fila 6: Observaciones Adicionales -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="{{ form_nuevo_cliente.observaciones_adicionales.id_for_label }}" class="form-label">{{ form_nuevo_cliente.observaciones_adicionales.label }}{% if not form_nuevo_cliente.observaciones_adicionales.field.required %} (Opcional){% endif %}</label>
+                            {% render_field form_nuevo_cliente.observaciones_adicionales class="form-control form-control-sm" rows="2" %}
+                            {% if form_nuevo_cliente.observaciones_adicionales.errors %}<div class="invalid-feedback d-block">{{ form_nuevo_cliente.observaciones_adicionales.errors|join:", " }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if page_obj.has_other_pages %}
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a href="?documento={{ request.GET.documento|default:'' }}&nombre={{ request.GET.nombre|default:'' }}&telefono={{ request.GET.telefono|default:'' }}&page={{ page_obj.previous_page_number }}" class="page-link" tabindex="-1" aria-disabled="true">Anterior</a>
+            </li>
+        {% endif %}
+        {% for i in page_obj.paginator.page_range %}
+            {% if page_obj.number == i %}
+                <li class="page-item active" aria-current="page">
+                    <span class="page-link">{{ i }}</span>
+                </li>
+            {% else %}
+                <li class="page-item"><a href="?documento={{ request.GET.documento|default:'' }}&nombre={{ request.GET.nombre|default:'' }}&telefono={{ request.GET.telefono|default:'' }}&page={{ i }}" class="page-link">{{ i }}</a></li>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a href="?documento={{ request.GET.documento|default:'' }}&nombre={{ request.GET.nombre|default:'' }}&telefono={{ request.GET.telefono|default:'' }}&page={{ page_obj.next_page_number }}" class="page-link">Siguiente</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Script para manejar la apertura del modal con errores (si es necesario sin AJAX)
+// Esto es un ejemplo básico. Una solución AJAX sería más robusta.
+window.addEventListener('DOMContentLoaded', (event) => {
+    // Si hay mensajes de error de Django y el formulario tiene errores (indicando un POST fallido a crear_cliente)
+    {% if messages %}
+        {% for message in messages %}
+            {% if 'error' in message.tags and form_nuevo_cliente.errors %}
+                var modalNuevoCliente = new bootstrap.Modal(document.getElementById('modalNuevoCliente'), {});
+                modalNuevoCliente.show();
+                {% comment %}
+                // Podrías intentar rellenar el formulario con los datos antiguos aquí si no usas AJAX,
+                // pero Django normalmente lo hace si renderizas el form con errores en la misma petición.
+                // Como aquí estamos redirigiendo y luego mostrando, los datos 'old' se pierden sin AJAX o manejo de sesión.
+                {% endcomment %}
+                break; // Mostrar el modal solo una vez si hay múltiples mensajes de error
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+});
+</script>
 {% endblock %}

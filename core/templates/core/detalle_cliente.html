@@ -1,164 +1,224 @@
 {% extends 'core/base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1200px;">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">Detalle de Cliente</h2>
-        <a href="{% url 'clientes' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Volver a la lista
-        </a>
-    </div>
-    <form method="post" class="card p-4 shadow-sm">
-        {% csrf_token %}
-        <!-- Información básica -->        
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-person-vcard me-2"></i>Información Básica</h5>
+<div class="py-4">
+    <!-- Resumen Superior -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body d-flex flex-wrap align-items-center detalle-cliente-header-custom">
+            <div class="flex-grow-1">
+                <h3 class="mb-1">{{ cliente_representativo.nombre_completo|default:"Cliente sin nombre" }}</h3>
+                <div class="mb-2 text-muted fs-6">
+                    <i class="bi bi-credit-card"></i> {{ documento_cliente|default:"N/A" }} &nbsp;|&nbsp;
+                    <i class="bi bi-geo-alt"></i> {{ cliente_representativo.ciudad|default:"N/A" }} &nbsp;|&nbsp;
+                    <i class="bi bi-phone"></i> {{ cliente_representativo.celular_1|default:"N/A" }}
+                </div>
+                <span class="badge bg-{% if cliente_representativo.estado == 'Activo' %}success{% elif cliente_representativo.estado == 'Inactivo' %}danger{% else %}secondary{% endif %}">{{ cliente_representativo.estado|default:"N/A" }}</span>
             </div>
-            <div class="card-body">
+            <div class="mt-2 mt-md-0">
+                <a href="https://wa.me/{{ cliente_representativo.celular_1|default:'' }}" target="_blank" class="btn btn-success btn-sm me-1"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+                <a href="sms:{{ cliente_representativo.celular_1|default:'' }}" class="btn btn-info btn-sm me-1 text-white"><i class="bi bi-chat-text-fill"></i> SMS</a>
+                <a href="tel:{{ cliente_representativo.celular_1|default:'' }}" class="btn btn-warning btn-sm me-1"><i class="bi bi-telephone"></i> Llamar</a>
+                <a href="mailto:{{ cliente_representativo.email|default:'' }}" class="btn btn-secondary btn-sm me-1"><i class="bi bi-envelope"></i> Email</a>
+                <a href="{% url 'clientes' %}" class="btn btn-light me-1"><i class="bi bi-arrow-left"></i> Volver a Clientes</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs para secciones -->
+    <ul class="nav nav-tabs mb-0" id="clienteTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="financiera-consolidada-tab" data-bs-toggle="tab" data-bs-target="#financiera-consolidada" type="button" role="tab" aria-controls="financiera-consolidada" aria-selected="true">Información Financiera</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="referencias-lista-tab" data-bs-toggle="tab" data-bs-target="#referencias-lista" type="button" role="tab" aria-controls="referencias-lista" aria-selected="false">Lista de Productos</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="info-contacto-tab" data-bs-toggle="tab" data-bs-target="#info-contacto" type="button" role="tab" aria-controls="info-contacto" aria-selected="false">Información Detallada y Contactos</button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="clienteTabContent">
+        <!-- Pestaña: Información Financiera Consolidada -->
+        <div class="tab-pane fade show active" id="financiera-consolidada" role="tabpanel" aria-labelledby="financiera-consolidada-tab">
+            <div class="card card-body shadow-sm border-top-0 rounded-bottom">
+                <h5 class="card-title mb-3"><i class="bi bi-calculator me-2"></i>Consolidado de Productos</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Principal Total</label>
+                        <input type="text" class="form-control form-control-sm" value="${{ totales_financieros.total_principal|intcomma|default:'0' }}" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Deuda Principal K Total</label>
+                        <input type="text" class="form-control form-control-sm" value="${{ totales_financieros.total_deuda_principal_k|intcomma|default:'0' }}" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Deuda Total Consolidada</label>
+                        <input type="text" class="form-control form-control-sm" value="${{ totales_financieros.total_deuda_total|intcomma|default:'0' }}" readonly>
+                    </div>
+                </div>
+                <hr>
+                <h6 class="mb-3"><i class="bi bi-card-list me-2"></i>Detalle Financiero por Referencia:</h6>
+                {% if referencias_cliente %}
+                    {% for ref in referencias_cliente %}
+                    <div class="mb-3 p-2 border rounded bg-light">
+                        <strong class="d-block mb-1">Referencia: {{ ref.referencia|default:'N/A' }}</strong>
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <label class="form-label-sm">Principal</label>
+                                <input type="text" class="form-control form-control-sm" value="${{ ref.principal|intcomma|default:'0' }}" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label-sm">Deuda Total</label>
+                                <input type="text" class="form-control form-control-sm" value="${{ ref.deuda_total|intcomma|default:'0' }}" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label-sm">Días Mora SAS</label>
+                                <input type="text" class="form-control form-control-sm" value="{{ ref.dias_mora_caso_sas|default:'0' }}" readonly>
+                            </div>
+                             <div class="col-md-3">
+                                <label class="form-label-sm">Fecha Cesión</label>
+                                <input type="text" class="form-control form-control-sm" value="{{ ref.fecha_cesion|date:'d M Y'|default:'N/A' }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No hay referencias para mostrar detalle financiero.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Pestaña: Lista de Referencias -->
+        <div class="tab-pane fade" id="referencias-lista" role="tabpanel" aria-labelledby="referencias-lista-tab">
+            <div class="card card-body shadow-sm border-top-0 rounded-bottom">
+                <h5 class="card-title mb-3"><i class="bi bi-list-ul me-2"></i>Referencias Asociadas al Documento: {{ documento_cliente }} (Total: {{ referencias_cliente|length }})</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover table-striped" style="font-size: 0.85rem;">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ref.</th>
+                                <th>Nombre Completo</th>
+                                <th>F. Cesión</th>
+                                <th>F. Registro</th>
+                                <th>F. Act.</th>
+                                <th>Estado</th>
+                                <th class="text-end">Principal</th>
+                                <th class="text-end">Deuda Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ref in referencias_cliente %}
+                            <tr>
+                                <td>{{ ref.referencia|default:'N/A' }}</td>
+                                <td>{{ ref.nombre_completo|truncatechars:30|default:'N/A' }}</td>
+                                <td>{{ ref.fecha_cesion|date:'d M Y'|default:'N/A' }}</td>
+                                <td>{{ ref.fecha_registro|date:'d M Y'|default:'N/A' }}</td>
+                                <td>{{ ref.fecha_act|date:'d M Y'|default:'N/A' }}</td>
+                                <td><span class="badge bg-{% if ref.estado == 'Activo' %}success{% elif ref.estado == 'Inactivo' %}danger{% else %}secondary{% endif %}">{{ ref.estado|default:'N/A' }}</span></td>
+                                <td class="text-end">${{ ref.principal|intcomma|default:'0' }}</td>
+                                <td class="text-end">${{ ref.deuda_total|intcomma|default:'0' }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">No hay referencias para este cliente.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña: Información General (del cliente_representativo) y Contactos -->
+        <div class="tab-pane fade" id="info-contacto" role="tabpanel" aria-labelledby="info-contacto-tab">
+            <div class="card card-body shadow-sm border-top-0 rounded-bottom">
+                <h5 class="card-title mb-3"><i class="bi bi-info-circle me-2"></i>Información Detallada y Contactos</h5>
+
+                <h6 class="mt-1 mb-3"><i class="bi bi-person-badge me-2"></i>Datos Generales del Cliente</h6>
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label class="form-label">Documento</label>
-                        <input type="text" class="form-control" name="documento" value="{{ cliente.documento }}" readonly>
+                        <label class="form-label">Tipo Documento</label>
+                        <input type="text" class="form-control form-control-sm" value="{{ cliente_representativo.tipo_documento|default:'N/A' }}" readonly>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Referencia</label>
-                        <input type="text" class="form-control" name="referencia" value="{{ cliente.referencia }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Estado</label>
-                        <select class="form-select" name="estado">
-                            <option value="Activo" {% if cliente.estado == 'Activo' %}selected{% endif %}>Activo</option>
-                            <option value="Inactivo" {% if cliente.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option>
-                        </select>
-                    </div>
-                    <div class="col-md-8">
                         <label class="form-label">Nombre Completo</label>
-                        <input type="text" class="form-control" name="nombre_completo" value="{{ cliente.nombre_completo }}">
+                        <input type="text" class="form-control form-control-sm" value="{{ cliente_representativo.nombre_completo|default:'N/A' }}" readonly>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Ciudad</label>
-                        <input type="text" class="form-control" name="ciudad" value="{{ cliente.ciudad }}">
+                        <input type="text" class="form-control form-control-sm" value="{{ cliente_representativo.ciudad|default:'N/A' }}" readonly>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Información de contacto -->
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="bi bi-telephone me-2"></i>Información de Contacto</h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Teléfono 1</label>
-                        <input type="text" class="form-control" name="telefono_1" value="{{ cliente.telefono_1 }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Teléfono 2</label>
-                        <input type="text" class="form-control" name="telefono_2" value="{{ cliente.telefono_2 }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Teléfono 3</label>
-                        <input type="text" class="form-control" name="telefono_3" value="{{ cliente.telefono_3 }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Celular 1</label>
-                        <input type="text" class="form-control" name="celular_1" value="{{ cliente.celular_1 }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Celular 2</label>
-                        <input type="text" class="form-control" name="celular_2" value="{{ cliente.celular_2 }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-control" name="email" value="{{ cliente.email }}">
-                    </div>
-                </div>
-            </div>
-        </div>
+                <hr class="my-4">
 
-        <!-- Información financiera -->
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Información Financiera</h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">Días Mora</label>
-                        <input type="text" class="form-control" name="dias_mora_caso_sas" value="{{ cliente.dias_mora_caso_sas }}">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Días Mora Originador</label>
-                        <input type="text" class="form-control" name="dias_mora_originador" value="{{ cliente.dias_mora_originador }}">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Total Días Mora</label>
-                        <input type="text" class="form-control" name="total_dias_mora" value="{{ cliente.total_dias_mora }}">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Años Mora</label>
-                        <input type="text" class="form-control" name="anios_mora" value="{{ cliente.anios_mora }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Principal</label>
-                        <input type="text" class="form-control" name="principal" value="{{ cliente.principal }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Deuda Principal K</label>
-                        <input type="text" class="form-control" name="deuda_principal_k" value="{{ cliente.deuda_principal_k }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Deuda Total</label>
-                        <input type="text" class="form-control" name="deuda_total" value="{{ cliente.deuda_total }}">
-                    </div>
-                </div>
-            </div>
-        </div>
+                <h6 class="mb-3"><i class="bi bi-person-lines-fill me-2"></i>Detalle de Contacto y Direcciones por Producto</h6>
+                {% if referencias_cliente %}
+                    {% for ref in referencias_cliente %}
+                    <div class="mb-4 p-3 border rounded bg-light">
+                        <h6 class="mb-3 border-bottom pb-2"><i class="bi bi-bookmark-star me-2"></i>Producto/Referencia: {{ ref.referencia|default:'N/A' }} ({{ ref.nombre_completo|truncatechars:30|default:'Cliente' }})</h6>
+                        
+                        <p class="fw-bold mb-1"><i class="bi bi-telephone-fill me-2"></i>Información de Contacto:</p>
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label-sm">Celular 1:</label>
+                                <p class="form-control-static form-control-sm">{{ ref.celular_1|default:'N/A' }}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label-sm">Celular 2:</label>
+                                <p class="form-control-static form-control-sm">{{ ref.celular_2|default:'N/A' }}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label-sm">Celular 3:</label>
+                                <p class="form-control-static form-control-sm">{{ ref.celular_3|default:'N/A' }}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label-sm">Teléfono 1:</label>
+                                <p class="form-control-static form-control-sm">{{ ref.telefono_1|default:'N/A' }}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label-sm">Teléfono 2:</label>
+                                <p class="form-control-static form-control-sm">{{ ref.telefono_2|default:'N/A' }}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label-sm">Email Principal:</label>
+                                <p class="form-control-static form-control-sm">{{ ref.email|default:'N/A' }}</p>
+                            </div>
+                             <div class="col-md-4">
+                                <label class="form-label-sm">Email 1:</label>
+                                <p class="form-control-static form-control-sm">{{ ref.email_1|default:'N/A' }}</p>
+                            </div>
+                             <div class="col-md-4">
+                                <label class="form-label-sm">Email 2:</label>
+                                <p class="form-control-static form-control-sm">{{ ref.email_2|default:'N/A' }}</p>
+                            </div>
+                        </div>
 
-        <!-- Direcciones -->
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-secondary text-white">
-                <h5 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Direcciones</h5>
+                        <p class="fw-bold mb-1"><i class="bi bi-geo-alt-fill me-2"></i>Direcciones Registradas:</p>
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label class="form-label-sm">Dirección 1:</label>
+                                <p class="form-control-static form-control-sm">{{ ref.direccion_1|default:'N/A' }}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label-sm">Dirección 2:</label>
+                                <p class="form-control-static form-control-sm">{{ ref.direccion_2|default:'N/A' }}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label-sm">Dirección 3:</label>
+                                <p class="form-control-static form-control-sm">{{ ref.direccion_3|default:'N/A' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% if not forloop.last %}<hr class="my-3">{% endif %}
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No hay productos/referencias para mostrar información de contacto o direcciones.</p>
+                {% endif %}
             </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Dirección 1</label>
-                        <input type="text" class="form-control" name="direccion_1" value="{{ cliente.direccion_1 }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Dirección 2</label>
-                        <input type="text" class="form-control" name="direccion_2" value="{{ cliente.direccion_2 }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Dirección 3</label>
-                        <input type="text" class="form-control" name="direccion_3" value="{{ cliente.direccion_3 }}">
-                    </div>
-                </div>
-            </div>
         </div>
-        </div>
-        <div class="mt-4 d-flex justify-content-end">
-            <button type="submit" class="btn btn-success"><i class="bi bi-save"></i> Guardar Cambios</button>
-        </div>
-        {% if errores %}
-        <div class="alert alert-danger mt-3">
-            <ul class="mb-0">
-                {% for error in errores %}
-                <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-        {% if mensaje %}
-        <div class="alert alert-success mt-3">
-            {{ mensaje }}
-        </div>
-        {% endif %}
-    </form>
+    </div>
 </div>
 {% endblock %}
