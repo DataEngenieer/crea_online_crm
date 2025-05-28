@@ -1,0 +1,43 @@
+<div class="table-responsive rounded" id="tabla-clientes-container">
+    <table class="table table-bordered table-hover table-striped align-middle">
+        <thead class="table-header-crea sticky-top shadow-sm">
+            <tr>
+                <th>Documento</th>
+                <th>Nombre Cliente</th>
+                <th class="text-end">Deuda</th>
+                <th class="text-center">Días Mora</th>
+                <th class="text-center">F. Cesión</th>
+                <th class="text-center">Nº Productos</th>
+                <th class="text-center">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for grupo_cliente in page_obj %}
+            <tr>
+                <td>{{ grupo_cliente.documento }}</td>
+                <td>{{ grupo_cliente.nombre_completo|default:'-' }}</td>
+                <td class="text-end">${{ grupo_cliente.deuda_total|floatformat:2|default:'0.00' }}</td>
+                <td class="text-center">{{ grupo_cliente.total_dias_mora|floatformat:0|default:'-' }}</td>
+                <td class="text-center">{{ grupo_cliente.fecha_cesion|date:"d/m/Y"|default:'-' }}</td>
+                <td class="text-center">{{ grupo_cliente.num_referencias }}</td>
+                <td class="text-center">
+                    <a href="{% url 'detalle_cliente' grupo_cliente.documento %}" class="btn btn-sm btn-outline-primary" title="Ver detalle del cliente {{ grupo_cliente.documento }}"><i class="bi bi-eye"></i></a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="7" class="text-center text-muted">No se encontraron clientes.</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div class="d-flex justify-content-center mt-3" id="paginacion-container">
+    {% if page_obj.has_previous %}
+        <a href="?documento={{ request.GET.documento|default:'' }}&nombre={{ request.GET.nombre|default:'' }}&telefono={{ request.GET.telefono|default:'' }}&referencia={{ request.GET.referencia|default:'' }}&page={{ page_obj.previous_page_number }}" class="btn btn-outline-secondary btn-sm me-1 ajax-link">Anterior</a>
+    {% endif %}
+    <span class="align-middle px-2">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+        <a href="?documento={{ request.GET.documento|default:'' }}&nombre={{ request.GET.nombre|default:'' }}&telefono={{ request.GET.telefono|default:'' }}&referencia={{ request.GET.referencia|default:'' }}&page={{ page_obj.next_page_number }}" class="btn btn-outline-secondary btn-sm ms-1 ajax-link">Siguiente</a>
+    {% endif %}
+</div>

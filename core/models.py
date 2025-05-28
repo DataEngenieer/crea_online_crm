@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 
 class LoginUser(models.Model):
     created_user = models.DateTimeField(auto_now_add=True)
@@ -52,7 +54,6 @@ class Cliente(models.Model):
         (INACTIVO, 'Inactivo'),
     ]
 
-    fecha_cesion = models.DateField(null=True, blank=True)
     fecha_act = models.DateField(null=True, blank=True)
     documento = models.CharField(max_length=30)
     referencia = models.CharField(max_length=50, blank=True, null=True)
@@ -110,3 +111,46 @@ class Cliente(models.Model):
 
     def __str__(self):
         return self.nombre_completo if self.nombre_completo else str(self.id)
+
+
+class Gestion(models.Model):
+    CANAL_CONTACTO_CHOICES = [
+        ('telefono', 'Teléfono'),
+        ('whatsapp', 'WhatsApp'),
+        ('email', 'Email'),
+        ('sms', 'SMS')
+    ]
+    ESTADO_CONTACTO_CHOICES = [
+        ('contactado', 'Contactado'),
+        ('no_contactado', 'No Contactado'),
+        ('numero_errado', 'Número Errado'),
+    ]
+
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='gestiones')
+    usuario_gestion = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='gestiones_realizadas')
+    fecha_hora_gestion = models.DateTimeField(default=timezone.now)
+
+    canal_contacto = models.CharField(max_length=50, choices=CANAL_CONTACTO_CHOICES)
+    estado_contacto = models.CharField(max_length=50, choices=ESTADO_CONTACTO_CHOICES)
+
+    tipo_gestion_n1 = models.CharField(max_length=100, blank=True, null=True, verbose_name="Tipo de Gestión (Nivel 1)")
+    tipo_gestion_n2 = models.CharField(max_length=100, blank=True, null=True, verbose_name="Tipo de Gestión (Nivel 2)")
+    tipo_gestion_n3 = models.CharField(max_length=100, blank=True, null=True, verbose_name="Tipo de Gestión (Nivel 3)")
+
+    acuerdo_pago_realizado = models.BooleanField(default=False, verbose_name="¿Se realizó acuerdo de pago?")
+    fecha_acuerdo = models.DateField(blank=True, null=True, verbose_name="Fecha de Acuerdo")
+    monto_acuerdo = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True, verbose_name="Monto del Acuerdo")
+    observaciones_acuerdo = models.TextField(blank=True, null=True, verbose_name="Observaciones del Acuerdo")
+
+    seguimiento_requerido = models.BooleanField(default=False, verbose_name="¿Requiere seguimiento?")
+    fecha_proximo_seguimiento = models.DateField(blank=True, null=True, verbose_name="Fecha Próximo Seguimiento")
+
+    observaciones_generales = models.TextField(blank=True, null=True, verbose_name="Observaciones Generales de la Gestión")
+
+    class Meta:
+        verbose_name = "Gestión"
+        verbose_name_plural = "Gestiones"
+        ordering = ['-fecha_hora_gestion']
+
+    def __str__(self):
+        return f"Gestión para {self.cliente.nombre_completo} el {self.fecha_hora_gestion.strftime('%Y-%m-%d %H:%M')}"

@@ -10,76 +10,47 @@
             <a href="{% url 'carga_clientes' %}" class="btn btn-light me-2">
                 <i class="bi bi-cloud-upload"></i> Carga Masiva
             </a>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente">
+            <button type="button" class="btn btn-crea-pink" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente">
                 <i class="bi bi-plus-lg"></i> Nuevo Cliente
             </button>
         </div>
     </div>
     <div class="card shadow-sm border-0 mb-3">
         <div class="card-body py-3">
-            <form method="get" class="row g-3 align-items-end mb-0">
-                <div class="col-md-3">
-                    <label for="documento" class="form-label">Documento</label>
-                    <input type="text" name="documento" id="documento" class="form-control" value="{{ request.GET.documento }}" placeholder="Buscar por Documento">
+            <form method="get" id="filtroClientesForm" class="mb-0">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label for="documento" class="form-label">Documento</label>
+                        <input type="text" name="documento" id="documento" class="form-control filtro-input" value="{{ request.GET.documento }}" placeholder="Buscar por Documento">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="nombre" class="form-label">Nombre Cliente</label>
+                        <input type="text" name="nombre" id="nombre" class="form-control filtro-input" value="{{ request.GET.nombre }}" placeholder="Buscar por Nombre">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="telefono" class="form-label">Teléfono</label>
+                        <input type="text" name="telefono" id="telefono" class="form-control filtro-input" value="{{ request.GET.telefono }}" placeholder="Buscar por Teléfono">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="referencia" class="form-label">Referencia</label>
+                        <input type="text" name="referencia" id="referencia" class="form-control filtro-input" value="{{ request.GET.referencia }}" placeholder="Buscar por Referencia">
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label for="nombre" class="form-label">Nombre Cliente</label>
-                    <input type="text" name="nombre" id="nombre" class="form-control" value="{{ request.GET.nombre }}" placeholder="Buscar por Nombre">
-                </div>
-                <div class="col-md-3">
-                    <label for="telefono" class="form-label">Teléfono</label>
-                    <input type="text" name="telefono" id="telefono" class="form-control" value="{{ request.GET.telefono }}" placeholder="Buscar por Teléfono">
-                </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">
-                        <i class="bi bi-search"></i> Buscar
-                    </button>
-                    <a href="{% url 'clientes' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-counterclockwise"></i> Limpiar
-                    </a>
+                <div class="row g-3">
+                    <div class="col-md-12 d-flex justify-content-start">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                        <a href="{% url 'clientes' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                        </a>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
-    <div class="table-responsive rounded">
-        <table class="table table-bordered table-hover table-striped align-middle">
-            <thead class="table-header-crea sticky-top shadow-sm">
-                <tr>
-                    <th>Documento</th>
-                    <th>Nombre Cliente</th> {# Nombre del cliente de la referencia más reciente del grupo #}
-                    <th>Email Cliente</th> {# Email del cliente de la referencia más reciente del grupo #}
-                    <th class="text-center">Nº Productos</th>
-                    <th></th> {# Para el botón de acciones #}
-                </tr>
-            </thead>
-            <tbody>
-            {% for grupo_cliente in page_obj %}
-                <tr>
-                    <td>{{ grupo_cliente.documento }}</td>
-                    <td>{{ grupo_cliente.nombre_completo|default:'-' }}</td>
-                    <td>{{ grupo_cliente.email|default:'-' }}</td>
-                    <td class="text-center">{{ grupo_cliente.num_referencias }}</td>
-                    <td>
-                        {# Ajustamos el enlace para pasar el documento en lugar del ID #}
-                        <a href="{% url 'detalle_cliente' grupo_cliente.documento %}" class="btn btn-sm btn-outline-primary" title="Ver detalle del cliente {{ grupo_cliente.documento }}"><i class="bi bi-eye"></i></a>
-                    </td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="5" class="text-center text-muted">No se encontraron clientes.</td> {# Ajustado colspan #}
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <div class="d-flex justify-content-center mt-3">
-        {% if page_obj.has_previous %}
-            <a href="?documento={{ request.GET.documento|default:'' }}&nombre={{ request.GET.nombre|default:'' }}&telefono={{ request.GET.telefono|default:'' }}&page={{ page_obj.previous_page_number }}" class="btn btn-outline-secondary btn-sm me-1">Anterior</a>
-        {% endif %}
-        <span class="align-middle px-2">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-        {% if page_obj.has_next %}
-            <a href="?documento={{ request.GET.documento|default:'' }}&nombre={{ request.GET.nombre|default:'' }}&telefono={{ request.GET.telefono|default:'' }}&page={{ page_obj.next_page_number }}" class="btn btn-outline-secondary btn-sm ms-1">Siguiente</a>
-        {% endif %}
+    <div id="tabla-clientes-wrapper">
+        {% include 'core/_tabla_clientes_parcial.html' %}
     </div>
 </div>
 
@@ -196,54 +167,82 @@
     </div>
 </div>
 
-{% if page_obj.has_other_pages %}
-<nav aria-label="Page navigation">
-    <ul class="pagination justify-content-center">
-        {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a href="?documento={{ request.GET.documento|default:'' }}&nombre={{ request.GET.nombre|default:'' }}&telefono={{ request.GET.telefono|default:'' }}&page={{ page_obj.previous_page_number }}" class="page-link" tabindex="-1" aria-disabled="true">Anterior</a>
-            </li>
-        {% endif %}
-        {% for i in page_obj.paginator.page_range %}
-            {% if page_obj.number == i %}
-                <li class="page-item active" aria-current="page">
-                    <span class="page-link">{{ i }}</span>
-                </li>
-            {% else %}
-                <li class="page-item"><a href="?documento={{ request.GET.documento|default:'' }}&nombre={{ request.GET.nombre|default:'' }}&telefono={{ request.GET.telefono|default:'' }}&page={{ i }}" class="page-link">{{ i }}</a></li>
-            {% endif %}
-        {% endfor %}
-        {% if page_obj.has_next %}
-            <li class="page-item">
-                <a href="?documento={{ request.GET.documento|default:'' }}&nombre={{ request.GET.nombre|default:'' }}&telefono={{ request.GET.telefono|default:'' }}&page={{ page_obj.next_page_number }}" class="page-link">Siguiente</a>
-            </li>
-        {% endif %}
-    </ul>
-</nav>
-{% endif %}
-
-{% endblock %}
+{% endblock content %}
 
 {% block extra_js %}
 <script>
-// Script para manejar la apertura del modal con errores (si es necesario sin AJAX)
-// Esto es un ejemplo básico. Una solución AJAX sería más robusta.
-window.addEventListener('DOMContentLoaded', (event) => {
-    // Si hay mensajes de error de Django y el formulario tiene errores (indicando un POST fallido a crear_cliente)
-    {% if messages %}
-        {% for message in messages %}
-            {% if 'error' in message.tags and form_nuevo_cliente.errors %}
-                var modalNuevoCliente = new bootstrap.Modal(document.getElementById('modalNuevoCliente'), {});
-                modalNuevoCliente.show();
-                {% comment %}
-                // Podrías intentar rellenar el formulario con los datos antiguos aquí si no usas AJAX,
-                // pero Django normalmente lo hace si renderizas el form con errores en la misma petición.
-                // Como aquí estamos redirigiendo y luego mostrando, los datos 'old' se pierden sin AJAX o manejo de sesión.
-                {% endcomment %}
-                break; // Mostrar el modal solo una vez si hay múltiples mensajes de error
-            {% endif %}
-        {% endfor %}
-    {% endif %}
+document.addEventListener('DOMContentLoaded', function() {
+    const filtroForm = document.getElementById('filtroClientesForm');
+    const inputsFiltro = filtroForm.querySelectorAll('input[type="text"]');
+    const tablaWrapper = document.getElementById('tabla-clientes-wrapper');
+    const baseUrl = "{% url 'clientes' %}";
+
+    async function buscarClientes(urlConParams) {
+        try {
+            const response = await fetch(urlConParams, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const html = await response.text();
+            tablaWrapper.innerHTML = html;
+            // history.pushState(null, '', urlConParams); // <-- LÍNEA ELIMINADA/COMENTADA
+            agregarListenersPaginacion(); 
+        } catch (error) {
+            console.error('Error en la búsqueda AJAX:', error);
+        }
+    }
+
+    function obtenerUrlConFiltrosActuales() {
+        const formData = new FormData(filtroForm);
+        const params = new URLSearchParams();
+        for (const [key, value] of formData.entries()) {
+            if (value) { 
+                params.append(key, value);
+            }
+        }
+        const queryString = params.toString();
+        return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+    }
+
+    inputsFiltro.forEach(input => {
+        input.addEventListener('input', function() {
+            const url = obtenerUrlConFiltrosActuales();
+            buscarClientes(url);
+        });
+    });
+
+    filtroForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const url = obtenerUrlConFiltrosActuales();
+        buscarClientes(url);
+    });
+
+    function agregarListenersPaginacion() {
+        const enlacesPaginacion = tablaWrapper.querySelectorAll('.ajax-link');
+        enlacesPaginacion.forEach(enlace => {
+            enlace.addEventListener('click', function(event) {
+                event.preventDefault();
+                buscarClientes(this.href);
+            });
+        });
+    }
+
+    agregarListenersPaginacion();
+
+    const btnLimpiar = document.querySelector('a[href="{% url 'clientes' %}"]');
+    if (btnLimpiar) {
+        btnLimpiar.addEventListener('click', function(event) {
+            event.preventDefault();
+            filtroForm.reset();
+            buscarClientes(baseUrl);
+        });
+    }
+
 });
 </script>
-{% endblock %}
+{% endblock extra_js %}

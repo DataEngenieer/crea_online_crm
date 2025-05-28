@@ -2,15 +2,15 @@
 {% load static %}
 
 {% block content %}
-<div class="container py-4">
+<div class="py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">Carga Masiva de Clientes</h2>
         <div>
             <a href="{% url 'clientes' %}" class="btn btn-light me-2">
                 <i class="bi bi-arrow-left"></i> Volver a Clientes
             </a>
-            <a href="{% static 'core/plantilla_clientes.xlsx' %}" class="btn btn-outline-secondary" download>
-                <i class="bi bi-file-earmark-arrow-down"></i> Descargar plantilla
+            <a href="{% static 'core/plantilla_clientes.xlsx' %}" class="btn btn-success" download>
+                <i class="bi bi-file-earmark-excel-fill"></i> Descargar plantilla
             </a>
         </div>
     </div>

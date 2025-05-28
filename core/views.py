@@ -3,7 +3,7 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django import forms
 from django.contrib.auth.models import User, Group
-from django.db.models import Q, Count, Sum
+from django.db.models import Q, Count, Sum, Max, F
 from django.utils import timezone
 from django.http import HttpResponseForbidden, FileResponse, Http404
 from django.core.mail import EmailMessage
@@ -26,8 +26,8 @@ from django.contrib.auth import get_user_model
 from decimal import Decimal
 from django.db import IntegrityError
 
-from .models import *
-from .forms import EmailAuthenticationForm, ClienteForm
+from .models import Cliente, User, LoginUser, Gestion
+from .forms import EmailAuthenticationForm, ClienteForm, GestionForm
 
 from django.contrib.auth.views import LoginView, LogoutView
 
@@ -141,69 +141,83 @@ def es_admin(user):
 
 @login_required
 def clientes(request):
-    q = request.GET.get('q', '').strip()
+    # Obtener parámetros de filtro individuales
+    filtro_documento = request.GET.get('documento', '').strip()
+    filtro_nombre = request.GET.get('nombre', '').strip()
+    filtro_telefono = request.GET.get('telefono', '').strip()
+    filtro_referencia = request.GET.get('referencia', '').strip()
 
-    # Obtener todos los clientes, ordenados para que el 'representante' del grupo sea el más reciente
-    clientes_lista_completa = Cliente.objects.all().order_by('documento', '-fecha_registro')
+    # Queryset base, ordenado para obtener el representante más reciente del grupo
+    clientes_qs = Cliente.objects.all().order_by('documento', '-fecha_registro')
 
-    if q:
-        # Filtrar basado en el término de búsqueda q sobre campos individuales de las referencias
-        clientes_lista_completa = clientes_lista_completa.filter(
-            Q(nombre_completo__icontains=q) |
-            Q(documento__icontains=q) |
-            Q(referencia__icontains=q) | # Permite buscar una referencia específica y encontrar el grupo
-            Q(email__icontains=q) |
-            Q(telefono_celular__icontains=q)
-        )
+    # Construir filtros dinámicamente
+    filtros = Q()
+    if filtro_documento:
+        filtros &= Q(documento__icontains=filtro_documento)
+    if filtro_nombre:
+        filtros &= Q(nombre_completo__icontains=filtro_nombre)
+    if filtro_telefono:
+        # Asumiendo que quieres buscar en varios campos de teléfono
+        filtros &= (Q(telefono_celular__icontains=filtro_telefono) |
+                    Q(celular_1__icontains=filtro_telefono) |
+                    Q(celular_2__icontains=filtro_telefono) |
+                    Q(celular_3__icontains=filtro_telefono) |
+                    Q(telefono_1__icontains=filtro_telefono) |
+                    Q(telefono_2__icontains=filtro_telefono))
+    if filtro_referencia:
+        filtros &= Q(referencia__icontains=filtro_referencia)
+    
+    if filtros: # Solo aplicar filtros si hay alguno
+        clientes_qs = clientes_qs.filter(filtros)
 
     clientes_info_agrupada = {}
-    documentos_ya_procesados_por_q = set() # Para asegurar que un documento aparezca solo una vez si q coincide con múltiples referencias
+    documentos_coincidentes = set(clientes_qs.values_list('documento', flat=True))
 
-    for cliente_ref in clientes_lista_completa:
-        doc = cliente_ref.documento
-        if q and doc in documentos_ya_procesados_por_q and doc in clientes_info_agrupada:
-            # Si estamos filtrando y ya hemos añadido este documento (a través de otra referencia que coincidió con q)
-            # solo incrementamos el contador de referencias del grupo existente.
-            clientes_info_agrupada[doc]['num_referencias_coincidentes_q'] = clientes_info_agrupada[doc].get('num_referencias_coincidentes_q', 0) +1
-            continue # Ya hemos tomado los datos del representante de este documento.
-        
-        if doc not in clientes_info_agrupada:
-            clientes_info_agrupada[doc] = {
-                'documento': doc,
-                'nombre_completo': cliente_ref.nombre_completo, # Nombre de la referencia más reciente del grupo
-                'email': cliente_ref.email, # Email de la referencia más reciente del grupo
-                'num_referencias': 0, # Este será el conteo total de referencias para este documento
-                'fecha_registro_grupo': cliente_ref.fecha_registro, # Fecha de la ref más reciente del grupo
-                # 'id_representativo': cliente_ref.id # Podríamos usar el documento para el enlace a detalle
+    if documentos_coincidentes:
+        representantes_qs = Cliente.objects.filter(documento__in=documentos_coincidentes)\
+                                      .order_by('documento', '-fecha_registro')\
+                                      .distinct('documento')
+
+        for rep in representantes_qs:
+            clientes_info_agrupada[rep.documento] = {
+                'documento': rep.documento,
+                'nombre_completo': rep.nombre_completo,
+                'email': rep.email, 
+                'deuda_total': rep.deuda_total,
+                'total_dias_mora': rep.total_dias_mora,
+                'fecha_cesion': rep.fecha_cesion,
+                'num_referencias': 0, 
+                'fecha_registro_grupo': rep.fecha_registro
             }
-            if q:
-                documentos_ya_procesados_por_q.add(doc)
-        
-        # El conteo de num_referencias se hará después, sobre el queryset sin filtro q, para obtener el total real.
 
-    # Obtener el conteo total de referencias para cada documento que está en nuestra lista filtrada (si q existe)
-    documentos_en_vista = list(clientes_info_agrupada.keys())
-    
-    if documentos_en_vista:
-        conteos_referencias = Cliente.objects.filter(documento__in=documentos_en_vista).values('documento').annotate(total_refs=Count('id'))
+        conteos_referencias = Cliente.objects.filter(documento__in=documentos_coincidentes)\
+                                        .values('documento')\
+                                        .annotate(total_refs=Count('id'))
         mapa_conteos = {item['documento']: item['total_refs'] for item in conteos_referencias}
+        
         for doc_key in clientes_info_agrupada:
             clientes_info_agrupada[doc_key]['num_referencias'] = mapa_conteos.get(doc_key, 0)
-    
+
     lista_para_paginar = sorted(list(clientes_info_agrupada.values()), key=lambda x: x['fecha_registro_grupo'], reverse=True)
 
-    paginator = Paginator(lista_para_paginar, 15) # Muestra 15 grupos de clientes por página
+    paginator = Paginator(lista_para_paginar, 15)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    form_nuevo_cliente = ClienteForm()
+    form_nuevo_cliente = ClienteForm() 
 
     context = {
         'page_obj': page_obj,
-        'q': q,
-        'is_grouped_view': True,
-        'form_nuevo_cliente': form_nuevo_cliente
+        'form_nuevo_cliente': form_nuevo_cliente,
+        'filtro_documento': filtro_documento,
+        'filtro_nombre': filtro_nombre,
+        'filtro_telefono': filtro_telefono,
+        'filtro_referencia': filtro_referencia,
     }
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'core/_tabla_clientes_parcial.html', context)
+    
     return render(request, 'core/clientes.html', context)
 
 @login_required
@@ -246,6 +260,44 @@ def crear_cliente_view(request):
     # Si no se usa AJAX, y hay un error, la página 'clientes' se recargaría y el modal no se mostraría con errores
     # a menos que la vista 'clientes' se modifique para manejar esto.
     return redirect('clientes') # Redirección temporal en caso de GET o error POST no manejado por AJAX
+
+@login_required
+def agregar_gestion_cliente(request, documento_cliente):
+    cliente = get_object_or_404(Cliente, documento=documento_cliente)
+    if request.method == 'POST':
+        form = GestionForm(request.POST)
+        if form.is_valid():
+            gestion = form.save(commit=False)
+            gestion.cliente = cliente
+            gestion.usuario_gestion = request.user # Asignar el usuario logueado
+            gestion.save()
+            messages.success(request, 'Gestión agregada exitosamente.')
+            return redirect('detalle_cliente', documento_cliente=documento_cliente)
+        else:
+            messages.error(request, 'Por favor corrige los errores en el formulario.')
+    else:
+        form = GestionForm(initial={'cliente': cliente})
+    
+    context = {
+        'form': form,
+        'cliente': cliente,
+        'titulo_pagina': 'Agregar Nueva Gestión'
+    }
+    return render(request, 'core/agregar_gestion.html', context)
+
+@login_required
+def lista_gestiones(request):
+    gestiones_list = Gestion.objects.select_related('cliente', 'usuario_gestion').all().order_by('-fecha_hora_gestion')
+    paginator = Paginator(gestiones_list, 25) # Mostrar 25 gestiones por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'titulo_pagina': 'Listado de Gestiones',
+        'total_gestiones': gestiones_list.count()
+    }
+    return render(request, 'core/lista_gestiones.html', context)
 
 @login_required
 @user_passes_test(es_admin)
@@ -422,50 +474,82 @@ def carga_clientes(request):
 @login_required
 @user_passes_test(es_admin)
 def detalle_cliente(request, documento_cliente):
-    """Vista para ver detalles de un cliente (agrupado por documento) y sus referencias."""
+    clientes_mismo_documento = Cliente.objects.filter(documento=documento_cliente).order_by('-id')
+    if not clientes_mismo_documento.exists():
+        raise Http404("Cliente no encontrado con el documento proporcionado.")
+
+    cliente_representativo = clientes_mismo_documento.first()
+    # Convertir a lista para evitar múltiples consultas a la base de datos si se itera varias veces
+    referencias_cliente_list = list(clientes_mismo_documento)
+
+    # Lógica de consolidación de datos financieros (adaptada de la original)
+    deuda_total_consolidada = sum(c.deuda_total for c in referencias_cliente_list if c.deuda_total is not None)
+    productos_count = len(referencias_cliente_list)
     
-    # Obtener todas las referencias para el documento dado, ordenadas por fecha de registro o como prefieras
-    referencias_cliente = Cliente.objects.filter(documento=documento_cliente).order_by('-fecha_registro', 'referencia')
+    edades_cartera = [c.total_dias_mora for c in referencias_cliente_list if c.total_dias_mora is not None]
+    edad_cartera_promedio = sum(edades_cartera) / len(edades_cartera) if edades_cartera else 0
     
-    if not referencias_cliente.exists():
-        raise Http404(f"No se encontraron clientes con el documento {documento_cliente}")
+    valor_pagado_total = sum(c.total_pagado for c in referencias_cliente_list if c.total_pagado is not None)
+    saldo_capital_total = sum(c.principal for c in referencias_cliente_list if c.principal is not None)
+    intereses_corrientes_total = sum(c.intereses for c in referencias_cliente_list if c.intereses is not None)
+    intereses_mora_total = sum(0 for c in referencias_cliente_list) # Campo no existente, sumando 0 temporalmente
+    gastos_cobranza_total = sum(0 for c in referencias_cliente_list) # Campo no existente, sumando 0 temporalmente
+    otros_conceptos_total = sum(c.otros_cargos for c in referencias_cliente_list if c.otros_cargos is not None)
+
+    # Inicializar el formulario de gestión. El campo 'cliente' se pre-rellena con el cliente_representativo.
+    # Esto es útil si el campo 'cliente' es visible en el formulario.
+    # Si está oculto y se asigna solo en backend, `GestionForm()` sería suficiente para GET.
+    gestion_form = GestionForm(initial={'cliente': cliente_representativo})
+
+    if request.method == 'POST':
+        # Asumimos que el POST es para guardar una gestión.
+        # Para mayor robustez, se podría añadir un 'name' al botón de submit del formulario de gestión
+        # y comprobarlo aquí: if 'nombre_del_boton_submit_gestion' in request.POST:
+        gestion_form_posted = GestionForm(request.POST)
+        if gestion_form_posted.is_valid():
+            gestion = gestion_form_posted.save(commit=False)
+            # Asociar la gestión al cliente_representativo (el registro más reciente con ese documento)
+            gestion.cliente = cliente_representativo 
+            gestion.usuario_gestion = request.user
+            gestion.save()
+            messages.success(request, f'Gestión para {cliente_representativo.nombre_completo} guardada exitosamente.')
+            # Redirigir a la misma página para ver la nueva gestión y limpiar el formulario (evita re-POST)
+            return redirect('detalle_cliente', documento_cliente=documento_cliente)
+        else:
+            messages.error(request, 'Error al guardar la gestión. Por favor revise el formulario.')
+            gestion_form = gestion_form_posted # Pasa el formulario con errores para mostrar en la plantilla
     
-    # Usar la primera referencia (o la más reciente según el orden) como la "principal" para datos generales
-    cliente_representativo = referencias_cliente.first()
-    
-    # Calcular totales financieros sumando los campos de todas las referencias
-    # Asegúrate de que los campos sean numéricos y maneja posibles None con Coalesce si es necesario
-    # from django.db.models.functions import Coalesce # Importar si se usa Coalesce
-    
-    totales_financieros = referencias_cliente.aggregate(
-        total_principal=Sum('principal'), # Asumiendo que 'principal' es un campo numérico en el modelo Cliente
-        total_deuda_principal_k=Sum('deuda_principal_k'),
-        total_deuda_total=Sum('deuda_total')
-        # Agrega aquí otros campos financieros que necesites sumar
-    )
-    
+    # Gestiones para la pestaña de historial. Mostrar todas las gestiones asociadas a CUALQUIER cliente con ese documento.
+    # Ordenadas por fecha de gestión descendente, y luego por ID descendente como desempate.
+    gestiones_del_cliente = Gestion.objects.filter(cliente__documento=documento_cliente).order_by('-fecha_hora_gestion', '-id')[:20]
+
     context = {
-        'cliente_representativo': cliente_representativo, # Para mostrar info general del cliente
-        'referencias_cliente': referencias_cliente,       # Lista de todas las referencias para la pestaña
-        'documento_cliente': documento_cliente,           # Para mostrar en la plantilla o usar en enlaces
-        'totales_financieros': totales_financieros,       # Diccionario con los totales
-        'is_detail_view': True                            # Para la plantilla, si es necesario diferenciar
+        'cliente_representativo': cliente_representativo,
+        'referencias_cliente': referencias_cliente_list, 
+        'documento_cliente': documento_cliente,
+        'deuda_total_consolidada': deuda_total_consolidada,
+        'productos_count': productos_count,
+        'edad_cartera_promedio': edad_cartera_promedio,
+        'valor_pagado_total': valor_pagado_total,
+        'saldo_capital_total': saldo_capital_total,
+        'intereses_corrientes_total': intereses_corrientes_total,
+        'intereses_mora_total': intereses_mora_total,
+        'gastos_cobranza_total': gastos_cobranza_total,
+        'otros_conceptos_total': otros_conceptos_total,
+        'gestion_form': gestion_form, # Para la pestaña de registrar gestión
+        'gestiones_cliente': gestiones_del_cliente, # Para la pestaña de historial de gestiones
+        'titulo_pagina': f"Detalle Cliente: {cliente_representativo.nombre_completo}",
+        # Estos campos existían en la plantilla original, asegurarse que se calculan o se obtienen si son necesarios.
+        # 'contactos_adicionales': cliente_representativo.contactos_adicionales.all() if hasattr(cliente_representativo, 'contactos_adicionales') else [],
+        # 'direcciones_adicionales': cliente_representativo.direcciones_adicionales.all() if hasattr(cliente_representativo, 'direcciones_adicionales') else [],
     }
-    
-    # ----- Lógica de POST (Actualización) -----
-    # Por ahora, deshabilitaremos la edición directa desde esta vista agrupada para simplificar.
-    # La edición podría manejarse a nivel de referencia individual o con una estrategia definida.
-    # Si se decide mantener la edición, se necesitará una lógica cuidadosa para determinar
-    # qué referencia(s) actualizar.
-    
-    # if request.method == 'POST':
-    #     # ... lógica de actualización compleja ...
-    #     # Por ejemplo, si se edita el nombre, ¿se actualiza en todas las referencias?
-    #     # ¿O solo en la 'cliente_representativo'?
-    #     # messages.warning(request, "La edición de datos agrupados aún no está implementada.")
-    #     pass # No hacer nada en POST por ahora
-        
     return render(request, 'core/detalle_cliente.html', context)
+
+
+# La vista agregar_gestion_cliente (líneas 521-544 de la versión anterior) ya no es necesaria
+# y será eliminada en un paso posterior.
+# def agregar_gestion_cliente(request, documento_cliente):
+#    ...
 
 @login_required
 def solo_admin(view_func):
@@ -578,3 +662,81 @@ def detalle_usuario(request, user_id):
     return render(request, 'core/detalle_usuario.html', {
         'usuario': user,
     })
+
+@login_required
+def registrar_nueva_gestion(request):
+    buscar_form = BuscarClienteForm()
+    gestion_form = GestionForm()
+    cliente_encontrado = None
+    # total_deuda_agrupada = 0 # Se implementará más adelante
+
+    if request.method == 'POST':
+        if 'buscar_cliente' in request.POST:
+            buscar_form = BuscarClienteForm(request.POST)
+            if buscar_form.is_valid():
+                documento = buscar_form.cleaned_data['documento']
+                # Usar filter() y order_by() para obtener el más reciente si hay duplicados
+                clientes_con_documento = Cliente.objects.filter(documento=documento).order_by('-id')
+                
+                if clientes_con_documento.exists():
+                    cliente_para_sesion = clientes_con_documento.first() # Tomar el primero (más reciente por -id)
+                    request.session['cliente_encontrado_id'] = cliente_para_sesion.id
+                    messages.success(request, f"Cliente '{cliente_para_sesion.nombre_completo}' (ID: {cliente_para_sesion.id}) encontrado. Mostrando el registro más reciente.")
+                else:
+                    request.session.pop('cliente_encontrado_id', None)
+                    messages.error(request, "Cliente no encontrado con el documento proporcionado.")
+                return redirect('registrar_nueva_gestion')
+
+        elif 'guardar_gestion' in request.POST:
+            cliente_id_sesion = request.session.get('cliente_encontrado_id')
+            if not cliente_id_sesion:
+                messages.error(request, "No hay cliente seleccionado. Por favor, busque un cliente primero.")
+                return redirect('registrar_nueva_gestion')
+
+            try:
+                # Usar el ID de la sesión que ya es único
+                cliente_para_gestion = Cliente.objects.get(id=cliente_id_sesion)
+            except Cliente.DoesNotExist:
+                messages.error(request, "El cliente seleccionado ya no existe. Busque de nuevo.")
+                request.session.pop('cliente_encontrado_id', None)
+                return redirect('registrar_nueva_gestion')
+
+            gestion_form_data = GestionForm(request.POST)
+            if gestion_form_data.is_valid():
+                gestion = gestion_form_data.save(commit=False)
+                gestion.cliente = cliente_para_gestion
+                gestion.usuario_gestion = request.user
+                gestion.save()
+                messages.success(request, f"Gestión guardada para {cliente_para_gestion.nombre_completo}.")
+                request.session.pop('cliente_encontrado_id', None)
+                return redirect('registrar_nueva_gestion')
+            else:
+                # Si el form de gestión no es válido, necesitamos repopular el cliente_encontrado
+                # para que la plantilla muestre la sección de registrar gestión.
+                cliente_encontrado = cliente_para_gestion 
+                gestion_form = gestion_form_data # Pasar el form con errores para mostrar los errores
+                messages.error(request, "Error al guardar la gestión. Por favor, revise los campos del formulario.")
+
+    # Lógica para GET o si POST de guardar_gestion falla y necesitamos mostrar el form de nuevo
+    if not cliente_encontrado: # Solo si no venimos de un error al guardar gestion (donde ya se seteó)
+        cliente_id_sesion = request.session.get('cliente_encontrado_id')
+        if cliente_id_sesion:
+            try:
+                cliente_encontrado = Cliente.objects.get(id=cliente_id_sesion)
+                # Pre-llenar el campo cliente en el formulario de gestión
+                gestion_form = GestionForm(initial={'cliente': cliente_encontrado})
+            except Cliente.DoesNotExist:
+                # Limpiar la sesión si el cliente ya no existe
+                request.session.pop('cliente_encontrado_id', None)
+                cliente_encontrado = None # Asegurarse que no se muestra nada si no existe
+
+    context = {
+        'buscar_form': buscar_form,
+        'gestion_form': gestion_form,
+        'cliente_encontrado': cliente_encontrado,
+        'titulo_pagina': "Registrar Nueva Gestión"
+    }
+    return render(request, 'core/registrar_nueva_gestion.html', context)
+
+
+# REPORTES

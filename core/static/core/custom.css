@@ -312,3 +312,17 @@ body {
 }
 
 /* Ajustes para el modal de filtros en admin_usuarios */
+/* Estilos para el botón CREA Pink */
+.btn-crea-pink {
+    background-color: #BB2BA3 !important;
+    border-color: #BB2BA3 !important;
+    color: #fff !important; /* Texto blanco para buen contraste */
+}
+
+.btn-crea-pink:hover,
+.btn-crea-pink:focus,
+.btn-crea-pink:active {
+    background-color: #A3258E !important; /* Un magenta un poco más oscuro para el hover/focus/active */
+    border-color: #A3258E !important;
+    color: #fff !important;
+}

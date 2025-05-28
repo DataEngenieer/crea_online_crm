@@ -57,6 +57,8 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'core',
     'widget_tweaks',  # Añadido aquí
+    'crispy_forms', # Añadido para Crispy Forms
+    'crispy_bootstrap5', # Añadido para el paquete Bootstrap 5 de Crispy Forms
 ]
 
 MIDDLEWARE = [
@@ -186,3 +188,7 @@ LOGGING = {
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'inicio'
 LOGOUT_REDIRECT_URL = 'login'
+
+# Configuraciones para django-crispy-forms
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"

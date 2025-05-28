@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import get_user_model
-from .models import Cliente
+from .models import Cliente, Gestion
 
 class EmailAuthenticationForm(AuthenticationForm):
     username = forms.EmailField(
@@ -98,3 +98,62 @@ class ClienteForm(forms.ModelForm):
             ('RC', 'Registro Civil'),
             ('TI', 'Tarjeta de Identidad'),
         ]
+
+
+class GestionForm(forms.ModelForm):
+    tipo_gestion_n1_opciones = [
+        ('', '---------'),
+        ('consulta_general', 'Consulta General'),
+        ('solicitud_informacion', 'Solicitud de Información'),
+        ('gestion_cobro', 'Gestión de Cobro'),
+        ('reclamacion', 'Reclamación'),
+        ('otro', 'Otro'),
+    ]
+
+    tipo_gestion_n1 = forms.ChoiceField(
+        choices=tipo_gestion_n1_opciones,
+        required=False, 
+        label="Tipo de Gestión (Nivel 1)",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    class Meta:
+        model = Gestion
+        fields = [
+            'cliente',
+            'canal_contacto', 
+            'estado_contacto',
+            'tipo_gestion_n1',
+            'tipo_gestion_n2',
+            'tipo_gestion_n3',
+            'acuerdo_pago_realizado',
+            'fecha_acuerdo',
+            'monto_acuerdo',
+            'observaciones_acuerdo',
+            'seguimiento_requerido',
+            'fecha_proximo_seguimiento',
+            'observaciones_generales',
+        ]
+        widgets = {
+            'cliente': forms.HiddenInput(),
+            'fecha_acuerdo': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'fecha_proximo_seguimiento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'canal_contacto': forms.Select(attrs={'class': 'form-select'}),
+            'estado_contacto': forms.Select(attrs={'class': 'form-select'}),
+            'acuerdo_pago_realizado': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'seguimiento_requerido': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'observaciones_acuerdo': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'observaciones_generales': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'tipo_gestion_n2': forms.Select(attrs={'class': 'form-select'}, choices=[('', '---------')]),
+            'tipo_gestion_n3': forms.Select(attrs={'class': 'form-select'}, choices=[('', '---------')]),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['tipo_gestion_n1'].required = False
+        self.fields['tipo_gestion_n2'].required = False
+        self.fields['tipo_gestion_n3'].required = False
+        self.fields['fecha_acuerdo'].required = False
+        self.fields['monto_acuerdo'].required = False
+        self.fields['observaciones_acuerdo'].required = False
+        self.fields['fecha_proximo_seguimiento'].required = False

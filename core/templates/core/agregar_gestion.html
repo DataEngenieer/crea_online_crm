@@ -1,0 +1,236 @@
+{% extends "core/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'inicio' %}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'clientes' %}">Clientes</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'detalle_cliente' cliente.documento %}">{{ cliente.nombre_completo }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Agregar Gestión</li>
+    </ol>
+</nav>
+
+<h2 class="my-4">{{ titulo_pagina }}</h2>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<form method="post" novalidate>
+    {% csrf_token %}
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Información de la Gestión</h5>
+            
+            {{ form.cliente|as_crispy_field }} {# Asumiendo que es HiddenInput #}
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.canal_contacto|as_crispy_field }}
+                </div>
+                <div class="col-md-6 mb-3">
+                    {{ form.estado_contacto|as_crispy_field }}
+                </div>
+            </div>
+
+            <div id="detalles-gestion-contactado" style="display: none;">
+                <h6>Detalles de la Gestión (si fue contactado)</h6>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        {{ form.tipo_gestion_n1|as_crispy_field }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        {{ form.tipo_gestion_n2|as_crispy_field }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        {{ form.tipo_gestion_n3|as_crispy_field }}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                {{ form.acuerdo_pago_realizado|as_crispy_field }}
+            </div>
+            <div id="detalles-acuerdo-pago" style="display: none;">
+                <h6>Detalles del Acuerdo de Pago</h6>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.fecha_acuerdo|as_crispy_field }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.monto_acuerdo|as_crispy_field }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    {{ form.observaciones_acuerdo|as_crispy_field }}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                {{ form.seguimiento_requerido|as_crispy_field }}
+            </div>
+            <div id="detalles-seguimiento" style="display: none;">
+                <h6>Detalles del Seguimiento</h6>
+                <div class="mb-3">
+                    {{ form.fecha_proximo_seguimiento|as_crispy_field }}
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                {{ form.observaciones_generales|as_crispy_field }}
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">Guardar Gestión</button>
+                <a href="{% url 'detalle_cliente' cliente.documento %}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const estadoContactoField = document.getElementById('id_estado_contacto');
+    const detallesGestionContactadoDiv = document.getElementById('detalles-gestion-contactado');
+    
+    const acuerdoPagoField = document.getElementById('id_acuerdo_pago_realizado');
+    const detallesAcuerdoPagoDiv = document.getElementById('detalles-acuerdo-pago');
+
+    const seguimientoRequeridoField = document.getElementById('id_seguimiento_requerido');
+    const detallesSeguimientoDiv = document.getElementById('detalles-seguimiento');
+
+    // --- Lógica para Estado Contacto ---
+    function toggleDetallesGestion() {
+        if (estadoContactoField.value === 'contactado') {
+            detallesGestionContactadoDiv.style.display = 'block';
+        } else {
+            detallesGestionContactadoDiv.style.display = 'none';
+        }
+    }
+    if (estadoContactoField) {
+        estadoContactoField.addEventListener('change', toggleDetallesGestion);
+        toggleDetallesGestion(); // Llamada inicial
+    }
+
+    // --- Lógica para Acuerdo de Pago ---
+    function toggleDetallesAcuerdo() {
+        if (acuerdoPagoField && acuerdoPagoField.checked) {
+            detallesAcuerdoPagoDiv.style.display = 'block';
+        } else {
+            detallesAcuerdoPagoDiv.style.display = 'none';
+        }
+    }
+    if (acuerdoPagoField) {
+        acuerdoPagoField.addEventListener('change', toggleDetallesAcuerdo);
+        toggleDetallesAcuerdo(); // Llamada inicial
+    }
+
+    // --- Lógica para Seguimiento ---
+    function toggleDetallesSeguimiento() {
+        if (seguimientoRequeridoField && seguimientoRequeridoField.checked) {
+            detallesSeguimientoDiv.style.display = 'block';
+        } else {
+            detallesSeguimientoDiv.style.display = 'none';
+        }
+    }
+    if (seguimientoRequeridoField) {
+        seguimientoRequeridoField.addEventListener('change', toggleDetallesSeguimiento);
+        toggleDetallesSeguimiento(); // Llamada inicial
+    }
+
+    // --- Lógica para Tipos de Gestión Anidados (placeholder) ---
+    const tipoGestionN1Field = document.getElementById('id_tipo_gestion_n1');
+    const tipoGestionN2Field = document.getElementById('id_tipo_gestion_n2');
+    const tipoGestionN3Field = document.getElementById('id_tipo_gestion_n3');
+
+    const opcionesGestion = {
+        'consulta_general': {
+            label: 'Consulta General',
+            subniveles: {
+                'aclaracion_saldo': { label: 'Aclaración de Saldo', subniveles: {} },
+                'info_producto': { label: 'Información de Producto/Servicio', subniveles: {} }
+            }
+        },
+        'solicitud_informacion': {
+            label: 'Solicitud de Información',
+            subniveles: {
+                'estado_cuenta': { label: 'Estado de Cuenta', subniveles: {} },
+                'certificado_deuda': { label: 'Certificado de Deuda', subniveles: {} }
+            }
+        },
+        'gestion_cobro': {
+            label: 'Gestión de Cobro',
+            subniveles: {
+                'recordatorio_pago': { label: 'Recordatorio de Pago', subniveles: {} },
+                'negociacion_deuda': { 
+                    label: 'Negociación de Deuda', 
+                    subniveles: {
+                        'propuesta_cliente': { label: 'Propuesta del Cliente', subniveles: {} },
+                        'ofrecimiento_descuento': { label: 'Ofrecimiento de Descuento', subniveles: {} }
+                    }
+                },
+                'promesa_pago': { label: 'Promesa de Pago', subniveles: {} } 
+            }
+        },
+        'reclamacion': {
+            label: 'Reclamación',
+            subniveles: {
+                'error_facturacion': { label: 'Error en Facturación', subniveles: {} },
+                'calidad_servicio': { label: 'Calidad del Servicio', subniveles: {} }
+            }
+        },
+        'otro': { label: 'Otro', subniveles: {} }
+    };
+
+    function popularSelect(selectElement, opciones, nivelActual) {
+        selectElement.innerHTML = '<option value="">---------</option>';
+        for (const [valor, data] of Object.entries(opciones)) {
+            const option = document.createElement('option');
+            option.value = valor;
+            option.textContent = data.label;
+            selectElement.appendChild(option);
+        }
+        if (nivelActual === 1) {
+            popularSelect(tipoGestionN3Field, {}, 3);
+        }
+    }
+    
+    if (tipoGestionN1Field) {
+        tipoGestionN1Field.addEventListener('change', function() {
+            const valorN1 = this.value;
+            tipoGestionN2Field.innerHTML = '<option value="">---------</option>';
+            tipoGestionN3Field.innerHTML = '<option value="">---------</option>';
+            if (valorN1 && opcionesGestion[valorN1] && opcionesGestion[valorN1].subniveles) {
+                popularSelect(tipoGestionN2Field, opcionesGestion[valorN1].subniveles, 2);
+            }
+        });
+    }
+
+    if (tipoGestionN2Field) {
+        tipoGestionN2Field.addEventListener('change', function() {
+            const valorN1 = tipoGestionN1Field.value;
+            const valorN2 = this.value;
+            tipoGestionN3Field.innerHTML = '<option value="">---------</option>';
+            if (valorN1 && valorN2 && 
+                opcionesGestion[valorN1] && 
+                opcionesGestion[valorN1].subniveles[valorN2] &&
+                opcionesGestion[valorN1].subniveles[valorN2].subniveles) {
+                popularSelect(tipoGestionN3Field, opcionesGestion[valorN1].subniveles[valorN2].subniveles, 3);
+            }
+        });
+    }
+
+});
+</script>
+{% endblock %}

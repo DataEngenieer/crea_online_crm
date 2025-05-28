@@ -9,3 +9,5 @@ PyMuPDF
 PyPDF2
 pandas
 django-widget-tweaks
+django-crispy-forms==2.1
+crispy-bootstrap5==2024.2
