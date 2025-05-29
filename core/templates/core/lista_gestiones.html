@@ -3,20 +3,20 @@
 {% load humanize %}
 
 {% block content %}
-<div class="py-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="text-primary-dark mb-0"><i class="bi bi-card-checklist me-2"></i>{{ titulo_pagina|default:'Listado de Gestiones' }} ({{ total_gestiones|intcomma }})</h3>
+<div class="px-0">
+    <div class="d-flex justify-content-between align-items-center mb-4 page-title-header">
+        <h2 class="mb-0"><i class="bi bi-card-checklist me-2"></i>{{ titulo_pagina|default:'Listado de Gestiones' }} ({{ total_gestiones|intcomma }})</h2>
         <div>
             {# Aquí podrían ir botones de acción como exportar, si se necesitan en el futuro #}
         </div>
     </div>
 
-    <div class="card shadow-sm mb-4">
+    <div class="card shadow-sm border-0 mb-3">
         <div class="card-body">
             {# Aquí podrían ir filtros en el futuro #}
             <div class="table-responsive">
                 <table class="table table-hover table-sm align-middle" style="font-size: 0.85rem;">
-                    <thead class="table-light">
+                    <thead class="table-header-crea sticky-top shadow-sm">
                         <tr>
                             <th>Fecha/Hora</th>
                             <th>Cliente</th>

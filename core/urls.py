@@ -26,7 +26,9 @@ urlpatterns = [
     path('clientes/carga/', views.carga_clientes, name='carga_clientes'),
     path('clientes/crear/', views.crear_cliente_view, name='crear_cliente'),
     path('clientes/<str:documento_cliente>/', views.detalle_cliente, name='detalle_cliente'),
-    path('gestiones/', views.lista_gestiones, name='lista_gestiones'), 
+    path('gestiones/', views.lista_gestiones, name='lista_gestiones'),
+    path('acuerdos-pago/', views.acuerdos_pago, name='acuerdos_pago'),
+    path('seguimientos/', views.seguimientos, name='seguimientos'),
 ]
 
 if settings.DEBUG:

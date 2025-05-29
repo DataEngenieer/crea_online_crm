@@ -1,0 +1,134 @@
+{% if page_obj %}
+<div class="table-responsive">
+    <table class="table table-sm table-hover table-striped table-bordered" style="font-size: 0.85rem;">
+        <thead class="table-light">
+            <tr>
+                <th>Cliente</th>
+                <th>Documento</th>
+                <th>Fecha Seguimiento</th>
+                <th>Estado</th>
+                <th>Gestor</th>
+                <th>Canal</th>
+                <th>Observaciones</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for seguimiento in page_obj %}
+            <tr class="{% if seguimiento.fecha_proximo_seguimiento < today %}table-danger{% elif seguimiento.fecha_proximo_seguimiento == today %}table-warning{% else %}table-success{% endif %}">
+                <td>
+                    <a href="{% url 'detalle_cliente' documento_cliente=seguimiento.cliente.documento %}" class="text-decoration-none">
+                        {{ seguimiento.cliente.nombre_completo|truncatechars:30 }}
+                    </a>
+                </td>
+                <td>{{ seguimiento.cliente.documento }}</td>
+                <td>{{ seguimiento.fecha_proximo_seguimiento|date:"d/m/Y" }}</td>
+                <td class="text-center">
+                    {% if seguimiento.fecha_proximo_seguimiento < today %}
+                        <span class="badge bg-danger">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>Vencido
+                        </span>
+                    {% elif seguimiento.fecha_proximo_seguimiento == today %}
+                        <span class="badge bg-warning">
+                            <i class="bi bi-clock-fill me-1"></i>Hoy
+                        </span>
+                    {% else %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-calendar-plus-fill me-1"></i>Futuro
+                        </span>
+                    {% endif %}
+                </td>
+                <td>{{ seguimiento.usuario_gestion.get_full_name|default:seguimiento.usuario_gestion.username }}</td>
+                <td class="text-center">
+                    {% if seguimiento.canal_contacto == 'telefono' %}
+                        <span class="badge bg-warning" title="Teléfono"><i class="bi bi-telephone"></i></span>
+                    {% elif seguimiento.canal_contacto == 'whatsapp' %}
+                        <span class="badge bg-success" title="WhatsApp"><i class="bi bi-whatsapp"></i></span>
+                    {% elif seguimiento.canal_contacto == 'email' %}
+                        <span class="badge bg-primary" title="Email"><i class="bi bi-envelope"></i></span>
+                    {% elif seguimiento.canal_contacto == 'sms' %}
+                        <span class="badge bg-info" title="SMS"><i class="bi bi-chat"></i></span>
+                    {% else %}
+                        {{ seguimiento.get_canal_contacto_display|default:"N/A" }}
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ seguimiento.observaciones_generales }}">
+                        {{ seguimiento.observaciones_generales|default:"-"|truncatechars:50 }}
+                    </span>
+                </td>
+                <td class="text-center">
+                    <a href="{% url 'detalle_cliente' documento_cliente=seguimiento.cliente.documento %}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center py-4">
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle-fill me-2"></i>No se encontraron seguimientos pendientes con los filtros aplicados.
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="d-flex justify-content-center mt-4">
+    <nav aria-label="Paginación de seguimientos">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link ajax-link" href="?{% for key, value in filtros.items %}{% if value %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1">Primera</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link ajax-link" href="?{% for key, value in filtros.items %}{% if value %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Primera</span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Anterior</span>
+                </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link ajax-link" href="?{% for key, value in filtros.items %}{% if value %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link ajax-link" href="?{% for key, value in filtros.items %}{% if value %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">Siguiente</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link ajax-link" href="?{% for key, value in filtros.items %}{% if value %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}">Última</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Siguiente</span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Última</span>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+{% else %}
+<div class="alert alert-warning m-3">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>No se encontraron seguimientos pendientes.
+</div>
+{% endif %}

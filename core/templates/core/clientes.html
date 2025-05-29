@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const btnLimpiar = document.querySelector('a[href="{% url 'clientes' %}"]');
     if (btnLimpiar) {
-        btnLimpiar.addEventListener('click', function(event) {
+        btnLimpiar.addEventListener('click', (event) => {
             event.preventDefault();
             filtroForm.reset();
             buscarClientes(baseUrl);

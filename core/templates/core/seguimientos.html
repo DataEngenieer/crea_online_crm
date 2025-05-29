@@ -1,0 +1,168 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="px-0">
+    <div class="d-flex justify-content-between align-items-center mb-4 page-title-header">
+        <h2 class="mb-0">Seguimientos Pendientes</h2>
+        <div>
+            <a href="{% url 'clientes' %}" class="btn btn-light me-2">
+                <i class="bi bi-people"></i> Clientes
+            </a>
+            <a href="{% url 'acuerdos_pago' %}" class="btn btn-success text-white">
+                <i class="bi bi-cash-coin"></i> Acuerdos de Pago
+            </a>
+        </div>
+    </div>
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body py-3">
+            <form method="get" id="filtroSeguimientosForm" class="mb-0">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label for="documento" class="form-label">Documento</label>
+                        <input type="text" name="documento" id="documento" class="form-control filtro-input" value="{{ filtros.documento }}" placeholder="Buscar por Documento">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="nombre" class="form-label">Nombre Cliente</label>
+                        <input type="text" name="nombre" id="nombre" class="form-control filtro-input" value="{{ filtros.nombre }}" placeholder="Buscar por Nombre">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="fecha_desde" class="form-label">Fecha Desde</label>
+                        <input type="date" name="fecha_desde" id="fecha_desde" class="form-control filtro-input" value="{{ filtros.fecha_desde }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="fecha_hasta" class="form-label">Fecha Hasta</label>
+                        <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control filtro-input" value="{{ filtros.fecha_hasta }}">
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="usuario" class="form-label">Gestor</label>
+                        <select name="usuario" id="usuario" class="form-select filtro-input">
+                            <option value="" {% if not filtros.usuario %}selected{% endif %}>Todos los gestores</option>
+                            {% for user in usuarios %}
+                                <option value="{{ user.username }}" {% if filtros.usuario == user.username %}selected{% endif %}>
+                                    {{ user.get_full_name|default:user.username }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-9 d-flex align-items-end justify-content-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                        <a href="{% url 'seguimientos' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Limpiar
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-calendar-check me-2 text-info"></i>
+                    Seguimientos Pendientes ({{ total_seguimientos }})
+                </h5>
+                <div>
+                    <span class="badge bg-warning me-2">
+                        <i class="bi bi-clock"></i> Hoy
+                    </span>
+                    <span class="badge bg-danger">
+                        <i class="bi bi-exclamation-circle"></i> Vencidos
+                    </span>
+                    <span class="badge bg-success">
+                        <i class="bi bi-calendar-plus"></i> Futuros
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div id="tablaSeguimientosWrapper">
+                {% include 'core/partials/tabla_seguimientos.html' %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filtroForm = document.getElementById('filtroSeguimientosForm');
+    const inputsFiltro = document.querySelectorAll('.filtro-input');
+    const tablaWrapper = document.getElementById('tablaSeguimientosWrapper');
+    const baseUrl = "{% url 'seguimientos' %}";
+
+    async function buscarSeguimientos(url) {
+        try {
+            tablaWrapper.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Cargando...</p></div>';
+            
+            const response = await fetch(url, {
+                headers: {
+                  'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const html = await response.text();
+            tablaWrapper.innerHTML = html;
+            agregarListenersPaginacion(); 
+        } catch (error) {
+            console.error('Error en la búsqueda AJAX:', error);
+        }
+    }
+
+    function obtenerUrlConFiltrosActuales() {
+        const formData = new FormData(filtroForm);
+        const params = new URLSearchParams();
+        for (const [key, value] of formData.entries()) {
+            if (value) { 
+                params.append(key, value);
+            }
+        }
+        const queryString = params.toString();
+        return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+    }
+
+    inputsFiltro.forEach(input => {
+        input.addEventListener('input', function() {
+            const url = obtenerUrlConFiltrosActuales();
+            buscarSeguimientos(url);
+        });
+    });
+
+    filtroForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const url = obtenerUrlConFiltrosActuales();
+        buscarSeguimientos(url);
+    });
+
+    function agregarListenersPaginacion() {
+        const enlacesPaginacion = tablaWrapper.querySelectorAll('.ajax-link');
+        enlacesPaginacion.forEach(enlace => {
+            enlace.addEventListener('click', function(event) {
+                event.preventDefault();
+                buscarSeguimientos(this.href);
+            });
+        });
+    }
+
+    agregarListenersPaginacion();
+
+    const btnLimpiar = document.querySelector('a[href="{% url 'seguimientos' %}"]');
+    if (btnLimpiar) {
+        btnLimpiar.addEventListener('click', (event) => {
+            event.preventDefault();
+            filtroForm.reset();
+            buscarSeguimientos(baseUrl);
+        });
+    }
+});
+</script>
+{% endblock extra_js %}

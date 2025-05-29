@@ -301,6 +301,135 @@ def lista_gestiones(request):
 
 @login_required
 @user_passes_test(es_admin)
+def acuerdos_pago(request):
+    # Filtros para acuerdos de pago
+    documento = request.GET.get('documento', '')
+    nombre = request.GET.get('nombre', '')
+    fecha_desde = request.GET.get('fecha_desde', '')
+    fecha_hasta = request.GET.get('fecha_hasta', '')
+    estado = request.GET.get('estado', '')
+    
+    # Consulta base: solo gestiones con acuerdo de pago
+    acuerdos_list = Gestion.objects.select_related('cliente', 'usuario_gestion')\
+                          .filter(acuerdo_pago_realizado=True)\
+                          .order_by('-fecha_acuerdo')
+    
+    # Aplicar filtros si están presentes
+    if documento:
+        acuerdos_list = acuerdos_list.filter(cliente__documento__icontains=documento)
+    if nombre:
+        acuerdos_list = acuerdos_list.filter(cliente__nombre_completo__icontains=nombre)
+    if fecha_desde:
+        try:
+            fecha_desde_obj = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
+            acuerdos_list = acuerdos_list.filter(fecha_acuerdo__gte=fecha_desde_obj)
+        except ValueError:
+            pass
+    if fecha_hasta:
+        try:
+            fecha_hasta_obj = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
+            acuerdos_list = acuerdos_list.filter(fecha_acuerdo__lte=fecha_hasta_obj)
+        except ValueError:
+            pass
+    if estado:
+        # Estado personalizado: 'vigente' o 'vencido'
+        today = datetime.now().date()
+        if estado == 'vigente':
+            acuerdos_list = acuerdos_list.filter(fecha_acuerdo__gte=today)
+        elif estado == 'vencido':
+            acuerdos_list = acuerdos_list.filter(fecha_acuerdo__lt=today)
+    
+    # Paginación
+    paginator = Paginator(acuerdos_list, 25)  # 25 acuerdos por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Preparar contexto
+    context = {
+        'page_obj': page_obj,
+        'titulo_pagina': 'Acuerdos de Pago',
+        'total_acuerdos': acuerdos_list.count(),
+        'filtros': {
+            'documento': documento,
+            'nombre': nombre,
+            'fecha_desde': fecha_desde,
+            'fecha_hasta': fecha_hasta,
+            'estado': estado
+        },
+        'today': datetime.now().date()
+    }
+    
+    # Si es una solicitud AJAX, devolver solo la tabla
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render(request, 'core/partials/tabla_acuerdos.html', context)
+    
+    return render(request, 'core/acuerdos_pago.html', context)
+
+@login_required
+@user_passes_test(es_admin)
+def seguimientos(request):
+    # Filtros para seguimientos
+    documento = request.GET.get('documento', '')
+    nombre = request.GET.get('nombre', '')
+    fecha_desde = request.GET.get('fecha_desde', '')
+    fecha_hasta = request.GET.get('fecha_hasta', '')
+    usuario = request.GET.get('usuario', '')
+    
+    # Consulta base: solo gestiones con seguimiento requerido
+    seguimientos_list = Gestion.objects.select_related('cliente', 'usuario_gestion')\
+                              .filter(seguimiento_requerido=True)\
+                              .order_by('fecha_proximo_seguimiento')
+    
+    # Aplicar filtros si están presentes
+    if documento:
+        seguimientos_list = seguimientos_list.filter(cliente__documento__icontains=documento)
+    if nombre:
+        seguimientos_list = seguimientos_list.filter(cliente__nombre_completo__icontains=nombre)
+    if fecha_desde:
+        try:
+            fecha_desde_obj = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
+            seguimientos_list = seguimientos_list.filter(fecha_proximo_seguimiento__gte=fecha_desde_obj)
+        except ValueError:
+            pass
+    if fecha_hasta:
+        try:
+            fecha_hasta_obj = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
+            seguimientos_list = seguimientos_list.filter(fecha_proximo_seguimiento__lte=fecha_hasta_obj)
+        except ValueError:
+            pass
+    if usuario:
+        seguimientos_list = seguimientos_list.filter(usuario_gestion__username__icontains=usuario)
+    
+    # Paginación
+    paginator = Paginator(seguimientos_list, 25)  # 25 seguimientos por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Preparar contexto
+    today = datetime.now().date()
+    context = {
+        'page_obj': page_obj,
+        'titulo_pagina': 'Seguimientos Pendientes',
+        'total_seguimientos': seguimientos_list.count(),
+        'filtros': {
+            'documento': documento,
+            'nombre': nombre,
+            'fecha_desde': fecha_desde,
+            'fecha_hasta': fecha_hasta,
+            'usuario': usuario
+        },
+        'today': today,
+        'usuarios': User.objects.filter(is_active=True).order_by('username')
+    }
+    
+    # Si es una solicitud AJAX, devolver solo la tabla
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render(request, 'core/partials/tabla_seguimientos.html', context)
+    
+    return render(request, 'core/seguimientos.html', context)
+
+@login_required
+@user_passes_test(es_admin)
 def carga_clientes(request):
     """
     Vista para cargar clientes masivamente desde un archivo Excel o CSV
@@ -523,6 +652,9 @@ def detalle_cliente(request, documento_cliente):
     # Ordenadas por fecha de gestión descendente, y luego por ID descendente como desempate.
     gestiones_del_cliente = Gestion.objects.filter(cliente__documento=documento_cliente).order_by('-fecha_hora_gestion', '-id')[:20]
 
+    # Obtener la fecha actual para comparaciones en la plantilla
+    today = datetime.now().date()
+    
     context = {
         'cliente_representativo': cliente_representativo,
         'referencias_cliente': referencias_cliente_list, 
@@ -539,6 +671,7 @@ def detalle_cliente(request, documento_cliente):
         'gestion_form': gestion_form, # Para la pestaña de registrar gestión
         'gestiones_cliente': gestiones_del_cliente, # Para la pestaña de historial de gestiones
         'titulo_pagina': f"Detalle Cliente: {cliente_representativo.nombre_completo}",
+        'today': today, # Fecha actual para comparaciones en la plantilla
         # Estos campos existían en la plantilla original, asegurarse que se calculan o se obtienen si son necesarios.
         # 'contactos_adicionales': cliente_representativo.contactos_adicionales.all() if hasattr(cliente_representativo, 'contactos_adicionales') else [],
         # 'direcciones_adicionales': cliente_representativo.direcciones_adicionales.all() if hasattr(cliente_representativo, 'direcciones_adicionales') else [],

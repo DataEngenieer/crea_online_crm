@@ -1,3 +1,13 @@
+/* Importación de IBM Plex Sans Condensed desde Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@300;400;500;600;700&display=swap');
+
+/* Aplicación global de la fuente */
+html, body, button, input, optgroup, select, textarea, .btn, .form-control, .card, .dropdown-menu, .nav, 
+.navbar, .modal, .form-label, .table, h1, h2, h3, h4, h5, h6, p, span, div, a, li, 
+.sidebar-gradient, .text-white, .list-group-item, .dropdown-item, .card-title, .card-text {
+    font-family: 'IBM Plex Sans Condensed', sans-serif !important;
+}
+
 :root {
     /* Tonos principales */
     --color-principal-1: #bb2ba3;
@@ -16,6 +26,8 @@
     --color-danger: #ef4444;
     --color-bg: #2d2d2d;
     --color-text: #f8f9fa;
+    /* Definición de la fuente */
+    --font-family-sans-serif: 'IBM Plex Sans Condensed', sans-serif;
 }
 
 body {
