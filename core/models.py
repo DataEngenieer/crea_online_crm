@@ -144,6 +144,7 @@ class Gestion(models.Model):
 
     seguimiento_requerido = models.BooleanField(default=False, verbose_name="¿Requiere seguimiento?")
     fecha_proximo_seguimiento = models.DateField(blank=True, null=True, verbose_name="Fecha Próximo Seguimiento")
+    hora_proximo_seguimiento = models.TimeField(blank=True, null=True, verbose_name="Hora Próximo Seguimiento")
 
     observaciones_generales = models.TextField(blank=True, null=True, verbose_name="Observaciones Generales de la Gestión")
 

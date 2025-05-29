@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="{% static 'core/custom.css' %}">
+    <link rel="stylesheet" href="{% static 'core/notificaciones.css' %}">
 </head>
 <body class="d-flex vh-100">
     <!-- Sidebar -->
@@ -111,6 +112,126 @@
                 });
             });
         }
+
+        // Sistema de notificaciones para seguimientos
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar si el navegador soporta notificaciones
+            let notificacionesPermitidas = false;
+            if ('Notification' in window) {
+                if (Notification.permission === 'granted') {
+                    notificacionesPermitidas = true;
+                } else if (Notification.permission !== 'denied') {
+                    Notification.requestPermission().then(function(permission) {
+                        notificacionesPermitidas = permission === 'granted';
+                    });
+                }
+            }
+
+            // Función para verificar seguimientos próximos
+            function verificarSeguimientosPendientes() {
+                fetch('/api/seguimientos/proximos/')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error en la solicitud');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.total > 0) {
+                            // Actualizar contador en el menú lateral
+                            actualizarContadorSeguimientos(data.total);
+                            
+                            // Mostrar notificación del navegador si está permitido
+                            if (notificacionesPermitidas) {
+                                mostrarNotificacionNavegador(data.seguimientos);
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al verificar seguimientos:', error);
+                    });
+            }
+
+            // Función para actualizar el contador en el menú
+            function actualizarContadorSeguimientos(cantidad) {
+                const enlaceSeguimientos = document.querySelector('a[href="{% url 'seguimientos' %}"]');
+                if (enlaceSeguimientos) {
+                    // Buscar si ya existe un badge
+                    let badge = enlaceSeguimientos.querySelector('.badge');
+                    if (!badge) {
+                        // Crear nuevo badge si no existe
+                        badge = document.createElement('span');
+                        badge.className = 'badge bg-danger ms-2 badge-notificacion';
+                        enlaceSeguimientos.appendChild(badge);
+                    }
+                    badge.textContent = cantidad;
+                }
+            }
+
+            // Función para mostrar notificación del navegador
+            function mostrarNotificacionNavegador(seguimientos) {
+                if (seguimientos.length > 0) {
+                    const seguimiento = seguimientos[0]; // Tomar el primer seguimiento
+                    const notificacion = new Notification('Seguimiento en 5 minutos', {
+                        body: `Cliente: ${seguimiento.cliente_nombre}\nObservaciones: ${seguimiento.observaciones}`,
+                        icon: '/static/core/img/logo_letra_blanca.png'
+                    });
+                    
+                    notificacion.onclick = function() {
+                        window.focus();
+                        window.location.href = seguimiento.url;
+                    };
+
+                    // También mostrar una notificación toast en la interfaz
+                    mostrarToastNotificacion(seguimiento);
+                }
+            }
+
+            // Función para mostrar notificación toast en la interfaz
+            function mostrarToastNotificacion(seguimiento) {
+                // Verificar si ya existe un contenedor de toast
+                let toastContainer = document.getElementById('toast-container');
+                if (!toastContainer) {
+                    toastContainer = document.createElement('div');
+                    toastContainer.id = 'toast-container';
+                    toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                    document.body.appendChild(toastContainer);
+                }
+
+                // Crear el elemento toast
+                const toastId = 'seguimiento-toast-' + seguimiento.id;
+                const toastHtml = `
+                    <div id="${toastId}" class="toast toast-notificacion" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="toast-header">
+                            <i class="bi bi-bell-fill me-2"></i>
+                            <strong class="me-auto">Seguimiento pendiente</strong>
+                            <small>Ahora</small>
+                            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                        <div class="toast-body">
+                            <p class="mb-1"><strong>Cliente:</strong> ${seguimiento.cliente_nombre}</p>
+                            <p class="mb-1"><strong>Documento:</strong> ${seguimiento.cliente_documento}</p>
+                            <p class="mb-2"><strong>Observaciones:</strong> ${seguimiento.observaciones}</p>
+                            <a href="${seguimiento.url}" class="btn btn-sm btn-primary">Ver cliente</a>
+                        </div>
+                    </div>
+                `;
+
+                // Agregar el toast al contenedor
+                toastContainer.innerHTML += toastHtml;
+
+                // Inicializar y mostrar el toast
+                const toastElement = document.getElementById(toastId);
+                const toast = new bootstrap.Toast(toastElement, { autohide: false });
+                toast.show();
+            }
+
+            // Verificar seguimientos cada minuto (60000 ms)
+            setInterval(verificarSeguimientosPendientes, 60000);
+            
+            // Verificar inmediatamente al cargar la página
+            verificarSeguimientosPendientes();
+        });
     </script>
     {% block extra_js %}{% endblock %}
 </body>

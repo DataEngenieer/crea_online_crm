@@ -29,6 +29,7 @@ urlpatterns = [
     path('gestiones/', views.lista_gestiones, name='lista_gestiones'),
     path('acuerdos-pago/', views.acuerdos_pago, name='acuerdos_pago'),
     path('seguimientos/', views.seguimientos, name='seguimientos'),
+    path('api/seguimientos/proximos/', views.api_seguimientos_proximos, name='api_seguimientos_proximos'),
 ]
 
 if settings.DEBUG:

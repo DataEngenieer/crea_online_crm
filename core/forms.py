@@ -120,7 +120,6 @@ class GestionForm(forms.ModelForm):
     class Meta:
         model = Gestion
         fields = [
-            'cliente',
             'canal_contacto', 
             'estado_contacto',
             'tipo_gestion_n1',
@@ -132,12 +131,14 @@ class GestionForm(forms.ModelForm):
             'observaciones_acuerdo',
             'seguimiento_requerido',
             'fecha_proximo_seguimiento',
+            'hora_proximo_seguimiento',
             'observaciones_generales',
         ]
         widgets = {
             'cliente': forms.HiddenInput(),
             'fecha_acuerdo': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'fecha_proximo_seguimiento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'hora_proximo_seguimiento': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'canal_contacto': forms.Select(attrs={'class': 'form-select'}),
             'estado_contacto': forms.Select(attrs={'class': 'form-select'}),
             'acuerdo_pago_realizado': forms.CheckboxInput(attrs={'class': 'form-check-input'}),

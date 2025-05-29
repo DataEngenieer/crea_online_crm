@@ -594,17 +594,32 @@
                                     
                                     <!-- Campos de seguimiento -->
                                     <div id="campos-seguimiento">
-                                        <!-- Fecha de próximo seguimiento -->
-                                        <div class="mb-3">
-                                            <label for="{{ gestion_form.fecha_proximo_seguimiento.id_for_label }}" class="form-label d-flex align-items-center">
-                                                <i class="bi bi-calendar-week me-1 text-info"></i>
-                                                <span>{{ gestion_form.fecha_proximo_seguimiento.label }}</span>
-                                            </label>
-                                            <div class="input-group">
-                                                <span class="input-group-text"><i class="bi bi-calendar"></i></span>
-                                                {{ gestion_form.fecha_proximo_seguimiento }}
+                                        <div class="row">
+                                            <!-- Fecha de próximo seguimiento -->
+                                            <div class="col-md-6 mb-3">
+                                                <label for="{{ gestion_form.fecha_proximo_seguimiento.id_for_label }}" class="form-label d-flex align-items-center">
+                                                    <i class="bi bi-calendar-week me-1 text-info"></i>
+                                                    <span>{{ gestion_form.fecha_proximo_seguimiento.label }}</span>
+                                                </label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="bi bi-calendar"></i></span>
+                                                    {{ gestion_form.fecha_proximo_seguimiento }}
+                                                </div>
+                                                {% if gestion_form.fecha_proximo_seguimiento.errors %}<div class="invalid-feedback d-block">{{ gestion_form.fecha_proximo_seguimiento.errors|join:", " }}</div>{% endif %}
                                             </div>
-                                            {% if gestion_form.fecha_proximo_seguimiento.errors %}<div class="invalid-feedback d-block">{{ gestion_form.fecha_proximo_seguimiento.errors|join:", " }}</div>{% endif %}
+                                            
+                                            <!-- Hora de próximo seguimiento -->
+                                            <div class="col-md-6 mb-3">
+                                                <label for="{{ gestion_form.hora_proximo_seguimiento.id_for_label }}" class="form-label d-flex align-items-center">
+                                                    <i class="bi bi-clock me-1 text-info"></i>
+                                                    <span>{{ gestion_form.hora_proximo_seguimiento.label }}</span>
+                                                </label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                                                    {{ gestion_form.hora_proximo_seguimiento }}
+                                                </div>
+                                                {% if gestion_form.hora_proximo_seguimiento.errors %}<div class="invalid-feedback d-block">{{ gestion_form.hora_proximo_seguimiento.errors|join:", " }}</div>{% endif %}
+                                            </div>
                                         </div>
                                     </div>
                                     
@@ -740,7 +755,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Referencias a los campos de seguimiento
     const seguimientoCheckbox = document.getElementById('{{ gestion_form.seguimiento_requerido.id_for_label }}');
-    const fechaSeguimientoGroup = document.getElementById('{{ gestion_form.fecha_proximo_seguimiento.id_for_label }}').closest('.mb-3');
+    const camposSeguimientoDiv = document.getElementById('campos-seguimiento');
     
     // Referencias a campos interdependientes
     const canalContactoSelect = document.getElementById('{{ gestion_form.canal_contacto.id_for_label }}');
@@ -774,11 +789,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Función para mostrar/ocultar campos de seguimiento
     function toggleSeguimientoFields() {
         const isChecked = seguimientoCheckbox.checked;
-        fechaSeguimientoGroup.style.display = isChecked ? 'block' : 'none';
+        camposSeguimientoDiv.style.display = isChecked ? 'block' : 'none';
         
-        // Si se desmarca, limpiar el campo
+        // Si se desmarca, limpiar los campos
         if (!isChecked) {
             document.getElementById('{{ gestion_form.fecha_proximo_seguimiento.id_for_label }}').value = '';
+            document.getElementById('{{ gestion_form.hora_proximo_seguimiento.id_for_label }}').value = '';
         }
     }
     
@@ -830,6 +846,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Si se marcó seguimiento requerido, validar campos relacionados
         if (seguimientoCheckbox.checked) {
             const fechaSeguimientoInput = document.getElementById('{{ gestion_form.fecha_proximo_seguimiento.id_for_label }}');
+            const horaSeguimientoInput = document.getElementById('{{ gestion_form.hora_proximo_seguimiento.id_for_label }}');
             
             if (!fechaSeguimientoInput.value) {
                 isValid = false;
@@ -837,6 +854,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 fechaSeguimientoInput.classList.add('is-invalid');
             } else {
                 fechaSeguimientoInput.classList.remove('is-invalid');
+            }
+            
+            if (!horaSeguimientoInput.value) {
+                isValid = false;
+                messages.push('Debe ingresar la hora del próximo seguimiento');
+                horaSeguimientoInput.classList.add('is-invalid');
+            } else {
+                horaSeguimientoInput.classList.remove('is-invalid');
             }
         }
         

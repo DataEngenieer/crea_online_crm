@@ -1,4 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
+from django.urls import reverse
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django import forms
@@ -428,11 +430,69 @@ def seguimientos(request):
     
     return render(request, 'core/seguimientos.html', context)
 
+def api_seguimientos_proximos(request):
+    """Endpoint API que devuelve los seguimientos que están próximos a realizarse (5 minutos)."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'No autorizado'}, status=401)
+    
+    # Obtener la fecha y hora actual
+    ahora = timezone.now()
+    hora_actual = ahora.time()
+    
+    # Calcular el límite de tiempo (5 minutos en el futuro)
+    limite_tiempo = (ahora + timezone.timedelta(minutes=5)).time()
+    
+    # Convertir la fecha actual a solo fecha (sin hora)
+    fecha_actual = ahora.date()
+    
+    # Filtrar seguimientos que:
+    # 1. Requieren seguimiento
+    # 2. La fecha de seguimiento es hoy
+    # 3. Están asignados al usuario actual
+    seguimientos_proximos = Gestion.objects.filter(
+        seguimiento_requerido=True,
+        fecha_proximo_seguimiento=fecha_actual,
+        usuario_gestion=request.user
+    )
+    
+    # Filtrar por hora si está disponible
+    seguimientos_a_notificar = []
+    for seguimiento in seguimientos_proximos:
+        if seguimiento.hora_proximo_seguimiento:
+            # Si la hora del seguimiento está entre la hora actual y 5 minutos después
+            hora_seguimiento = seguimiento.hora_proximo_seguimiento
+            if hora_actual <= hora_seguimiento <= limite_tiempo:
+                seguimientos_a_notificar.append(seguimiento)
+        else:
+            # Si no tiene hora específica, incluirlo de todas formas
+            seguimientos_a_notificar.append(seguimiento)
+    
+    # Preparar la respuesta
+    seguimientos_data = []
+    for seguimiento in seguimientos_a_notificar:
+        hora_texto = seguimiento.hora_proximo_seguimiento.strftime('%H:%M') if seguimiento.hora_proximo_seguimiento else 'No especificada'
+        seguimientos_data.append({
+            'id': seguimiento.id,
+            'cliente_nombre': seguimiento.cliente.nombre_completo,
+            'cliente_documento': seguimiento.cliente.documento,
+            'fecha_seguimiento': seguimiento.fecha_proximo_seguimiento.strftime('%d/%m/%Y'),
+            'hora_seguimiento': hora_texto,
+            'observaciones': seguimiento.observaciones_generales or 'Sin observaciones',
+            'url': reverse('detalle_cliente', kwargs={'documento_cliente': seguimiento.cliente.documento})
+        })
+    
+    return JsonResponse({
+        'seguimientos': seguimientos_data,
+        'total': len(seguimientos_data),
+        'timestamp': ahora.isoformat()
+    })
+
 @login_required
 @user_passes_test(es_admin)
 def carga_clientes(request):
     """
     Vista para cargar clientes masivamente desde un archivo Excel o CSV
+{{ ... }}
     """
     context = {
         'titulo': 'Carga masiva de clientes',
