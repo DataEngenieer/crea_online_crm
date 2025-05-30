@@ -120,6 +120,9 @@
             let notificacionesPermitidas = false;
             let intervaloVerificacion = null;
             
+            // Contador para seguir cuántas veces se ha mostrado cada notificación
+            let contadorNotificaciones = {};
+            
             if ('Notification' in window) {
                 // Solicitar permiso para notificaciones del navegador
                 if (Notification.permission === 'granted') {
@@ -144,7 +147,8 @@
             }
             
             // Establecer un nuevo intervalo de verificación (cada 1 minuto en lugar de 5)
-            intervaloVerificacion = setInterval(verificarSeguimientosPendientes, 60 * 1000); // 1 minuto
+            // Verificar seguimientos cada 10 minutos (600000 ms)
+            intervaloVerificacion = setInterval(verificarSeguimientosPendientes, 600000); // 10 minutos
             
             // Función para verificar si estamos en horario laboral
             function estaEnHorarioLaboral() {
@@ -184,32 +188,33 @@
                         return response.json();
                     })
                     .then(data => {
-                        console.log(`[${timestamp}] Respuesta API seguimientos:`, data);
-                        
-                        // Mostrar información de depuración
-                        if (data.debug_info) {
-                            console.log('Fecha actual:', data.debug_info.fecha_actual);
-                            console.log('Hora actual:', data.debug_info.hora_actual);
-                            console.log('Límite de tiempo:', data.debug_info.limite_tiempo);
-                        }
-                        
-                        if (data.total > 0) {
-                            console.log(`Se encontraron ${data.total} seguimientos pendientes`);
+                        if (data.seguimientos && data.seguimientos.length > 0) {
+                            // Actualizar contador en el menú
+                            actualizarContadorSeguimientos(data.seguimientos.length);
                             
-                            // Actualizar contador en el menú lateral
-                            actualizarContadorSeguimientos(data.total);
-                            
-                            // Mostrar notificación del navegador si está permitido
-                            if (notificacionesPermitidas) {
-                                mostrarNotificacionNavegador(data.seguimientos);
+                            // Mostrar notificaciones para cada seguimiento (máximo 2 veces por seguimiento)
+                            for (const seguimiento of data.seguimientos) {
+                                // Inicializar contador para este seguimiento si no existe
+                                if (!contadorNotificaciones[seguimiento.id]) {
+                                    contadorNotificaciones[seguimiento.id] = 0;
+                                }
+                                
+                                // Verificar si ya se ha mostrado 2 veces
+                                if (contadorNotificaciones[seguimiento.id] < 2) {
+                                    // Incrementar contador y mostrar notificación
+                                    contadorNotificaciones[seguimiento.id]++;
+                                    mostrarToastNotificacion(seguimiento);
+                                    
+                                    // Mostrar notificación del navegador si hay permisos
+                                    if (notificacionesPermitidas && contadorNotificaciones[seguimiento.id] === 1) {
+                                        // Solo mostrar notificación del navegador la primera vez
+                                        mostrarNotificacionNavegador(seguimiento);
+                                    }
+                                }
                             }
-                            
-                            // Siempre mostrar notificación visual en la interfaz
-                            data.seguimientos.forEach(seguimiento => {
-                                mostrarToastNotificacion(seguimiento);
-                            });
                         } else {
-                            console.log('No hay seguimientos pendientes para mostrar');
+                            // No hay seguimientos, ocultar contador
+                            actualizarContadorSeguimientos(0);
                         }
                     })
                     .catch(error => {
@@ -342,9 +347,6 @@
                 toast.show();
             }
 
-            // Verificar seguimientos cada 10 minutos (600000 ms)
-            setInterval(verificarSeguimientosPendientes, 600000);
-            
             // Verificar inmediatamente al cargar la página
             verificarSeguimientosPendientes();
         });
