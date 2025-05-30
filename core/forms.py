@@ -103,17 +103,22 @@ class ClienteForm(forms.ModelForm):
 class GestionForm(forms.ModelForm):
     # Usamos CharField para evitar la validación estricta de opciones pero mantenemos el widget Select
     tipo_gestion_n1 = forms.CharField(
-        required=False,
+        required=True,  # Ahora es obligatorio
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     tipo_gestion_n2 = forms.CharField(
-        required=False,
+        required=True,  # Ahora es obligatorio
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     
+    # Campos para acuerdo de pago
     fecha_acuerdo = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}))
     monto_acuerdo = forms.DecimalField(required=False, widget=forms.NumberInput(attrs={'class': 'form-control'}))
     observaciones_acuerdo = forms.CharField(required=False, widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}))
+    
+    # Campos para pago efectivo
+    comprobante_pago = forms.FileField(required=False, widget=forms.FileInput(attrs={'class': 'form-control'}))
+    fecha_pago_efectivo = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}))
     
     fecha_proximo_seguimiento = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}))
     hora_proximo_seguimiento = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}))
@@ -126,7 +131,7 @@ class GestionForm(forms.ModelForm):
             'tipo_gestion_n1', 'tipo_gestion_n2',
             'acuerdo_pago_realizado', 'fecha_acuerdo', 'monto_acuerdo', 'observaciones_acuerdo',
             'seguimiento_requerido', 'fecha_proximo_seguimiento', 'hora_proximo_seguimiento',
-            'observaciones_generales',
+            'observaciones_generales', 'comprobante_pago', 'fecha_pago_efectivo',
         ]
         widgets = {
             'cliente': forms.HiddenInput(),
@@ -142,6 +147,10 @@ class GestionForm(forms.ModelForm):
         self.fields['estado_contacto'].choices = ESTADO_CONTACTO_CHOICES
         self.fields['estado_contacto'].widget.attrs.update({'class': 'form-select'})
         self.fields['canal_contacto'].widget.attrs.update({'class': 'form-select'})
+        
+        # Establecer "telefono" como valor predeterminado para canal_contacto
+        if not self.initial.get('canal_contacto'):
+            self.initial['canal_contacto'] = 'telefono'
 
         # Inicializar N1 y N2 vacíos o con opciones si es una instancia existente
         self.fields['tipo_gestion_n1'].choices = [('', 'Seleccione Nivel 1')]
@@ -171,7 +180,6 @@ class GestionForm(forms.ModelForm):
             self.fields['tipo_gestion_n2'].widget.attrs['disabled'] = True
         
         no_requeridos = [
-            'tipo_gestion_n1', 'tipo_gestion_n2',
             'fecha_acuerdo', 'monto_acuerdo', 'observaciones_acuerdo',
             'fecha_proximo_seguimiento', 'hora_proximo_seguimiento',
             'observaciones_generales'
@@ -180,3 +188,64 @@ class GestionForm(forms.ModelForm):
         for campo in no_requeridos:
             if campo in self.fields:
                  self.fields[campo].required = False
+    
+    def clean(self):
+        """Validación personalizada para campos condicionales según el tipo_gestion_n2 seleccionado."""
+        cleaned_data = super().clean()
+        tipo_gestion_n1 = cleaned_data.get('tipo_gestion_n1')
+        tipo_gestion_n2 = cleaned_data.get('tipo_gestion_n2')
+        
+        # Validación básica: comprobar que no sean valores vacíos
+        if not tipo_gestion_n1 or tipo_gestion_n1 == '':
+            self.add_error('tipo_gestion_n1', 'Debe seleccionar una opción válida de Nivel 1.')
+            
+        if not tipo_gestion_n2 or tipo_gestion_n2 == '':
+            self.add_error('tipo_gestion_n2', 'Debe seleccionar una opción válida de Nivel 2.')
+        
+        # Validaciones condicionales según tipo_gestion_n2
+        if tipo_gestion_n2 == 'PAGADO':
+            # Si es PAGADO, debe incluir comprobante y fecha de pago
+            comprobante_pago = cleaned_data.get('comprobante_pago')
+            fecha_pago_efectivo = cleaned_data.get('fecha_pago_efectivo')
+            
+            if not comprobante_pago:
+                self.add_error('comprobante_pago', 'Debe adjuntar un comprobante de pago cuando selecciona PAGADO.')
+                
+            if not fecha_pago_efectivo:
+                self.add_error('fecha_pago_efectivo', 'Debe ingresar la fecha de pago efectivo cuando selecciona PAGADO.')
+        
+        elif tipo_gestion_n2 in ['AP', 'PP']:
+            # Si es AP o PP, debe marcar acuerdo de pago y completar sus campos
+            acuerdo_pago_realizado = cleaned_data.get('acuerdo_pago_realizado')
+            fecha_acuerdo = cleaned_data.get('fecha_acuerdo')
+            monto_acuerdo = cleaned_data.get('monto_acuerdo')
+            
+            # Forzar que se active el checkbox de acuerdo de pago
+            if not acuerdo_pago_realizado:
+                cleaned_data['acuerdo_pago_realizado'] = True
+                
+            # Validar que se completen los campos del acuerdo
+            if not fecha_acuerdo:
+                self.add_error('fecha_acuerdo', 'Debe ingresar la fecha del acuerdo para AP o PP.')
+                
+            if not monto_acuerdo:
+                self.add_error('monto_acuerdo', 'Debe ingresar el monto del acuerdo para AP o PP.')
+        
+        elif tipo_gestion_n2 == 'SOLICITA_LLAMADA':
+            # Si solicita llamada posterior, debe activar seguimiento
+            seguimiento_requerido = cleaned_data.get('seguimiento_requerido')
+            fecha_proximo_seguimiento = cleaned_data.get('fecha_proximo_seguimiento')
+            hora_proximo_seguimiento = cleaned_data.get('hora_proximo_seguimiento')
+            
+            # Forzar que se active el checkbox de seguimiento
+            if not seguimiento_requerido:
+                cleaned_data['seguimiento_requerido'] = True
+                
+            # Validar que se completen los campos de seguimiento
+            if not fecha_proximo_seguimiento:
+                self.add_error('fecha_proximo_seguimiento', 'Debe ingresar la fecha del próximo seguimiento.')
+                
+            if not hora_proximo_seguimiento:
+                self.add_error('hora_proximo_seguimiento', 'Debe ingresar la hora del próximo seguimiento.')
+            
+        return cleaned_data

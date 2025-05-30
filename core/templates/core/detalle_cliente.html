@@ -45,22 +45,22 @@
     <!-- Tabs para secciones -->
     <ul class="nav nav-tabs mb-0" id="clienteTab" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="financiera-consolidada-tab" data-bs-toggle="tab" data-bs-target="#financiera-consolidada" type="button" role="tab" aria-controls="financiera-consolidada" aria-selected="true">Información Financiera</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="info-contacto-tab" data-bs-toggle="tab" data-bs-target="#info-contacto" type="button" role="tab" aria-controls="info-contacto" aria-selected="false">Información Detallada y Contactos</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="registrar-gestion-tab" data-bs-toggle="tab" data-bs-target="#registrar-gestion" type="button" role="tab" aria-controls="registrar-gestion" aria-selected="false">Registrar Gestión</button>
+            <button class="nav-link active" id="registrar-gestion-tab" data-bs-toggle="tab" data-bs-target="#registrar-gestion" type="button" role="tab" aria-controls="registrar-gestion" aria-selected="true">Registrar Gestión</button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="historial-gestiones-tab" data-bs-toggle="tab" data-bs-target="#historial-gestiones" type="button" role="tab" aria-controls="historial-gestiones" aria-selected="false">Historial de Gestiones</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="financiera-consolidada-tab" data-bs-toggle="tab" data-bs-target="#financiera-consolidada" type="button" role="tab" aria-controls="financiera-consolidada" aria-selected="false">Información Financiera</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="info-contacto-tab" data-bs-toggle="tab" data-bs-target="#info-contacto" type="button" role="tab" aria-controls="info-contacto" aria-selected="false">Información Detallada y Contactos</button>
         </li>
     </ul>
 
     <div class="tab-content" id="clienteTabContent">
         <!-- Pestaña: Información Financiera Consolidada (Unificada con Lista de Productos) -->
-        <div class="tab-pane fade show active" id="financiera-consolidada" role="tabpanel" aria-labelledby="financiera-consolidada-tab">
+        <div class="tab-pane fade" id="financiera-consolidada" role="tabpanel" aria-labelledby="financiera-consolidada-tab">
             <div class="card card-body shadow-sm border-top-0 rounded-bottom p-3">
                 <!-- Encabezado del panel financiero -->
                 <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
@@ -439,7 +439,7 @@
         </div>
 
         <!-- Pestaña: Registrar Gestión -->
-        <div class="tab-pane fade" id="registrar-gestion" role="tabpanel" aria-labelledby="registrar-gestion-tab">
+        <div class="tab-pane fade show active" id="registrar-gestion" role="tabpanel" aria-labelledby="registrar-gestion-tab">
             <div class="card card-body shadow-sm border-top-0 rounded-bottom p-3">
                 <!-- Encabezado del formulario -->
                 <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
@@ -530,7 +530,7 @@
                                     </div>
                                     
                                     <!-- Campos de acuerdo -->
-                                    <div id="campos-acuerdo">
+                                    <div id="campos-acuerdo" style="display: none;">
                                         <!-- Fecha de acuerdo -->
                                         <div class="mb-3">
                                             <label for="{{ gestion_form.fecha_acuerdo.id_for_label }}" class="form-label d-flex align-items-center">
@@ -570,8 +570,42 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Sección 3: Comprobante de Pago (visible solo cuando tipo_gestion_n2 = PAGADO) -->
+                        <div class="col-md-4" id="comprobante_pago_container" style="display: none;">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-light d-flex align-items-center">
+                                    <i class="bi bi-receipt me-2 text-success"></i>
+                                    <h6 class="mb-0">Comprobante de Pago</h6>
+                                </div>
+                                <div class="card-body p-3">
+                                    <!-- Campo comprobante de pago -->
+                                    <div class="mb-3">
+                                        <label for="{{ gestion_form.comprobante_pago.id_for_label }}" class="form-label d-flex align-items-center">
+                                            <i class="bi bi-file-earmark-arrow-up me-1 text-success"></i>
+                                            <span>{{ gestion_form.comprobante_pago.label }}</span>
+                                        </label>
+                                        {{ gestion_form.comprobante_pago }}
+                                        {% if gestion_form.comprobante_pago.errors %}<div class="invalid-feedback d-block">{{ gestion_form.comprobante_pago.errors|join:", " }}</div>{% endif %}
+                                    </div>
+                                    
+                                    <!-- Fecha de pago efectivo -->
+                                    <div class="mb-3" id="fecha_pago_efectivo_container">
+                                        <label for="{{ gestion_form.fecha_pago_efectivo.id_for_label }}" class="form-label d-flex align-items-center">
+                                            <i class="bi bi-calendar-check me-1 text-success"></i>
+                                            <span>{{ gestion_form.fecha_pago_efectivo.label }}</span>
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-calendar"></i></span>
+                                            {{ gestion_form.fecha_pago_efectivo }}
+                                        </div>
+                                        {% if gestion_form.fecha_pago_efectivo.errors %}<div class="invalid-feedback d-block">{{ gestion_form.fecha_pago_efectivo.errors|join:", " }}</div>{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                        <!-- Sección 3: Seguimiento y Observaciones -->
+                        <!-- Sección 4: Seguimiento y Observaciones -->
                         <div class="col-md-4">
                             <div class="card h-100 border-0 shadow-sm">
                                 <div class="card-header bg-light d-flex align-items-center">
@@ -589,7 +623,7 @@
                                     </div>
                                     
                                     <!-- Campos de seguimiento -->
-                                    <div id="campos-seguimiento">
+                                    <div id="campos-seguimiento" style="display: none;">
                                         <div class="row">
                                             <!-- Fecha de próximo seguimiento -->
                                             <div class="col-md-6 mb-3">
@@ -743,6 +777,13 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Ocultar los contenedores de acuerdo de pago y seguimiento al cargar la página
+    const camposAcuerdo = document.getElementById('campos-acuerdo');
+    const camposSeguimiento = document.getElementById('campos-seguimiento');
+    
+    if (camposAcuerdo) camposAcuerdo.style.display = 'none';
+    if (camposSeguimiento) camposSeguimiento.style.display = 'none';
+    
     // Función para mostrar/ocultar opciones en selectores dependientes
     function actualizarOpcionesVisibles(selectorPadre, selectorHijo) {
         const valorSeleccionado = selectorPadre.value;
@@ -826,13 +867,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Función para mostrar/ocultar campos de acuerdo de pago
     function toggleAcuerdoPagoFields() {
         const isChecked = acuerdoPagoCheckbox.checked;
-        fechaAcuerdoGroup.style.display = isChecked ? 'block' : 'none';
-        montoAcuerdoGroup.style.display = isChecked ? 'block' : 'none';
-        observacionesAcuerdoGroup.style.display = isChecked ? 'block' : 'none';
-        // Habilitar/deshabilitar campos
+        const camposAcuerdo = document.getElementById('campos-acuerdo');
+        
+        // Mostrar/ocultar el contenedor completo
+        if (camposAcuerdo) camposAcuerdo.style.display = isChecked ? 'block' : 'none';
+        
+        // Habilitar/deshabilitar campos individuales
         document.getElementById('{{ gestion_form.fecha_acuerdo.id_for_label }}').disabled = !isChecked;
         document.getElementById('{{ gestion_form.monto_acuerdo.id_for_label }}').disabled = !isChecked;
         document.getElementById('{{ gestion_form.observaciones_acuerdo.id_for_label }}').disabled = !isChecked;
+        
         // Si se desmarca, limpiar los campos
         if (!isChecked) {
             document.getElementById('{{ gestion_form.fecha_acuerdo.id_for_label }}').value = '';
@@ -844,11 +888,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Función para mostrar/ocultar campos de seguimiento
     function toggleSeguimientoFields() {
         const isChecked = seguimientoCheckbox.checked;
-        camposSeguimientoDiv.style.display = isChecked ? 'block' : 'none';
-        // Habilitar/deshabilitar campos
+        const camposSeguimiento = document.getElementById('campos-seguimiento');
+        
+        // Mostrar/ocultar el contenedor completo
+        if (camposSeguimiento) camposSeguimiento.style.display = isChecked ? 'block' : 'none';
+        
+        // Habilitar/deshabilitar campos individuales
         document.getElementById('{{ gestion_form.fecha_proximo_seguimiento.id_for_label }}').disabled = !isChecked;
         document.getElementById('{{ gestion_form.hora_proximo_seguimiento.id_for_label }}').disabled = !isChecked;
         document.getElementById('{{ gestion_form.observaciones_generales.id_for_label }}').disabled = !isChecked;
+        
         // Si se desmarca, limpiar los campos
         if (!isChecked) {
             document.getElementById('{{ gestion_form.fecha_proximo_seguimiento.id_for_label }}').value = '';
@@ -953,6 +1002,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlNivel1 = "{% url 'ajax_get_opciones_nivel1' %}";
     const urlNivel2 = "{% url 'ajax_get_opciones_nivel2' %}";
     
+    // Obtener referencias a los contenedores de campos condicionales
+    const comprobantePagoContainer = document.getElementById('comprobante_pago_container');
+    const fechaPagoEfectivoContainer = document.getElementById('fecha_pago_efectivo_container');
+    
     function updateSelectWithOptions(selectElement, options, defaultOptionText) {
         selectElement.innerHTML = ''; // Limpiar opciones existentes
         
@@ -969,6 +1022,41 @@ document.addEventListener('DOMContentLoaded', function() {
             opt.textContent = option.label;
             selectElement.appendChild(opt);
         });
+    }
+    
+    // Función para mostrar u ocultar campos según la selección de tipo_gestion_n2
+    function toggleFieldsBasedOnSelection(tipoGestionN2Value) {
+        // Obtener referencias a los checkboxes y sus contenedores
+        const acuerdoPagoCheckbox = document.getElementById('id_acuerdo_pago_realizado');
+        const camposAcuerdo = document.getElementById('campos-acuerdo');
+        const seguimientoCheckbox = document.getElementById('id_seguimiento_requerido');
+        const camposSeguimiento = document.getElementById('campos-seguimiento');
+        
+        // Por defecto, ocultar todos los contenedores condicionales
+        if (comprobantePagoContainer) comprobantePagoContainer.style.display = 'none';
+        if (fechaPagoEfectivoContainer) fechaPagoEfectivoContainer.style.display = 'none';
+        if (camposAcuerdo) camposAcuerdo.style.display = 'none';
+        if (camposSeguimiento) camposSeguimiento.style.display = 'none';
+        
+        // Desmarcar los checkboxes por defecto
+        if (acuerdoPagoCheckbox) acuerdoPagoCheckbox.checked = false;
+        if (seguimientoCheckbox) seguimientoCheckbox.checked = false;
+        
+        if (tipoGestionN2Value === 'PAGADO') {
+            // Para PAGADO: mostrar comprobante y fecha de pago
+            if (comprobantePagoContainer) comprobantePagoContainer.style.display = 'block';
+            if (fechaPagoEfectivoContainer) fechaPagoEfectivoContainer.style.display = 'block';
+            
+        } else if (tipoGestionN2Value === 'AP' || tipoGestionN2Value === 'PP') {
+            // Para AP o PP: activar checkbox de acuerdo y mostrar sus campos
+            if (acuerdoPagoCheckbox) acuerdoPagoCheckbox.checked = true;
+            if (camposAcuerdo) camposAcuerdo.style.display = 'block';
+            
+        } else if (tipoGestionN2Value === 'SOLICITA_LLAMADA') {
+            // Para SOLICITA_LLAMADA: activar checkbox de seguimiento y mostrar sus campos
+            if (seguimientoCheckbox) seguimientoCheckbox.checked = true;
+            if (camposSeguimiento) camposSeguimiento.style.display = 'block';
+        }
     }
     
 
@@ -1014,6 +1102,9 @@ document.addEventListener('DOMContentLoaded', function() {
         updateSelectWithOptions(tipoGestionN2Select, [], 'Seleccione Nivel 2');
         tipoGestionN2Select.disabled = true;
         
+        // Resetear campos condicionales cuando cambia el nivel 1
+        toggleFieldsBasedOnSelection('');
+        
         if (estadoContactoId && tipoGestionN1Id) {
             // Cargar opciones para nivel 2 vía AJAX
             fetch(`${urlNivel2}?estado_contacto_id=${estadoContactoId}&tipo_gestion_n1_id=${tipoGestionN1Id}`)
@@ -1027,6 +1118,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error('Error cargando opciones de Nivel 2:', error);
                 });
         }
+    });
+    
+    // Añadir event listener para el selector de tipo_gestion_n2
+    tipoGestionN2Select.addEventListener('change', function() {
+        const tipoGestionN2Value = this.value;
+        toggleFieldsBasedOnSelection(tipoGestionN2Value);
     });
 
 

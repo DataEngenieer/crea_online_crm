@@ -1,7 +1,6 @@
 from django.db import models
 
 ESTADO_CONTACTO_CHOICES = [
-    ('', '---------'),
     ('contacto_efectivo', 'Contacto Efectivo'),
     ('contacto_no_efectivo', 'Contacto No Efectivo'),
     ('contacto_fallido', 'Contacto Fallido'),
@@ -267,6 +266,10 @@ class Gestion(models.Model):
     hora_proximo_seguimiento = models.TimeField(blank=True, null=True, verbose_name="Hora Próximo Seguimiento")
 
     observaciones_generales = models.TextField(blank=True, null=True, verbose_name="Observaciones Generales de la Gestión")
+    
+    # Campos para comprobante de pago
+    comprobante_pago = models.FileField(upload_to='comprobantes_pago/', blank=True, null=True, verbose_name="Comprobante de Pago")
+    fecha_pago_efectivo = models.DateField(blank=True, null=True, verbose_name="Fecha de Pago Efectivo")
 
     class Meta:
         verbose_name = "Gestión"

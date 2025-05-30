@@ -7,6 +7,7 @@
                 <th class="text-end">Deuda</th>
                 <th class="text-center">Días Mora</th>
                 <th class="text-center">F. Cesión</th>
+                <th class="text-center">Estado</th>
                 <th class="text-center">Nº Productos</th>
                 <th class="text-center">Acciones</th>
             </tr>
@@ -19,6 +20,11 @@
                 <td class="text-end">${{ grupo_cliente.deuda_total|floatformat:2|default:'0.00' }}</td>
                 <td class="text-center">{{ grupo_cliente.total_dias_mora|floatformat:0|default:'-' }}</td>
                 <td class="text-center">{{ grupo_cliente.fecha_cesion|date:"d/m/Y"|default:'-' }}</td>
+                <td class="text-center">
+                    <span class="badge bg-{% if grupo_cliente.estado == 'Activo' %}success{% elif grupo_cliente.estado == 'Inactivo' %}danger{% else %}secondary{% endif %}">
+                        {{ grupo_cliente.estado|default:'Sin definir' }}
+                    </span>
+                </td>
                 <td class="text-center">{{ grupo_cliente.num_referencias }}</td>
                 <td class="text-center">
                     <a href="{% url 'detalle_cliente' grupo_cliente.documento %}" class="btn btn-sm btn-outline-primary" title="Ver detalle del cliente {{ grupo_cliente.documento }}"><i class="bi bi-eye"></i></a>
@@ -26,7 +32,7 @@
             </tr>
         {% empty %}
             <tr>
-                <td colspan="7" class="text-center text-muted">No se encontraron clientes.</td>
+                <td colspan="8" class="text-center text-muted">No se encontraron clientes.</td>
             </tr>
         {% endfor %}
         </tbody>
