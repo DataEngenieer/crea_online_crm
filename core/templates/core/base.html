@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CREA ONLINE</title>
+    <title>CREA ONLINE | CRM</title>
     <link rel="icon" type="image/png" href="{% static 'core/img/logo_letra_blanca.png' %}">
     <!-- Google Fonts: IBM Plex Sans Condensed -->
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
     <!-- Sidebar -->
     <div id="sidebar-wrapper" class="sidebar-gradient d-flex flex-column text-white" style="width: 220px; min-height: 100vh; transition: all 0.3s;">
         <div class="d-flex align-items-center justify-content-center py-3 px-3 border-bottom">
-            <img src="{% static 'core/img/logo_letra_blanca.png' %}" alt="Logo Corporativo" height="70">
+            <img src="{% static 'core/img/logo_letra_blanca.png' %}" alt="Logo Corporativo" height="90">
         </div>
         
         <div class="px-3 py-3 border-bottom">
@@ -51,8 +51,8 @@
             {% endif %}
         </div>
 
-        <div class="px-3 py-3 border-top">
-            <div class="small text-uppercase text-white mb-2">Mi Cuenta</div>
+        <div class="px-3 py-3">
+            
             <a href="{% url 'perfil' %}" class="d-block text-white text-decoration-none py-1">
                 <i class="bi bi-person me-2"></i> Mi Perfil
             </a>
@@ -84,6 +84,7 @@
 
         <main class="flex-grow-1 py-3">
             <div style="max-width: 1400px; margin-left: auto; margin-right: auto; padding-left: var(--bs-gutter-x, 0.75rem); padding-right: var(--bs-gutter-x, 0.75rem);">
+                <!-- El contenido no tendrá las notificaciones aquí, ahora se mostrarán como toasts superpuestos -->
                 {% block content %}{% endblock %}
             </div>
         </main>
@@ -117,7 +118,10 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Verificar si el navegador soporta notificaciones
             let notificacionesPermitidas = false;
+            let intervaloVerificacion = null;
+            
             if ('Notification' in window) {
+                // Solicitar permiso para notificaciones del navegador
                 if (Notification.permission === 'granted') {
                     notificacionesPermitidas = true;
                 } else if (Notification.permission !== 'denied') {
@@ -125,19 +129,73 @@
                         notificacionesPermitidas = permission === 'granted';
                     });
                 }
+                
+                // Mostrar mensaje en consola sobre el estado de las notificaciones
+                console.log('Estado de permisos de notificaciones:', Notification.permission);
+                console.log('Notificaciones permitidas:', notificacionesPermitidas);
             }
-
-            // Función para verificar seguimientos próximos
+            
+            // Verificar seguimientos pendientes al cargar la página
+            verificarSeguimientosPendientes();
+            
+            // Limpiar cualquier intervalo existente
+            if (intervaloVerificacion) {
+                clearInterval(intervaloVerificacion);
+            }
+            
+            // Establecer un nuevo intervalo de verificación (cada 1 minuto en lugar de 5)
+            intervaloVerificacion = setInterval(verificarSeguimientosPendientes, 60 * 1000); // 1 minuto
+            
+            // Función para verificar si estamos en horario laboral
+            function estaEnHorarioLaboral() {
+                const ahora = new Date();
+                const diaSemana = ahora.getDay(); // 0 = domingo, 1 = lunes, ..., 6 = sábado
+                const hora = ahora.getHours();
+                const minutos = ahora.getMinutes();
+                const horaDecimal = hora + (minutos / 60);
+                
+                // Lunes a viernes (1-5): 7:00 a 19:00
+                if (diaSemana >= 1 && diaSemana <= 5) {
+                    return horaDecimal >= 7 && horaDecimal < 19;
+                }
+                // Sábado (6): 8:00 a 13:00
+                else if (diaSemana === 6) {
+                    return horaDecimal >= 8 && horaDecimal < 13;
+                }
+                // Domingo (0): No hay horario laboral
+                return false;
+            }
+            
             function verificarSeguimientosPendientes() {
+                // Verificar si estamos en horario laboral
+                if (!estaEnHorarioLaboral()) {
+                    console.log('Fuera de horario laboral. No se verifican seguimientos.');
+                    return;
+                }
+                
+                console.log('Verificando seguimientos pendientes...');
+                const timestamp = new Date().toLocaleTimeString();
+                
                 fetch('/api/seguimientos/proximos/')
                     .then(response => {
                         if (!response.ok) {
-                            throw new Error('Error en la solicitud');
+                            throw new Error(`Error en la solicitud: ${response.status}`);
                         }
                         return response.json();
                     })
                     .then(data => {
+                        console.log(`[${timestamp}] Respuesta API seguimientos:`, data);
+                        
+                        // Mostrar información de depuración
+                        if (data.debug_info) {
+                            console.log('Fecha actual:', data.debug_info.fecha_actual);
+                            console.log('Hora actual:', data.debug_info.hora_actual);
+                            console.log('Límite de tiempo:', data.debug_info.limite_tiempo);
+                        }
+                        
                         if (data.total > 0) {
+                            console.log(`Se encontraron ${data.total} seguimientos pendientes`);
+                            
                             // Actualizar contador en el menú lateral
                             actualizarContadorSeguimientos(data.total);
                             
@@ -145,6 +203,13 @@
                             if (notificacionesPermitidas) {
                                 mostrarNotificacionNavegador(data.seguimientos);
                             }
+                            
+                            // Siempre mostrar notificación visual en la interfaz
+                            data.seguimientos.forEach(seguimiento => {
+                                mostrarToastNotificacion(seguimiento);
+                            });
+                        } else {
+                            console.log('No hay seguimientos pendientes para mostrar');
                         }
                     })
                     .catch(error => {
@@ -154,7 +219,7 @@
 
             // Función para actualizar el contador en el menú
             function actualizarContadorSeguimientos(cantidad) {
-                const enlaceSeguimientos = document.querySelector('a[href="{% url 'seguimientos' %}"]');
+                const enlaceSeguimientos = document.querySelector('a[href="{% url "seguimientos" %}"]');
                 if (enlaceSeguimientos) {
                     // Buscar si ya existe un badge
                     let badge = enlaceSeguimientos.querySelector('.badge');
@@ -168,6 +233,57 @@
                 }
             }
 
+            // Función para mostrar notificación visual en la interfaz (toast)
+            function mostrarToastNotificacion(seguimiento) {
+                // Crear el contenedor del toast si no existe
+                let toastContainer = document.getElementById('toast-container');
+                if (!toastContainer) {
+                    toastContainer = document.createElement('div');
+                    toastContainer.id = 'toast-container';
+                    toastContainer.className = 'position-fixed bottom-0 end-0 p-3';
+                    toastContainer.style.zIndex = '1050';
+                    document.body.appendChild(toastContainer);
+                }
+                
+                // Crear un ID único para este toast
+                const toastId = `toast-${seguimiento.id}-${Date.now()}`;
+                
+                // Determinar el color del toast según el estado
+                let bgClass = 'bg-primary';
+                if (seguimiento.estado === 'Atrasado') {
+                    bgClass = 'bg-danger';
+                }
+                
+                // Construir el HTML del toast
+                const toastHTML = `
+                    <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="10000">
+                        <div class="toast-header ${bgClass} text-white">
+                            <strong class="me-auto">Seguimiento ${seguimiento.estado}</strong>
+                            <small>${seguimiento.fecha_seguimiento} ${seguimiento.hora_seguimiento}</small>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+                        </div>
+                        <div class="toast-body">
+                            <strong>Cliente:</strong> ${seguimiento.cliente_nombre}<br>
+                            <strong>Observaciones:</strong> ${seguimiento.observaciones}<br>
+                            <a href="${seguimiento.url}" class="btn btn-sm btn-primary mt-2">Ver Cliente</a>
+                        </div>
+                    </div>
+                `;
+                
+                // Agregar el toast al contenedor
+                toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+                
+                // Inicializar y mostrar el toast
+                const toastElement = document.getElementById(toastId);
+                const toast = new bootstrap.Toast(toastElement);
+                toast.show();
+                
+                // Eliminar el toast del DOM después de que se oculte
+                toastElement.addEventListener('hidden.bs.toast', function () {
+                    toastElement.remove();
+                });
+            }
+            
             // Función para mostrar notificación del navegador
             function mostrarNotificacionNavegador(seguimientos) {
                 if (seguimientos.length > 0) {
@@ -226,13 +342,41 @@
                 toast.show();
             }
 
-            // Verificar seguimientos cada minuto (60000 ms)
-            setInterval(verificarSeguimientosPendientes, 60000);
+            // Verificar seguimientos cada 10 minutos (600000 ms)
+            setInterval(verificarSeguimientosPendientes, 600000);
             
             // Verificar inmediatamente al cargar la página
             verificarSeguimientosPendientes();
         });
     </script>
     {% block extra_js %}{% endblock %}
+    <!-- Toast container para notificaciones temporales -->
+    <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1080;">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="toast align-items-center text-white bg-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="2500">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        {{ message }}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Script para inicializar los toasts automáticamente -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var toastElList = [].slice.call(document.querySelectorAll('.toast'))
+            var toastList = toastElList.map(function(toastEl) {
+                return new bootstrap.Toast(toastEl)
+            });
+            
+            // Mostrar todos los toasts
+            toastList.forEach(toast => toast.show());
+        });
+    </script>
 </body>
 </html>

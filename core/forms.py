@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import get_user_model
-from .models import Cliente, Gestion
+from .models import Cliente, Gestion, GESTION_OPCIONES, ESTADO_CONTACTO_CHOICES
 
 class EmailAuthenticationForm(AuthenticationForm):
     username = forms.EmailField(
@@ -101,60 +101,82 @@ class ClienteForm(forms.ModelForm):
 
 
 class GestionForm(forms.ModelForm):
-    tipo_gestion_n1_opciones = [
-        ('', '---------'),
-        ('consulta_general', 'Consulta General'),
-        ('solicitud_informacion', 'Solicitud de Información'),
-        ('gestion_cobro', 'Gestión de Cobro'),
-        ('reclamacion', 'Reclamación'),
-        ('otro', 'Otro'),
-    ]
-
-    tipo_gestion_n1 = forms.ChoiceField(
-        choices=tipo_gestion_n1_opciones,
-        required=False, 
-        label="Tipo de Gestión (Nivel 1)",
+    # Usamos CharField para evitar la validación estricta de opciones pero mantenemos el widget Select
+    tipo_gestion_n1 = forms.CharField(
+        required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    tipo_gestion_n2 = forms.CharField(
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    fecha_acuerdo = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}))
+    monto_acuerdo = forms.DecimalField(required=False, widget=forms.NumberInput(attrs={'class': 'form-control'}))
+    observaciones_acuerdo = forms.CharField(required=False, widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}))
+    
+    fecha_proximo_seguimiento = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}))
+    hora_proximo_seguimiento = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}))
+    observaciones_generales = forms.CharField(required=False, widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}))
 
     class Meta:
         model = Gestion
         fields = [
-            'canal_contacto', 
-            'estado_contacto',
-            'tipo_gestion_n1',
-            'tipo_gestion_n2',
-            'tipo_gestion_n3',
-            'acuerdo_pago_realizado',
-            'fecha_acuerdo',
-            'monto_acuerdo',
-            'observaciones_acuerdo',
-            'seguimiento_requerido',
-            'fecha_proximo_seguimiento',
-            'hora_proximo_seguimiento',
+            'cliente', 'canal_contacto', 'estado_contacto',
+            'tipo_gestion_n1', 'tipo_gestion_n2',
+            'acuerdo_pago_realizado', 'fecha_acuerdo', 'monto_acuerdo', 'observaciones_acuerdo',
+            'seguimiento_requerido', 'fecha_proximo_seguimiento', 'hora_proximo_seguimiento',
             'observaciones_generales',
         ]
         widgets = {
             'cliente': forms.HiddenInput(),
-            'fecha_acuerdo': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'fecha_proximo_seguimiento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'hora_proximo_seguimiento': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'canal_contacto': forms.Select(attrs={'class': 'form-select'}),
-            'estado_contacto': forms.Select(attrs={'class': 'form-select'}),
+            'estado_contacto': forms.Select(attrs={'class': 'form-select', 'id': 'id_estado_contacto'}), # Usar ESTADO_CONTACTO_CHOICES
             'acuerdo_pago_realizado': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'seguimiento_requerido': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'observaciones_acuerdo': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-            'observaciones_generales': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-            'tipo_gestion_n2': forms.Select(attrs={'class': 'form-select'}, choices=[('', '---------')]),
-            'tipo_gestion_n3': forms.Select(attrs={'class': 'form-select'}, choices=[('', '---------')]),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['tipo_gestion_n1'].required = False
-        self.fields['tipo_gestion_n2'].required = False
-        self.fields['tipo_gestion_n3'].required = False
-        self.fields['fecha_acuerdo'].required = False
-        self.fields['monto_acuerdo'].required = False
-        self.fields['observaciones_acuerdo'].required = False
-        self.fields['fecha_proximo_seguimiento'].required = False
+        
+        self.fields['estado_contacto'].choices = ESTADO_CONTACTO_CHOICES
+        self.fields['estado_contacto'].widget.attrs.update({'class': 'form-select'})
+        self.fields['canal_contacto'].widget.attrs.update({'class': 'form-select'})
+
+        # Inicializar N1 y N2 vacíos o con opciones si es una instancia existente
+        self.fields['tipo_gestion_n1'].choices = [('', 'Seleccione Nivel 1')]
+        self.fields['tipo_gestion_n2'].choices = [('', 'Seleccione Nivel 2')]
+
+        if self.instance and self.instance.pk:
+            estado_contacto_val = self.instance.estado_contacto
+            tipo_gestion_n1_val = self.instance.tipo_gestion_n1
+            # tipo_gestion_n2_val = self.instance.tipo_gestion_n2 # No es necesario para cargar N2, se usa n1_val
+
+            if estado_contacto_val and estado_contacto_val in GESTION_OPCIONES:
+                nivel1_data = GESTION_OPCIONES[estado_contacto_val].get('nivel1', {})
+                self.fields['tipo_gestion_n1'].choices = [('', 'Seleccione Nivel 1')] + [(k, v['label']) for k, v in nivel1_data.items()]
+                self.fields['tipo_gestion_n1'].initial = tipo_gestion_n1_val # Establecer valor inicial
+
+                if tipo_gestion_n1_val and tipo_gestion_n1_val in nivel1_data:
+                    nivel2_data = nivel1_data[tipo_gestion_n1_val].get('nivel2', {})
+                    self.fields['tipo_gestion_n2'].choices = [('', 'Seleccione Nivel 2')] + [(k, v_label) for k, v_label in nivel2_data.items()]
+                    self.fields['tipo_gestion_n2'].initial = self.instance.tipo_gestion_n2 # Establecer valor inicial
+            
+            # No deshabilitar si hay instancia, ya que los valores deben estar seleccionados
+            self.fields['tipo_gestion_n1'].widget.attrs.pop('disabled', None)
+            self.fields['tipo_gestion_n2'].widget.attrs.pop('disabled', None)
+
+        else: # Formulario nuevo, deshabilitar N1 y N2 inicialmente
+            self.fields['tipo_gestion_n1'].widget.attrs['disabled'] = True
+            self.fields['tipo_gestion_n2'].widget.attrs['disabled'] = True
+        
+        no_requeridos = [
+            'tipo_gestion_n1', 'tipo_gestion_n2',
+            'fecha_acuerdo', 'monto_acuerdo', 'observaciones_acuerdo',
+            'fecha_proximo_seguimiento', 'hora_proximo_seguimiento',
+            'observaciones_generales'
+        ]
+        
+        for campo in no_requeridos:
+            if campo in self.fields:
+                 self.fields[campo].required = False

@@ -26,10 +26,15 @@ urlpatterns = [
     path('clientes/carga/', views.carga_clientes, name='carga_clientes'),
     path('clientes/crear/', views.crear_cliente_view, name='crear_cliente'),
     path('clientes/<str:documento_cliente>/', views.detalle_cliente, name='detalle_cliente'),
+    path('clientes/<str:documento_cliente>/enviar-email-prueba/', views.enviar_email_prueba, name='enviar_email_prueba'),
     path('gestiones/', views.lista_gestiones, name='lista_gestiones'),
     path('acuerdos-pago/', views.acuerdos_pago, name='acuerdos_pago'),
     path('seguimientos/', views.seguimientos, name='seguimientos'),
     path('api/seguimientos/proximos/', views.api_seguimientos_proximos, name='api_seguimientos_proximos'),
+    path('api/opciones-gestion/', views.api_opciones_gestion, name='api_opciones_gestion'),
+    # Rutas AJAX para los desplegables dependientes
+    path('ajax/get_opciones_nivel1/', views.get_opciones_nivel1, name='ajax_get_opciones_nivel1'),
+    path('ajax/get_opciones_nivel2/', views.get_opciones_nivel2, name='ajax_get_opciones_nivel2'),
 ]
 
 if settings.DEBUG:

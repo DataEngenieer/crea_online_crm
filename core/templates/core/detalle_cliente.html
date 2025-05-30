@@ -36,7 +36,7 @@
                 <a href="https://wa.me/{{ cliente_representativo.celular_1|default:'' }}" target="_blank" class="btn btn-success btn-sm me-1"><i class="bi bi-whatsapp"></i> WhatsApp</a>
                 <a href="sms:{{ cliente_representativo.celular_1|default:'' }}" class="btn btn-info btn-sm me-1 text-white"><i class="bi bi-chat-text-fill"></i> SMS</a>
                 <a href="tel:{{ cliente_representativo.celular_1|default:'' }}" class="btn btn-warning btn-sm me-1"><i class="bi bi-telephone"></i> Llamar</a>
-                <a href="mailto:{{ cliente_representativo.email|default:'' }}" class="btn btn-secondary btn-sm me-1"><i class="bi bi-envelope"></i> Email</a>
+                <a href="{% url 'enviar_email_prueba' documento_cliente=documento_cliente %}" class="btn btn-secondary btn-sm me-1"><i class="bi bi-envelope"></i> Enviar Correo</a>
                 <a href="{% url 'clientes' %}" class="btn btn-light me-1"><i class="bi bi-arrow-left"></i> Volver a Clientes</a>
             </div>
         </div>
@@ -489,7 +489,10 @@
                                             <i class="bi bi-grid-1x2 me-1 text-primary"></i>
                                             <span>{{ gestion_form.tipo_gestion_n1.label }}</span>
                                         </label>
-                                        {{ gestion_form.tipo_gestion_n1 }}
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-list"></i></span>
+                                            {{ gestion_form.tipo_gestion_n1 }}
+                                        </div>
                                         {% if gestion_form.tipo_gestion_n1.errors %}<div class="invalid-feedback d-block">{{ gestion_form.tipo_gestion_n1.errors|join:", " }}</div>{% endif %}
                                     </div>
                                     
@@ -499,18 +502,11 @@
                                             <i class="bi bi-grid-3x2 me-1 text-primary"></i>
                                             <span>{{ gestion_form.tipo_gestion_n2.label }}</span>
                                         </label>
-                                        {{ gestion_form.tipo_gestion_n2 }}
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-list"></i></span>
+                                            {{ gestion_form.tipo_gestion_n2 }}
+                                        </div>
                                         {% if gestion_form.tipo_gestion_n2.errors %}<div class="invalid-feedback d-block">{{ gestion_form.tipo_gestion_n2.errors|join:", " }}</div>{% endif %}
-                                    </div>
-                                    
-                                    <!-- Tipo de gestión N3 -->
-                                    <div class="mb-3">
-                                        <label for="{{ gestion_form.tipo_gestion_n3.id_for_label }}" class="form-label d-flex align-items-center">
-                                            <i class="bi bi-grid-3x3 me-1 text-primary"></i>
-                                            <span>{{ gestion_form.tipo_gestion_n3.label }}</span>
-                                        </label>
-                                        {{ gestion_form.tipo_gestion_n3 }}
-                                        {% if gestion_form.tipo_gestion_n3.errors %}<div class="invalid-feedback d-block">{{ gestion_form.tipo_gestion_n3.errors|join:", " }}</div>{% endif %}
                                     </div>
                                 </div>
                             </div>
@@ -747,6 +743,43 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Función para mostrar/ocultar opciones en selectores dependientes
+    function actualizarOpcionesVisibles(selectorPadre, selectorHijo) {
+        const valorSeleccionado = selectorPadre.value;
+        // Ocultar todas las opciones excepto la primera
+        Array.from(selectorHijo.options).forEach((option, index) => {
+            if (index === 0) return;
+            option.style.display = 'none';
+        });
+        // Mostrar solo las opciones correspondientes al valor seleccionado
+        let opcionesVisibles = 0;
+        Array.from(selectorHijo.options).forEach(option => {
+            if (option.getAttribute('data-parent') === valorSeleccionado) {
+                option.style.display = '';
+                opcionesVisibles++;
+            }
+        });
+        // Resetear el valor del selector hijo
+        selectorHijo.value = '';
+        // Habilitar si hay opciones, deshabilitar si no
+        selectorHijo.disabled = (opcionesVisibles === 0);
+    }
+    // Al cargar la página, asegúrate de habilitar los selects si hay opciones
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof tipoGestionN1Select !== 'undefined' && tipoGestionN1Select.options.length > 1) {
+            tipoGestionN1Select.disabled = false;
+        }
+        if (typeof tipoGestionN2Select !== 'undefined' && tipoGestionN2Select.options.length > 1) {
+            tipoGestionN2Select.disabled = false;
+        }
+    });
+    
+    // Referencias a los campos de formulario
+    const canalContactoSelect = document.getElementById('{{ gestion_form.canal_contacto.id_for_label }}');
+    const estadoContactoSelect = document.getElementById('{{ gestion_form.estado_contacto.id_for_label }}');
+    const tipoGestionN1Select = document.getElementById('{{ gestion_form.tipo_gestion_n1.id_for_label }}');
+    const tipoGestionN2Select = document.getElementById('{{ gestion_form.tipo_gestion_n2.id_for_label }}');
+    
     // Referencias a los campos de acuerdo de pago
     const acuerdoPagoCheckbox = document.getElementById('{{ gestion_form.acuerdo_pago_realizado.id_for_label }}');
     const fechaAcuerdoGroup = document.getElementById('{{ gestion_form.fecha_acuerdo.id_for_label }}').closest('.mb-3');
@@ -757,17 +790,36 @@ document.addEventListener('DOMContentLoaded', function() {
     const seguimientoCheckbox = document.getElementById('{{ gestion_form.seguimiento_requerido.id_for_label }}');
     const camposSeguimientoDiv = document.getElementById('campos-seguimiento');
     
-    // Referencias a campos interdependientes
-    const canalContactoSelect = document.getElementById('{{ gestion_form.canal_contacto.id_for_label }}');
-    const estadoContactoSelect = document.getElementById('{{ gestion_form.estado_contacto.id_for_label }}');
-    const tipoGestionN1Select = document.getElementById('{{ gestion_form.tipo_gestion_n1.id_for_label }}');
-    const tipoGestionN2Select = document.getElementById('{{ gestion_form.tipo_gestion_n2.id_for_label }}');
-    const tipoGestionN3Select = document.getElementById('{{ gestion_form.tipo_gestion_n3.id_for_label }}');
-    
     // Establecer teléfono como opción por defecto en canal de contacto
     if (canalContactoSelect) {
         if (!canalContactoSelect.value) {
             canalContactoSelect.value = 'telefono';
+        }
+    }
+    
+    // Evento para cambio en estado de contacto
+    estadoContactoSelect.addEventListener('change', function() {
+        actualizarOpcionesVisibles(estadoContactoSelect, tipoGestionN1Select);
+        tipoGestionN2Select.disabled = true;
+        tipoGestionN2Select.value = '';
+    });
+    
+    // Evento para cambio en nivel 1
+    tipoGestionN1Select.addEventListener('change', function() {
+        actualizarOpcionesVisibles(tipoGestionN1Select, tipoGestionN2Select);
+    });
+    
+    // Si hay valores preseleccionados, actualizar las opciones visibles
+    if (estadoContactoSelect.value) {
+        actualizarOpcionesVisibles(estadoContactoSelect, tipoGestionN1Select);
+        if (tipoGestionN1Select.options.length > 1) {
+            tipoGestionN1Select.disabled = false;
+        }
+        if (tipoGestionN1Select.value) {
+            actualizarOpcionesVisibles(tipoGestionN1Select, tipoGestionN2Select);
+            if (tipoGestionN2Select.options.length > 1) {
+                tipoGestionN2Select.disabled = false;
+            }
         }
     }
     
@@ -777,7 +829,10 @@ document.addEventListener('DOMContentLoaded', function() {
         fechaAcuerdoGroup.style.display = isChecked ? 'block' : 'none';
         montoAcuerdoGroup.style.display = isChecked ? 'block' : 'none';
         observacionesAcuerdoGroup.style.display = isChecked ? 'block' : 'none';
-        
+        // Habilitar/deshabilitar campos
+        document.getElementById('{{ gestion_form.fecha_acuerdo.id_for_label }}').disabled = !isChecked;
+        document.getElementById('{{ gestion_form.monto_acuerdo.id_for_label }}').disabled = !isChecked;
+        document.getElementById('{{ gestion_form.observaciones_acuerdo.id_for_label }}').disabled = !isChecked;
         // Si se desmarca, limpiar los campos
         if (!isChecked) {
             document.getElementById('{{ gestion_form.fecha_acuerdo.id_for_label }}').value = '';
@@ -790,11 +845,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function toggleSeguimientoFields() {
         const isChecked = seguimientoCheckbox.checked;
         camposSeguimientoDiv.style.display = isChecked ? 'block' : 'none';
-        
+        // Habilitar/deshabilitar campos
+        document.getElementById('{{ gestion_form.fecha_proximo_seguimiento.id_for_label }}').disabled = !isChecked;
+        document.getElementById('{{ gestion_form.hora_proximo_seguimiento.id_for_label }}').disabled = !isChecked;
+        document.getElementById('{{ gestion_form.observaciones_generales.id_for_label }}').disabled = !isChecked;
         // Si se desmarca, limpiar los campos
         if (!isChecked) {
             document.getElementById('{{ gestion_form.fecha_proximo_seguimiento.id_for_label }}').value = '';
             document.getElementById('{{ gestion_form.hora_proximo_seguimiento.id_for_label }}').value = '';
+            document.getElementById('{{ gestion_form.observaciones_generales.id_for_label }}').value = '';
         }
     }
     
@@ -889,143 +948,97 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Definición de opciones para tipo de gestión según estado de contacto
-    const opcionesGestion = {
-        'contactado': {
-            // Opciones cuando el cliente fue contactado
-            'informacion': { label: 'Información', subniveles: {
-                'info_deuda': { label: 'Información de Deuda', subniveles: {} },
-                'info_descuentos': { label: 'Información de Descuentos', subniveles: {} },
-                'info_proceso_pago': { label: 'Información de Proceso de Pago', subniveles: {} }
-            }},
-            'acuerdo': { label: 'Acuerdo de Pago', subniveles: {
-                'compromiso_pago': { label: 'Compromiso de Pago', subniveles: {} },
-                'plan_pagos': { label: 'Plan de Pagos', subniveles: {} }
-            }},
-            'reclamacion': { label: 'Reclamación', subniveles: {
-                'error_facturacion': { label: 'Error en Facturación', subniveles: {} },
-                'calidad_servicio': { label: 'Calidad del Servicio', subniveles: {} }
-            }},
-            'otro': { label: 'Otro', subniveles: {} }
-        },
-        'no_contactado': {
-            // Opciones cuando el cliente no fue contactado
-            'no_contesta': { label: 'No Contesta', subniveles: {} },
-            'buzon': { label: 'Buzón de Voz', subniveles: {} },
-            'ocupado': { label: 'Línea Ocupada', subniveles: {} }
-        },
-        'numero_errado': {
-            // Opciones cuando el número es errado
-            'no_existe': { label: 'Número No Existe', subniveles: {} },
-            'fuera_servicio': { label: 'Fuera de Servicio', subniveles: {} },
-            'equivocado': { label: 'Número Equivocado', subniveles: {} }
-        }
-    };
+    // Configuración de los desplegables dependientes usando AJAX
+    // URLs para las vistas AJAX
+    const urlNivel1 = "{% url 'ajax_get_opciones_nivel1' %}";
+    const urlNivel2 = "{% url 'ajax_get_opciones_nivel2' %}";
     
-    // Función para cargar opciones en los selectores de tipo de gestión
-    function cargarOpcionesGestion() {
-        const estadoSeleccionado = estadoContactoSelect.value;
+    function updateSelectWithOptions(selectElement, options, defaultOptionText) {
+        selectElement.innerHTML = ''; // Limpiar opciones existentes
         
-        // Limpiar los selectores
-        tipoGestionN1Select.innerHTML = '';
-        tipoGestionN2Select.innerHTML = '<option value="">---------</option>';
-        tipoGestionN3Select.innerHTML = '<option value="">---------</option>';
-        
-        // Verificar si existe el estado seleccionado en nuestras opciones
-        if (estadoSeleccionado && opcionesGestion[estadoSeleccionado]) {
-            // Cargar opciones de nivel 1 según el estado
-            const opciones = opcionesGestion[estadoSeleccionado];
-            
-            // Agregar las opciones al selector de nivel 1
-            for (const [valor, data] of Object.entries(opciones)) {
-                const option = document.createElement('option');
-                option.value = valor;
-                option.textContent = data.label;
-                tipoGestionN1Select.appendChild(option);
-            }
-        }
+        // Añadir opción por defecto
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = defaultOptionText;
+        selectElement.appendChild(defaultOption);
+
+        // Añadir nuevas opciones
+        options.forEach(function(option) {
+            const opt = document.createElement('option');
+            opt.value = option.value;
+            opt.textContent = option.label;
+            selectElement.appendChild(opt);
+        });
     }
     
-    // Función para cargar opciones de nivel 2 basadas en la selección de nivel 1
-    function cargarOpcionesGestionN2() {
-        const estadoSeleccionado = estadoContactoSelect.value;
-        const opcionN1 = tipoGestionN1Select.value;
-        
-        // Limpiar los selectores de nivel 2 y 3
-        tipoGestionN2Select.innerHTML = '<option value="">---------</option>';
-        tipoGestionN3Select.innerHTML = '<option value="">---------</option>';
-        
-        // Verificar si existen subniveles para la opción seleccionada
-        if (estadoSeleccionado && opcionN1 && 
-            opcionesGestion[estadoSeleccionado] && 
-            opcionesGestion[estadoSeleccionado][opcionN1] && 
-            opcionesGestion[estadoSeleccionado][opcionN1].subniveles) {
-            
-            const subniveles = opcionesGestion[estadoSeleccionado][opcionN1].subniveles;
-            
-            // Agregar las opciones al selector de nivel 2
-            for (const [valor, data] of Object.entries(subniveles)) {
-                const option = document.createElement('option');
-                option.value = valor;
-                option.textContent = data.label;
-                tipoGestionN2Select.appendChild(option);
-            }
-        }
-    }
-    
-    // Función para cargar opciones de nivel 3 basadas en la selección de nivel 2
-    function cargarOpcionesGestionN3() {
-        const estadoSeleccionado = estadoContactoSelect.value;
-        const opcionN1 = tipoGestionN1Select.value;
-        const opcionN2 = tipoGestionN2Select.value;
-        
-        // Limpiar el selector de nivel 3
-        tipoGestionN3Select.innerHTML = '<option value="">---------</option>';
-        
-        // Verificar si existen subniveles para la opción seleccionada de nivel 2
-        if (estadoSeleccionado && opcionN1 && opcionN2 && 
-            opcionesGestion[estadoSeleccionado] && 
-            opcionesGestion[estadoSeleccionado][opcionN1] && 
-            opcionesGestion[estadoSeleccionado][opcionN1].subniveles && 
-            opcionesGestion[estadoSeleccionado][opcionN1].subniveles[opcionN2] && 
-            opcionesGestion[estadoSeleccionado][opcionN1].subniveles[opcionN2].subniveles) {
-            
-            const subniveles = opcionesGestion[estadoSeleccionado][opcionN1].subniveles[opcionN2].subniveles;
-            
-            // Agregar las opciones al selector de nivel 3
-            for (const [valor, data] of Object.entries(subniveles)) {
-                const option = document.createElement('option');
-                option.value = valor;
-                option.textContent = data.label;
-                tipoGestionN3Select.appendChild(option);
-            }
-        }
-    }
+
     
     // Función para actualizar el estado visual de los campos cuando cambia el estado de contacto
     estadoContactoSelect.addEventListener('change', function() {
-        const isContactado = this.value === 'contactado';
+        const estadoContactoId = this.value;
+        const isContactoEfectivo = estadoContactoId === 'contacto_efectivo';
         
-        // Actualizar opciones de tipo de gestión según el estado seleccionado
-        cargarOpcionesGestion();
+        // Limpiar y deshabilitar Nivel 1 y Nivel 2
+        updateSelectWithOptions(tipoGestionN1Select, [], 'Seleccione Nivel 1');
+        tipoGestionN1Select.disabled = true;
+        updateSelectWithOptions(tipoGestionN2Select, [], 'Seleccione Nivel 2');
+        tipoGestionN2Select.disabled = true;
         
-        // Si no es contactado, deshabilitar acuerdo de pago
-        if (!isContactado) {
+        // Manejar el caso de acuerdo de pago (solo disponible en contacto efectivo)
+        if (!isContactoEfectivo) {
             acuerdoPagoCheckbox.checked = false;
             toggleAcuerdoPagoFields();
         }
         
-        // Habilitar/deshabilitar los selectores de tipo de gestión según corresponda
-        tipoGestionN1Select.disabled = false; // Siempre habilitado, solo cambian las opciones
+        if (estadoContactoId) {
+            // Cargar opciones para nivel 1 vía AJAX
+            fetch(`${urlNivel1}?estado_contacto_id=${estadoContactoId}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateSelectWithOptions(tipoGestionN1Select, data, 'Seleccione Nivel 1');
+                    tipoGestionN1Select.disabled = false;
+                    console.log('Opciones de nivel 1 cargadas correctamente');
+                })
+                .catch(error => {
+                    console.error('Error cargando opciones de Nivel 1:', error);
+                });
+        }
     });
     
-    // Event listeners para los selectores de tipo de gestión
-    tipoGestionN1Select.addEventListener('change', cargarOpcionesGestionN2);
-    tipoGestionN2Select.addEventListener('change', cargarOpcionesGestionN3);
+    // Event listener para el selector de tipo de gestión nivel 1
+    tipoGestionN1Select.addEventListener('change', function() {
+        const estadoContactoId = estadoContactoSelect.value;
+        const tipoGestionN1Id = this.value;
+        
+        // Limpiar y deshabilitar Nivel 2
+        updateSelectWithOptions(tipoGestionN2Select, [], 'Seleccione Nivel 2');
+        tipoGestionN2Select.disabled = true;
+        
+        if (estadoContactoId && tipoGestionN1Id) {
+            // Cargar opciones para nivel 2 vía AJAX
+            fetch(`${urlNivel2}?estado_contacto_id=${estadoContactoId}&tipo_gestion_n1_id=${tipoGestionN1Id}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateSelectWithOptions(tipoGestionN2Select, data, 'Seleccione Nivel 2');
+                    tipoGestionN2Select.disabled = false;
+                    console.log('Opciones de nivel 2 cargadas correctamente');
+                })
+                .catch(error => {
+                    console.error('Error cargando opciones de Nivel 2:', error);
+                });
+        }
+    });
+
+
     
-    // Disparar el evento para inicializar correctamente
-    const event = new Event('change');
-    estadoContactoSelect.dispatchEvent(event);
+    // Disparar el evento para inicializar correctamente si hay un valor preseleccionado
+    if (estadoContactoSelect.value) {
+        estadoContactoSelect.dispatchEvent(new Event('change'));
+        // Si también hay un valor en nivel 1, disparar su evento también
+        if (tipoGestionN1Select.value) {
+            tipoGestionN1Select.dispatchEvent(new Event('change'));
+        }
+    }
 });
 </script>
 {% endblock %}

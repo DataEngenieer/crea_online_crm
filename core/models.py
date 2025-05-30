@@ -1,4 +1,75 @@
 from django.db import models
+
+ESTADO_CONTACTO_CHOICES = [
+    ('', '---------'),
+    ('contacto_efectivo', 'Contacto Efectivo'),
+    ('contacto_no_efectivo', 'Contacto No Efectivo'),
+    ('contacto_fallido', 'Contacto Fallido'),
+]
+
+GESTION_OPCIONES = {
+    'contacto_efectivo': {
+        'label': 'Contacto Efectivo',
+        'nivel1': {
+            'deudor': {
+                'label': 'Deudor',
+                'nivel2': {
+                    'AP': 'AP- Acuerdo de pago formalizado',
+                    'PP': 'PP - Promesa de pago',
+                    'NC': 'NC -Negociación en curso / pendiente de validación',
+                    'RN': 'RN - Rechaza negociación',
+                    'ND': 'ND - Niega deuda',
+                    'REMITE_ABOGADO': 'Remite a abogado',
+                    'SOLICITA_INFO': 'Solicita más información',
+                    'SOLICITA_LLAMADA': 'Solicita llamada posterior',
+                    'NO_CAPACIDAD_PAGO': 'No tiene capacidad de pago',
+                    'TRAMITE_RECLAMO': 'Trámite de reclamo en curso',
+                    'PAGADO': 'PAGADO',
+                }
+            },
+            'tercero': {
+                'label': 'Tercero',
+                'nivel2': {
+                    'AP': 'AP- Acuerdo de pago formalizado',
+                    'PP': 'PP - Promesa de pago',
+                    'NC': 'NC -Negociación en curso / pendiente de validación',
+                    'RN': 'RN - Rechaza negociación',
+                    'ND': 'ND - Niega deuda',
+                    'REMITE_ABOGADO': 'Remite a abogado',
+                    'SOLICITA_INFO': 'Solicita más información',
+                    'SOLICITA_LLAMADA': 'Solicita llamada posterior',
+                    'NO_CAPACIDAD_PAGO': 'No tiene capacidad de pago',
+                    'TRAMITE_RECLAMO': 'Trámite de reclamo en curso',
+                    'PAGADO': 'PAGADO',
+                }
+            }
+        }
+    },
+    'contacto_no_efectivo': {
+        'label': 'Contacto No Efectivo',
+        'nivel1': {
+            'telefono_apagado': {
+                'label': 'Teléfono apagado / fuera de servicio',
+                'nivel2': {'MENSAJE_VOZ': 'Se deja mensaje de voz'}
+            },
+            'no_contesta': {
+                'label': 'No contesta',
+                'nivel2': {'MENSAJE_VOZ': 'Se deja mensaje de voz'}
+            },
+            'buzon_voz': {
+                'label': 'Buzón de voz',
+                'nivel2': {'MENSAJE_VOZ': 'Se deja mensaje de voz'}
+            }
+        }
+    },
+    'contacto_fallido': {
+        'label': 'Contacto Fallido',
+        'nivel1': {
+            'numero_equivocado': {'label': 'Número equivocado', 'nivel2': {'NA': 'N/A'}},
+            'numero_inexistente': {'label': 'Número inexistente', 'nivel2': {'NA': 'N/A'}}
+        }
+    }
+}
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
@@ -114,17 +185,66 @@ class Cliente(models.Model):
 
 
 class Gestion(models.Model):
+    # Opciones de canal de contacto
     CANAL_CONTACTO_CHOICES = [
-        ('telefono', 'Teléfono'),
         ('whatsapp', 'WhatsApp'),
+        ('telefono_in', 'Teléfono IN'),
+        ('telefono_out', 'Teléfono OUT'),
         ('email', 'Email'),
         ('sms', 'SMS')
     ]
+    
+    # Estados de contacto principales (Nivel 1)
+    CONTACTO_EFECTIVO = 'contacto_efectivo'
+    CONTACTO_NO_EFECTIVO = 'contacto_no_efectivo'
+    CONTACTO_FALLIDO = 'contacto_fallido'
+    
     ESTADO_CONTACTO_CHOICES = [
-        ('contactado', 'Contactado'),
-        ('no_contactado', 'No Contactado'),
-        ('numero_errado', 'Número Errado'),
+        (CONTACTO_EFECTIVO, 'Contacto Efectivo'),
+        (CONTACTO_NO_EFECTIVO, 'Contacto No Efectivo'),
+        (CONTACTO_FALLIDO, 'Contacto Fallido'),
     ]
+    
+    # Opciones nivel 1 para cada estado de contacto
+    TIPO_GESTION_N1_OPCIONES = {
+        CONTACTO_EFECTIVO: [
+            ('deudor', 'Deudor'),
+            ('tercero', 'Tercero')
+        ],
+        CONTACTO_NO_EFECTIVO: [
+            ('telefono_apagado', 'Teléfono apagado / fuera de servicio'),
+            ('no_contesta', 'No contesta'),
+            ('buzon_voz', 'Buzón de voz')
+        ],
+        CONTACTO_FALLIDO: [
+            ('numero_equivocado', 'Número equivocado'),
+            ('numero_inexistente', 'Número inexistente')
+        ]
+    }
+    
+    # Opciones nivel 2 para cada opción de nivel 1
+    TIPO_GESTION_N2_OPCIONES = {
+        'deudor': [
+            ('ap', 'AP - Acuerdo de pago formalizado'),
+            ('pp', 'PP - Promesa de pago'),
+            ('nc', 'NC - Negociación en curso / pendiente de validación'),
+            ('rn', 'RN - Rechaza negociación'),
+            ('nd', 'ND - Niega deuda'),
+            ('abogado', 'Remite a abogado'),
+            ('solicita_info', 'Solicita más información'),
+            ('solicita_llamada', 'Solicita llamada posterior'),
+            ('no_capacidad', 'No tiene capacidad de pago'),
+            ('reclamo', 'Trámite de reclamo en curso'),
+            ('pagado', 'PAGADO')
+        ],
+        'tercero': [
+            ('informacion', 'Brinda información'),
+            ('no_informacion', 'No brinda información')
+        ],
+        'buzon_voz': [
+            ('mensaje_voz', 'Se deja mensaje de voz')
+        ]
+    }
 
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='gestiones')
     usuario_gestion = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='gestiones_realizadas')

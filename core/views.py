@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.urls import reverse
+from .utils import enviar_correo_prueba
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django import forms
@@ -430,62 +431,214 @@ def seguimientos(request):
     
     return render(request, 'core/seguimientos.html', context)
 
+def api_opciones_gestion(request):
+    """Endpoint API que devuelve las opciones disponibles para los campos de gestión."""
+    # Permitir acceso sin autenticación para fines de prueba
+    # if not request.user.is_authenticated:
+    #     return JsonResponse({'error': 'No autorizado'}, status=401)
+    
+    # Agregar encabezados CORS para permitir solicitudes desde cualquier origen
+    response = JsonResponse({}) # Placeholder, se reemplazará más adelante
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+    response["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    
+    # Para solicitudes OPTIONS, devolver solo los encabezados CORS
+    if request.method == "OPTIONS":
+        return response
+    
+    nivel = request.GET.get('nivel', '1')
+    padre = request.GET.get('padre', '')
+    
+    # Definir las opciones para cada nivel
+    opciones = {
+        '1': [
+            {'valor': 'informacion', 'texto': 'Información'},
+            {'valor': 'acuerdo', 'texto': 'Acuerdo de Pago'},
+            {'valor': 'recordatorio', 'texto': 'Recordatorio'},
+            {'valor': 'otro', 'texto': 'Otro'}
+        ],
+        '2': {
+            'informacion': [
+                {'valor': 'datos_contacto', 'texto': 'Actualización de Datos'},
+                {'valor': 'estado_cuenta', 'texto': 'Estado de Cuenta'},
+                {'valor': 'productos', 'texto': 'Información de Productos'}
+            ],
+            'acuerdo': [
+                {'valor': 'pago_total', 'texto': 'Pago Total'},
+                {'valor': 'pago_parcial', 'texto': 'Pago Parcial'},
+                {'valor': 'refinanciacion', 'texto': 'Refinanciación'}
+            ],
+            'recordatorio': [
+                {'valor': 'vencimiento', 'texto': 'Vencimiento Próximo'},
+                {'valor': 'mora', 'texto': 'Cuenta en Mora'},
+                {'valor': 'compromiso', 'texto': 'Compromiso Previo'}
+            ],
+            'otro': [
+                {'valor': 'queja', 'texto': 'Queja o Reclamo'},
+                {'valor': 'solicitud', 'texto': 'Solicitud Especial'}
+            ]
+        },
+        '3': {
+            'datos_contacto': [
+                {'valor': 'telefono', 'texto': 'Teléfono'},
+                {'valor': 'direccion', 'texto': 'Dirección'},
+                {'valor': 'email', 'texto': 'Correo Electrónico'}
+            ],
+            'estado_cuenta': [
+                {'valor': 'saldo', 'texto': 'Saldo Actual'},
+                {'valor': 'movimientos', 'texto': 'Últimos Movimientos'}
+            ],
+            'pago_total': [
+                {'valor': 'descuento', 'texto': 'Con Descuento'},
+                {'valor': 'sin_descuento', 'texto': 'Sin Descuento'}
+            ],
+            'pago_parcial': [
+                {'valor': 'cuotas', 'texto': 'En Cuotas'},
+                {'valor': 'unico', 'texto': 'Pago Único'}
+            ],
+            # Más opciones para otros valores de nivel 2...
+        }
+    }
+    
+    # Determinar qué opciones devolver
+    resultado = []
+    if nivel == '1':
+        resultado = opciones['1']
+    elif nivel == '2' and padre in opciones['2']:
+        resultado = opciones['2'][padre]
+    elif nivel == '3' and padre in opciones['3']:
+        resultado = opciones['3'][padre]
+    
+    # Crear la respuesta con los datos y agregar encabezados CORS
+    response = JsonResponse({
+        'opciones': resultado,
+        'nivel': nivel,
+        'padre': padre
+    })
+    
+    # Agregar encabezados CORS
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+    response["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    
+    return response
+
+
 def api_seguimientos_proximos(request):
-    """Endpoint API que devuelve los seguimientos que están próximos a realizarse (5 minutos)."""
+    """Endpoint API que devuelve los seguimientos que están próximos a realizarse."""
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'No autorizado'}, status=401)
     
-    # Obtener la fecha y hora actual
-    ahora = timezone.now()
+    # Obtener la fecha y hora actual (asegurando que use la zona horaria de Bogotá)
+    ahora = timezone.localtime(timezone.now())
     hora_actual = ahora.time()
-    
-    # Calcular el límite de tiempo (5 minutos en el futuro)
-    limite_tiempo = (ahora + timezone.timedelta(minutes=5)).time()
-    
-    # Convertir la fecha actual a solo fecha (sin hora)
     fecha_actual = ahora.date()
     
-    # Filtrar seguimientos que:
-    # 1. Requieren seguimiento
-    # 2. La fecha de seguimiento es hoy
-    # 3. Están asignados al usuario actual
-    seguimientos_proximos = Gestion.objects.filter(
+    # Log para depuración de zona horaria
+    print(f"DEBUG: Zona horaria del servidor: {timezone.get_current_timezone()}")
+    print(f"DEBUG: Hora UTC: {timezone.now()}")
+    print(f"DEBUG: Hora local (Bogotá): {ahora}")
+    
+    # Crear una ventana de tiempo más amplia (30 minutos) para capturar seguimientos próximos
+    limite_tiempo = (ahora + timezone.timedelta(minutes=30)).time()
+    
+    # Para seguimientos sin hora específica, considerar todo el día
+    # También considerar seguimientos del día anterior que no se hayan completado
+    ayer = fecha_actual - timezone.timedelta(days=1)
+    
+    # Log de depuración
+    print(f"DEBUG: Buscando seguimientos próximos a las {ahora.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"DEBUG: Hora actual: {hora_actual}, Límite: {limite_tiempo}")
+    
+    # Filtrar seguimientos pendientes (de hoy o de ayer)
+    seguimientos_pendientes = Gestion.objects.filter(
         seguimiento_requerido=True,
-        fecha_proximo_seguimiento=fecha_actual,
-        usuario_gestion=request.user
+        fecha_proximo_seguimiento__in=[fecha_actual, ayer]
     )
     
-    # Filtrar por hora si está disponible
+    # Log de depuración para ver cuántos seguimientos pendientes hay en total
+    print(f"DEBUG: Total de seguimientos pendientes encontrados: {seguimientos_pendientes.count()}")
+    for seg in seguimientos_pendientes:
+        print(f"DEBUG: Seguimiento ID {seg.id}, Cliente: {seg.cliente.nombre_completo}, "  
+              f"Fecha: {seg.fecha_proximo_seguimiento}, Hora: {seg.hora_proximo_seguimiento or 'No especificada'}, "  
+              f"Usuario: {seg.usuario_gestion.username}")
+    
+    # Filtrar por usuario actual
+    seguimientos_usuario = seguimientos_pendientes.filter(usuario_gestion=request.user)
+    print(f"DEBUG: Seguimientos asignados al usuario actual: {seguimientos_usuario.count()}")
+    
+    # Filtrar por hora si está disponible o incluir todos si no tienen hora específica
     seguimientos_a_notificar = []
-    for seguimiento in seguimientos_proximos:
-        if seguimiento.hora_proximo_seguimiento:
-            # Si la hora del seguimiento está entre la hora actual y 5 minutos después
-            hora_seguimiento = seguimiento.hora_proximo_seguimiento
-            if hora_actual <= hora_seguimiento <= limite_tiempo:
-                seguimientos_a_notificar.append(seguimiento)
-        else:
-            # Si no tiene hora específica, incluirlo de todas formas
+    for seguimiento in seguimientos_usuario:
+        incluir = False
+        
+        # Si es de hoy
+        if seguimiento.fecha_proximo_seguimiento == fecha_actual:
+            if seguimiento.hora_proximo_seguimiento:
+                # Incluir si la hora está dentro de la ventana de 30 minutos
+                if hora_actual <= seguimiento.hora_proximo_seguimiento <= limite_tiempo:
+                    incluir = True
+                    print(f"DEBUG: Incluyendo seguimiento ID {seguimiento.id} - hora dentro de ventana")
+                # MODIFICACIÓN: Incluir también si la hora ya pasó (seguimientos pendientes de hoy)
+                elif hora_actual > seguimiento.hora_proximo_seguimiento:
+                    incluir = True
+                    print(f"DEBUG: Incluyendo seguimiento ID {seguimiento.id} - hora ya pasó hoy")
+            else:
+                # Si no tiene hora específica, incluirlo durante todo el día
+                incluir = True
+                print(f"DEBUG: Incluyendo seguimiento ID {seguimiento.id} - sin hora específica")
+        
+        # Si es de ayer y no se atendió
+        elif seguimiento.fecha_proximo_seguimiento == ayer:
+            # Incluir seguimientos de ayer que no se atendieron
+            incluir = True
+            print(f"DEBUG: Incluyendo seguimiento ID {seguimiento.id} - de ayer sin atender")
+        
+        if incluir:
             seguimientos_a_notificar.append(seguimiento)
     
     # Preparar la respuesta
     seguimientos_data = []
     for seguimiento in seguimientos_a_notificar:
         hora_texto = seguimiento.hora_proximo_seguimiento.strftime('%H:%M') if seguimiento.hora_proximo_seguimiento else 'No especificada'
+        fecha_texto = seguimiento.fecha_proximo_seguimiento.strftime('%d/%m/%Y')
+        
+        # Indicar si es un seguimiento atrasado
+        es_atrasado = seguimiento.fecha_proximo_seguimiento < fecha_actual
+        estado = "Atrasado" if es_atrasado else "Pendiente"
+        
         seguimientos_data.append({
             'id': seguimiento.id,
             'cliente_nombre': seguimiento.cliente.nombre_completo,
             'cliente_documento': seguimiento.cliente.documento,
-            'fecha_seguimiento': seguimiento.fecha_proximo_seguimiento.strftime('%d/%m/%Y'),
+            'fecha_seguimiento': fecha_texto,
             'hora_seguimiento': hora_texto,
             'observaciones': seguimiento.observaciones_generales or 'Sin observaciones',
-            'url': reverse('detalle_cliente', kwargs={'documento_cliente': seguimiento.cliente.documento})
+            'url': reverse('detalle_cliente', kwargs={'documento_cliente': seguimiento.cliente.documento}),
+            'estado': estado
         })
     
-    return JsonResponse({
+    print(f"DEBUG: Total de seguimientos a notificar: {len(seguimientos_data)}")
+    
+    # Crear la respuesta con los datos y agregar encabezados CORS
+    response = JsonResponse({
         'seguimientos': seguimientos_data,
         'total': len(seguimientos_data),
-        'timestamp': ahora.isoformat()
+        'timestamp': ahora.isoformat(),
+        'debug_info': {
+            'fecha_actual': fecha_actual.isoformat(),
+            'hora_actual': hora_actual.isoformat(),
+            'limite_tiempo': limite_tiempo.isoformat()
+        }
     })
+    
+    # Agregar encabezados CORS
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+    response["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    
+    return response
 
 @login_required
 @user_passes_test(es_admin)
@@ -931,5 +1084,74 @@ def registrar_nueva_gestion(request):
     }
     return render(request, 'core/registrar_nueva_gestion.html', context)
 
+@login_required
+@user_passes_test(es_admin)
+def enviar_email_prueba(request, documento_cliente):
+    """
+    Vista para enviar un correo electrónico de prueba al cliente.
+    """
+    # Obtener todos los clientes con ese documento y ordenarlos por ID descendente
+    clientes_mismo_documento = Cliente.objects.filter(documento=documento_cliente).order_by('-id')
+    
+    if not clientes_mismo_documento.exists():
+        raise Http404("Cliente no encontrado con el documento proporcionado.")
+    
+    # Tomar el cliente más reciente (el primero después de ordenar por -id)
+    cliente_representativo = clientes_mismo_documento.first()
+    
+    if not cliente_representativo.email:
+        messages.error(request, f'No se puede enviar correo porque el cliente {cliente_representativo.nombre_completo} no tiene una dirección de email registrada.')
+        return redirect('detalle_cliente', documento_cliente=documento_cliente)
+    
+    # Enviar el correo de prueba
+    resultado = enviar_correo_prueba(cliente_representativo.email, cliente_representativo.nombre_completo)
+    
+    if resultado:
+        messages.success(request, f'Correo de prueba enviado correctamente a {cliente_representativo.email}.')
+    else:
+        messages.error(request, f'Error al enviar el correo de prueba a {cliente_representativo.email}. Verifique la configuración SMTP.')
+    
+    return redirect('detalle_cliente', documento_cliente=documento_cliente)
+
 
 # REPORTES
+
+
+# Vistas AJAX para los desplegables dependientes
+def get_opciones_nivel1(request):
+    """
+    Vista AJAX que devuelve las opciones para el desplegable de nivel 1 según el estado de contacto seleccionado.
+    """
+    estado_contacto_id = request.GET.get('estado_contacto_id')
+    opciones_nivel1_data = {}
+    
+    # Importar aquí para evitar dependencias circulares
+    from .models import GESTION_OPCIONES
+    
+    if estado_contacto_id and estado_contacto_id in GESTION_OPCIONES:
+        opciones_nivel1_data = GESTION_OPCIONES[estado_contacto_id].get('nivel1', {})
+    
+    opciones_para_select = [{'value': key, 'label': data['label']} for key, data in opciones_nivel1_data.items()]
+    return JsonResponse(opciones_para_select, safe=False)
+
+
+def get_opciones_nivel2(request):
+    """
+    Vista AJAX que devuelve las opciones para el desplegable de nivel 2 según el estado de contacto 
+    y el tipo de gestión nivel 1 seleccionados.
+    """
+    estado_contacto_id = request.GET.get('estado_contacto_id')
+    tipo_gestion_n1_id = request.GET.get('tipo_gestion_n1_id')
+    opciones_nivel2_data = {}
+    
+    # Importar aquí para evitar dependencias circulares
+    from .models import GESTION_OPCIONES
+    
+    if estado_contacto_id and tipo_gestion_n1_id and \
+       estado_contacto_id in GESTION_OPCIONES and \
+       GESTION_OPCIONES[estado_contacto_id].get('nivel1') and \
+       tipo_gestion_n1_id in GESTION_OPCIONES[estado_contacto_id]['nivel1']:
+        opciones_nivel2_data = GESTION_OPCIONES[estado_contacto_id]['nivel1'][tipo_gestion_n1_id].get('nivel2', {})
+
+    opciones_para_select = [{'value': key, 'label': text} for key, text in opciones_nivel2_data.items()]
+    return JsonResponse(opciones_para_select, safe=False)
