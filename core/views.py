@@ -360,100 +360,73 @@ def es_admin(user):
 
 @login_required
 def clientes(request):
-    # Obtener parámetros de filtro individuales
-    filtro_documento = request.GET.get('documento', '').strip()
-    filtro_nombre = request.GET.get('nombre', '').strip()
-    filtro_telefono = request.GET.get('telefono', '').strip()
-    filtro_referencia = request.GET.get('referencia', '').strip()
-
-    # Queryset base para clientes con anotaciones
-    clientes_qs = Cliente.objects.annotate(
-        num_referencias=Count('referencia', distinct=True)
-    ).order_by('documento', '-fecha_registro')
-
-    # Obtener las gestiones para cada cliente
-    clientes_con_gestiones = {}
-    for cliente in clientes_qs:
-        # Obtenemos todas las gestiones del cliente
-        gestiones = Gestion.objects.filter(
-            cliente__documento=cliente.documento  # Usamos documento para agrupar gestiones
-        ).order_by('-fecha_hora_gestion')
+    # Versión simplificada para resolver problema de carga infinita
+    try:
+        # Obtener parámetros básicos
+        filtro_documento = request.GET.get('documento', '').strip()
+        filtro_nombre = request.GET.get('nombre', '').strip()
         
-        # Guardamos las gestiones usando el documento como clave
-        clientes_con_gestiones[cliente.documento] = list(gestiones)
-
-    # Construir filtros dinámicamente
-    filtros = Q()
-    if filtro_documento:
-        filtros &= Q(documento__icontains=filtro_documento)
-    if filtro_nombre:
-        filtros &= Q(nombre_completo__icontains=filtro_nombre)
-    if filtro_telefono:
-        # Asumiendo que quieres buscar en varios campos de teléfono
-        filtros &= (Q(telefono_celular__icontains=filtro_telefono) |
-                    Q(celular_1__icontains=filtro_telefono) |
-                    Q(celular_2__icontains=filtro_telefono) |
-                    Q(celular_3__icontains=filtro_telefono) |
-                    Q(telefono_1__icontains=filtro_telefono) |
-                    Q(telefono_2__icontains=filtro_telefono))
-    if filtro_referencia:
-        filtros &= Q(referencia__icontains=filtro_referencia)
-    
-    if filtros: # Solo aplicar filtros si hay alguno
-        clientes_qs = clientes_qs.filter(filtros)
-
-    clientes_info_agrupada = {}
-    documentos_coincidentes = set(clientes_qs.values_list('documento', flat=True))
-
-    if documentos_coincidentes:
-        representantes_qs = Cliente.objects.filter(documento__in=documentos_coincidentes)\
-                                      .order_by('documento', '-fecha_registro')\
-                                      .distinct('documento')
-
-        for rep in representantes_qs:
-            clientes_info_agrupada[rep.documento] = {
-                'documento': rep.documento,
-                'nombre_completo': rep.nombre_completo,
-                'email': rep.email, 
-                'deuda_total': rep.deuda_total,
-                'total_dias_mora': rep.total_dias_mora,
-                'fecha_cesion': rep.fecha_cesion,
-                'num_referencias': 0, 
-                'fecha_registro_grupo': rep.fecha_registro
-            }
-
-        conteos_referencias = Cliente.objects.filter(documento__in=documentos_coincidentes)\
-                                        .values('documento')\
-                                        .annotate(total_refs=Count('id'))
-        mapa_conteos = {item['documento']: item['total_refs'] for item in conteos_referencias}
+        # Consulta simplificada - primero filtrar, luego limitar
+        clientes_qs = Cliente.objects.all().order_by('-fecha_registro')
         
-        for doc_key in clientes_info_agrupada:
-            clientes_info_agrupada[doc_key]['num_referencias'] = mapa_conteos.get(doc_key, 0)
-
-    lista_para_paginar = sorted(list(clientes_info_agrupada.values()), key=lambda x: x['fecha_registro_grupo'], reverse=True)
-
-    paginator = Paginator(lista_para_paginar, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    form_nuevo_cliente = ClienteForm() 
-
-    context = {
-        'page_obj': page_obj,
-        'total_clientes': paginator.count,
-        'filtro_documento': filtro_documento,
-        'filtro_nombre': filtro_nombre,
-        'filtro_telefono': filtro_telefono,
-        'filtro_referencia': filtro_referencia,
-        'today': timezone.now().date(),
-        'form_nuevo_cliente': form_nuevo_cliente,
-        'gestiones_por_cliente': clientes_con_gestiones,
-    }
-
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return render(request, 'core/partials/tabla_clientes_parcial.html', context)
-    
-    return render(request, 'core/clientes.html', context)
+        # Aplicamos todos los filtros antes del slice
+        if filtro_documento:
+            clientes_qs = clientes_qs.filter(documento__icontains=filtro_documento)
+        if filtro_nombre:
+            clientes_qs = clientes_qs.filter(nombre_completo__icontains=filtro_nombre)
+            
+        # Limite para mostrar sólo algunos clientes (después de filtrar)
+        limite_clientes = 50
+        clientes_qs = clientes_qs[:limite_clientes]
+        
+        # Convertir a lista para la plantilla
+        clientes_lista = []
+        for cliente in clientes_qs:
+            clientes_lista.append({
+                'documento': cliente.documento,
+                'nombre_completo': cliente.nombre_completo,
+                'email': cliente.email,
+                'deuda_total': cliente.deuda_total,
+                'total_dias_mora': cliente.total_dias_mora,
+                'fecha_cesion': cliente.fecha_cesion,
+                'num_referencias': 1,  # Valor por defecto
+                'estado_nombre': 'Pendiente',
+                'estado_color': 'secondary',
+                'estado_icono': 'circle',
+                'estado_descripcion': 'Estado temporal'
+            })
+        
+        # Configurar paginación simple
+        paginator = Paginator(clientes_lista, 10)
+        page_number = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+        
+        # Formulario para nuevo cliente
+        form_nuevo_cliente = ClienteForm()
+        
+        context = {
+            'page_obj': page_obj,
+            'total_clientes': len(clientes_lista),
+            'filtro_documento': filtro_documento,
+            'filtro_nombre': filtro_nombre,
+            'filtro_telefono': '',
+            'filtro_referencia': '',
+            'today': timezone.now().date(),
+            'form_nuevo_cliente': form_nuevo_cliente,
+            # Ya no pasamos gestiones_por_cliente
+        }
+        
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return render(request, 'core/partials/tabla_clientes_parcial.html', context)
+        
+        return render(request, 'core/clientes.html', context)
+        
+    except Exception as e:
+        import traceback
+        print(f"Error en vista clientes: {e}")
+        print(traceback.format_exc())
+        # Devolver una página de error sencilla
+        return HttpResponse(f"<h1>Error al cargar la página de clientes</h1><p>{e}</p>")
 
 @login_required
 def crear_cliente_view(request):

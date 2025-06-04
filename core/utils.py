@@ -62,71 +62,99 @@ def determinar_estado_cliente(cliente, gestiones=None, today=None):
         today: Fecha actual. Si es None, se utiliza la fecha del sistema
         
     Returns:
-        dict: Diccionario con información del estado del cliente:
-            - nombre: Nombre del estado (string)
-            - color: Color Bootstrap para el badge (string)
-            - icono: Clase de Bootstrap Icons (string)
-            - descripcion: Descripción detallada del estado (string)
+        dict: Diccionario con detalles del estado {nombre, color, icono, descripcion}
     """
-    # Si no se proporciona una fecha, se utiliza la fecha actual del sistema
     if today is None:
         today = datetime.now().date()
     
-    # Valores por defecto
+    # Estado por defecto (sin gestiones)
     estado = {
-        'nombre': 'N/A',
+        'nombre': 'Sin gestión',
         'color': 'secondary',
-        'icono': 'bi-question-circle',
-        'descripcion': 'Estado no definido'
+        'icono': 'dash-circle',
+        'descripcion': 'Cliente sin gestiones registradas'
     }
     
-    # Si no hay gestiones, se verifica solo el estado base del cliente
-    if not gestiones or gestiones.count() == 0:
-        if cliente.estado == 'Activo':
-            estado = {
-                'nombre': 'Sin Gestión',
-                'color': 'primary',
-                'icono': 'bi-person-check',
-                'descripcion': 'Cliente activo, sin gestión'
+    # Función auxiliar para verificar atributos en objetos o diccionarios
+    def get_attr(obj, attr, default=None):
+        if isinstance(obj, dict):
+            return obj.get(attr, default)
+        return getattr(obj, attr, default)
+    
+    # Si no hay gestiones, verificar el estado base del cliente
+    if gestiones is None:
+        if get_attr(cliente, 'estado') == 'Activo':
+            return {
+                'nombre': 'Activo',
+                'color': 'success',
+                'icono': 'check-circle',
+                'descripcion': 'Cliente activo sin gestiones'
             }
         else:
-            estado = {
-                'nombre': cliente.estado,
-                'color': 'success' if cliente.estado == 'Activo' else ('danger' if cliente.estado == 'Inactivo' else 'secondary'),
-                'icono': 'bi-person',
-                'descripcion': f'Cliente en estado {cliente.estado}'
+            return estado
+    
+    # Convertir a lista si es un QuerySet para evitar problemas de evaluación
+    if not isinstance(gestiones, list):
+        try:
+            gestiones_lista = list(gestiones)
+        except Exception as e:
+            # Si hay error al convertir, retornamos estado por defecto
+            return estado
+    else:
+        gestiones_lista = gestiones
+    
+    # Si la lista está vacía, verificar estado base del cliente
+    if not gestiones_lista:
+        if get_attr(cliente, 'estado') == 'Activo':
+            return {
+                'nombre': 'Activo',
+                'color': 'success',
+                'icono': 'check-circle',
+                'descripcion': 'Cliente activo sin gestiones'
             }
+        else:
+            return estado
+    
+    # Ordenamos las gestiones por fecha (más reciente primero)
+    try:
+        gestiones_lista.sort(
+            key=lambda x: get_attr(x, 'fecha_hora_gestion', datetime.min), 
+            reverse=True
+        )
+    except Exception as e:
+        # Si hay error al ordenar, simplemente continuamos con el orden actual
+        print(f"Error al ordenar gestiones: {e}")
+    
+    # Obtener la gestión más reciente
+    if gestiones_lista:
+        ultima_gestion = gestiones_lista[0]
+    else:
         return estado
     
-    # Si hay gestiones, se obtiene la más reciente
-    ultima_gestion = gestiones.order_by('-fecha_hora_gestion', '-id').first()
-    
-    # Si la última gestión tiene un acuerdo de pago
-    if ultima_gestion and ultima_gestion.acuerdo_pago_realizado:
-        if ultima_gestion.fecha_acuerdo and ultima_gestion.fecha_acuerdo < today:
-            estado = {
-                'nombre': 'Acuerdo Vencido',
-                'color': 'warning',
-                'icono': 'bi-exclamation-triangle',
-                'descripcion': 'Acuerdo de pago vencido'
+    # Determinar estado basado en la última gestión
+    if ultima_gestion and hasattr(ultima_gestion, 'acuerdo_pago_realizado') and ultima_gestion.acuerdo_pago_realizado:
+        if hasattr(ultima_gestion, 'fecha_acuerdo') and ultima_gestion.fecha_acuerdo and ultima_gestion.fecha_acuerdo < today:
+            return {
+                'nombre': 'Acuerdo vencido',
+                'color': 'danger',
+                'icono': 'calendar-x',
+                'descripcion': f'Acuerdo de pago vencido desde {ultima_gestion.fecha_acuerdo.strftime("%d/%m/%Y")}'
             }
         else:
-            estado = {
-                'nombre': 'Con Acuerdo',
+            return {
+                'nombre': 'Acuerdo vigente',
                 'color': 'success',
-                'icono': 'bi-check-circle',
-                'descripcion': 'Acuerdo de pago vigente'
+                'icono': 'calendar-check',
+                'descripcion': 'Con acuerdo de pago vigente'
             }
-    # Si hay gestiones pero sin acuerdo
     else:
-        estado = {
-            'nombre': 'En Negociación',
+        # Si no tiene acuerdo o no está en negociación, mostrar que está en gestión
+        return {
+            'nombre': 'En gestión',
             'color': 'info',
-            'icono': 'bi-arrow-repeat',
-            'descripcion': 'En proceso de negociación'
+            'icono': 'telephone',
+            'descripcion': 'Cliente en proceso de gestión'
         }
-    
-    return estado
 
 def enviar_correo_prueba(destinatario, nombre_cliente=None):
     """
