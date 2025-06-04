@@ -173,7 +173,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const filtroForm = document.getElementById('filtroClientesForm');
-    const inputsFiltro = filtroForm.querySelectorAll('input[type="text"]');
+    const inputsFiltro = filtroForm.querySelectorAll('.filtro-input');
     const tablaWrapper = document.getElementById('tabla-clientes-wrapper');
     const baseUrl = "{% url 'clientes' %}";
 

@@ -112,7 +112,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             const html = await response.text();
             tablaWrapper.innerHTML = html;
-            agregarListenersPaginacion(); 
+            agregarListenersPaginacion();
+            
+            // Emitir evento para que los listeners de formularios se actualicen
+            document.dispatchEvent(new Event('tabla-actualizada'));
         } catch (error) {
             console.error('Error en la búsqueda AJAX:', error);
         }
@@ -154,6 +157,82 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     agregarListenersPaginacion();
+    
+    // Función para manejar marcado de seguimientos como completados
+    function manejarMarcarCompletado() {
+        const formsSeguimiento = document.querySelectorAll('.marcar-completado-form');
+        formsSeguimiento.forEach(form => {
+            form.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const filaActual = this.closest('tr');
+                
+                try {
+                    const response = await fetch(this.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': this.querySelector('input[name="csrfmiddlewaretoken"]').value
+                        },
+                        body: new FormData(this)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error en la solicitud: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Actualizar la interfaz: reemplazar el botón por el icono de completado
+                        const botonesContainer = this.closest('.btn-group');
+                        this.remove();
+                        
+                        const botonCompletado = document.createElement('button');
+                        botonCompletado.type = 'button';
+                        botonCompletado.className = 'btn btn-sm btn-outline-success';
+                        botonCompletado.disabled = true;
+                        botonCompletado.title = 'Seguimiento completado';
+                        botonCompletado.innerHTML = '<i class="bi bi-check2-all"></i>';
+                        
+                        botonesContainer.appendChild(botonCompletado);
+                        
+                        // También eliminar este seguimiento del contador localStorage si existe
+                        try {
+                            const contadorGuardado = localStorage.getItem('notificacionesSeguimiento');
+                            if (contadorGuardado) {
+                                const contador = JSON.parse(contadorGuardado);
+                                if (contador[data.seguimiento_id]) {
+                                    delete contador[data.seguimiento_id];
+                                    localStorage.setItem('notificacionesSeguimiento', JSON.stringify(contador));
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Error al actualizar contador en localStorage:', e);
+                        }
+                        
+                        // Mostrar mensaje de éxito temporal
+                        const mensaje = document.createElement('div');
+                        mensaje.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+                        mensaje.setAttribute('style', 'z-index: 1050;');
+                        mensaje.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i> ${data.message} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+                        document.body.appendChild(mensaje);
+                        
+                        // Eliminar automáticamente después de 3 segundos
+                        setTimeout(() => {
+                            mensaje.remove();
+                        }, 3000);
+                    }
+                } catch (error) {
+                    console.error('Error al marcar seguimiento como completado:', error);
+                    alert('Error al marcar el seguimiento como completado. Inténtelo de nuevo.');
+                }
+            });
+        });
+    }
+    
+    // Ejecutar inicialmente y después de cada actualización de la tabla
+    manejarMarcarCompletado();
+    document.addEventListener('tabla-actualizada', manejarMarcarCompletado, false);
 
     const btnLimpiar = document.querySelector('a[href="{% url 'seguimientos' %}"]');
     if (btnLimpiar) {

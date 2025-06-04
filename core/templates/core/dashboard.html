@@ -1,8 +1,70 @@
 {% extends 'core/base.html' %}
-{% load static %}
+{% load humanize %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.css">
+<style>
+    .card-metric {
+        border-left: 4px solid #04084C;
+        transition: transform 0.2s;
+        height: 100%;
+    }
+    .card-metric:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .card-metric .card-title {
+        color: #6c757d;
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    .card-metric .card-value {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: #04084C;
+        line-height: 1.2;
+    }
+    .card-metric .card-trend {
+        font-size: 0.8rem;
+    }
+    .trend-up {
+        color: #28a745;
+    }
+    .trend-down {
+        color: #dc3545;
+    }
+    .card-chart {
+        height: 100%;
+        min-height: 300px;
+    }
+    .fc .fc-toolbar-title {
+        font-size: 1.4rem;
+        color: #04084C;
+    }
+    .fc .fc-button {
+        background-color: #04084C;
+        border-color: #04084C;
+    }
+    .fc .fc-button:hover {
+        background-color: #14185C;
+        border-color: #14185C;
+    }
+    .table th {
+        background-color: #f8f9fa;
+        color: #04084C;
+        font-weight: 600;
+    }
+    .badge-mora {
+        background-color: #ffc107;
+        color: #000;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="px-0">
+<div class="py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mb-0">Panel de Control</h1>
         <div class="text-muted">
@@ -11,97 +73,131 @@
         </div>
     </div>
 
-    <!-- Tarjetas de Resumen -->
+    <!-- Estilo personalizado para columnas de 5 en pantallas grandes -->
+    <style>
+        @media (min-width: 1200px) {
+            .col-xl-2-4 {
+                flex: 0 0 auto;
+                width: 20%;
+                padding-right: 8px;
+                padding-left: 8px;
+            }
+        }
+        @media (max-width: 1399.98px) {
+            .card-metric .card-value {
+                font-size: 1.6rem;
+            }
+            .card-metric .card-title {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+    
+    <!-- Tarjetas de Métricas Principales -->
     <div class="row g-4 mb-4">
-        <!-- Tarjeta de Usuarios -->
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
+        <!-- Total de Clientes Únicos -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-2-4">
+            <div class="card card-metric h-100">
                 <div class="card-body">
+                    <h6 class="card-title">TOTAL CLIENTES</h6>
                     <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-2">Usuarios</h6>
-                            <h2 class="mb-0">{{ total_usuarios }}</h2>
-                        </div>
-                        <div class="icon-shape bg-primary bg-opacity-10 text-primary rounded-circle p-3">
-                            <i class="bi bi-people-fill fs-2"></i>
+                        <div class="card-value">{{ total_clientes|intcomma }}</div>
+                        <div class="bg-soft-primary rounded p-2">
+                            <i class="fas fa-users fa-2x text-primary"></i>
                         </div>
                     </div>
-                    <div class="mt-3">
-                        <span class="badge bg-success bg-opacity-10 text-success">
-                            <i class="bi bi-arrow-up"></i> {{ usuarios_activos }} activos
-                        </span>
-                        <span class="badge bg-danger bg-opacity-10 text-danger ms-2">
-                            {{ usuarios_inactivos }} inactivos
-                        </span>
+                    <div class="mt-2">
+                        <span class="text-success fw-bold">{{ clientes_activos|intcomma }} activos</span>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Tarjeta de Solicitudes -->
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
+        
+        <!-- Cantidad de Productos -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-2-4">
+            <div class="card card-metric h-100">
                 <div class="card-body">
+                    <h6 class="card-title">CANTIDAD DE PRODUCTOS</h6>
                     <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-2">Solicitudes</h6>
-                            <h2 class="mb-0">{{ total_solicitudes }}</h2>
-                        </div>
-                        <div class="icon-shape bg-warning bg-opacity-10 text-warning rounded-circle p-3">
-                            <i class="bi bi-file-earmark-text fs-2"></i>
+                        <div class="card-value">{{ total_productos|intcomma }}</div>
+                        <div class="bg-soft-info rounded p-2">
+                            <i class="fas fa-boxes fa-2x text-info"></i>
                         </div>
                     </div>
-                    <div class="mt-3">
-                        <span class="text-muted small">
-                            <i class="bi bi-arrow-up-right text-success"></i> {{ solicitudes_ultimo_mes }} en los últimos 30 días
-                        </span>
+                    <div class="mt-2">
+                        <span class="text-muted">Registros en cartera</span>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Tarjeta de Comprobantes -->
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
+        
+        <!-- Clientes con Acuerdo -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-2-4">
+            <div class="card card-metric h-100">
                 <div class="card-body">
+                    <h6 class="card-title">CLIENTES CON ACUERDO</h6>
                     <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-2">Comprobantes</h6>
-                            <h2 class="mb-0">{{ total_comprobantes }}</h2>
-                        </div>
-                        <div class="icon-shape bg-info bg-opacity-10 text-info rounded-circle p-3">
-                            <i class="bi bi-receipt fs-2"></i>
+                        <div class="card-value">{{ clientes_con_acuerdo|intcomma }}</div>
+                        <div class="bg-soft-success rounded p-2">
+                            <i class="fas fa-handshake fa-2x" style="color: #28a745;"></i>
                         </div>
                     </div>
-                    <div class="mt-3">
-                        <span class="text-muted small">
-                            <i class="bi bi-download"></i> {{ total_descargas }} descargas
-                        </span>
-                        <span class="text-muted small ms-2">
-                            <i class="bi bi-send"></i> {{ total_envios }} envíos
-                        </span>
+                    <div class="mt-2">
+                        <span class="text-muted">Últimos 30 días</span>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Tarjeta de Actividad -->
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
+        
+        <!-- Cartera Total -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-2-4">
+            <div class="card card-metric h-100">
                 <div class="card-body">
+                    <h6 class="card-title">CARTERA TOTAL</h6>
                     <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-2">Actividad</h6>
-                            <h2 class="mb-0">{{ total_descargas|add:total_envios }}</h2>
-                        </div>
-                        <div class="icon-shape bg-success bg-opacity-10 text-success rounded-circle p-3">
-                            <i class="bi bi-activity fs-2"></i>
+                        <div class="card-value">${{ cartera_total|intcomma }}</div>
+                        <div class="bg-soft-success rounded p-2">
+                            <i class="fas fa-wallet fa-2x text-success"></i>
                         </div>
                     </div>
-                    <div class="mt-3">
-                        <span class="badge bg-primary bg-opacity-10 text-primary">
-                            <i class="bi bi-arrow-repeat"></i> Actualizado ahora
-                        </span>
+                    <div class="mt-2">
+                        <span class="text-danger fw-bold">${{ cartera_vencida|intcomma }} vencida</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Total de Compromisos de Pago -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-2-4">
+            <div class="card card-metric h-100">
+                <div class="card-body">
+                    <h6 class="card-title">TOTAL COMPROMISOS</h6>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="card-value">${{ total_compromisos|intcomma }}</div>
+                        <div class="bg-soft-warning rounded p-2">
+                            <i class="fas fa-handshake fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-muted">Acuerdos de pago</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pagos del Mes -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-2-4">
+            <div class="card card-metric h-100">
+                <div class="card-body">
+                    <h6 class="card-title">PAGOS ESTE MES</h6>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="card-value">${{ pagos_este_mes|intcomma|default:"0" }}</div>
+                        <div class="bg-soft-purple rounded p-2">
+                            <i class="fas fa-money-bill-wave fa-2x" style="color: #9c27b0;"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-muted">Registrados en el sistema</span>
                     </div>
                 </div>
             </div>
@@ -110,164 +206,243 @@
 
     <!-- Gráficos -->
     <div class="row g-4 mb-4">
-<!-- Resumen de usuarios -->
-<div class="col-12 col-lg-6">
-    <div class="card border-0 shadow-sm h-100">
-        <div class="card-header bg-white border-0">
-            <h5 class="mb-0">Resumen de Usuarios</h5>
-            <p class="text-muted mb-0 small">Distribución de usuarios activos e inactivos</p>
-        </div>
-        <div class="card-body">
-            <div class="row align-items-center">
-                <div class="col-12 col-md-6">
-                    <div class="d-flex justify-content-center align-items-center" style="height:250px;">
-    <canvas id="graficoUsuariosResumen" width="160" height="160" style="max-width:160px;max-height:200px;"></canvas>
-</div>
-                </div>
-                <div class="col-12 col-md-6 mt-3 mt-md-0">
-                    <div class="d-flex align-items-center mb-3">
-                        <span class="badge bg-success bg-opacity-10 text-success p-2 rounded me-2">
-                            <i class="bi bi-circle-fill"></i>
-                        </span>
-                        <div class="flex-grow-1">
-                            <h6 class="mb-0">Activos</h6>
-                            <small class="text-muted">{{ usuarios_activos }} usuarios</small>
-                        </div>
-                        <span class="text-success fw-bold">{{ usuarios_activos|floatformat:0 }}%</span>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <span class="badge bg-danger bg-opacity-10 text-danger p-2 rounded me-2">
-                            <i class="bi bi-circle-fill"></i>
-                        </span>
-                        <div class="flex-grow-1">
-                            <h6 class="mb-0">Inactivos</h6>
-                            <small class="text-muted">{{ usuarios_inactivos }} usuarios</small>
-                        </div>
-                        <span class="text-danger fw-bold">{{ usuarios_inactivos|floatformat:0 }}%</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-    <!-- Últimas acciones -->
-    <div class="col-12 col-lg-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white border-0">
-                <h5 class="mb-0">Estadísticas Rápidas</h5>
-                <p class="text-muted mb-0 small">Resumen de la actividad del sistema</p>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-6">
-                        <div class="p-3 bg-light rounded-3 text-center">
-                            <i class="bi bi-file-earmark-text fs-1 text-primary"></i>
-                            <h4 class="mt-2 mb-0">{{ total_solicitudes }}</h4>
-                            <p class="text-muted small mb-0">Solicitudes totales</p>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="p-3 bg-light rounded-3 text-center">
-                            <i class="bi bi-download fs-1 text-success"></i>
-                            <h4 class="mt-2 mb-0">{{ total_descargas }}</h4>
-                            <p class="text-muted small mb-0">Descargas</p>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="p-3 bg-light rounded-3 text-center">
-                            <i class="bi bi-send fs-1 text-warning"></i>
-                            <h4 class="mt-2 mb-0">{{ total_envios }}</h4>
-                            <p class="text-muted small mb-0">Envíos</p>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="p-3 bg-light rounded-3 text-center">
-                            <i class="bi bi-people fs-1 text-info"></i>
-                            <h4 class="mt-2 mb-0">{{ usuarios_activos }}</h4>
-                            <p class="text-muted small mb-0">Usuarios activos</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-        
-    </div>
-
-    <!-- Otras secciones -->
-    
-        
-        <!-- Actividad reciente -->
-        <div class="col-12">
+        <!-- Resumen de Compromisos de Pago -->
+        <div class="col-12 col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0">
-                    <h5 class="mb-0">Actividad Reciente</h5>
-                    <p class="text-muted mb-0 small">Últimas acciones</p>
+                    <h5 class="mb-0">Estado de Compromisos de Pago</h5>
+                    <p class="text-muted mb-0 small">Distribución de compromisos vigentes y vencidos</p>
                 </div>
-                <div class="card-body p-0">
-    <div class="table-responsive rounded shadow-sm">
-        <table class="table table-bordered table-hover table-striped align-middle mb-0" style="vertical-align: top;">
-            <thead class="table-primary sticky-top shadow-sm">
-                <tr class="align-middle">
-                    <th class="text-center">Usuario</th>
-                    <th class="text-center">Acción</th>
-                    <th>Comprobante</th>
-                    <th class="text-center">Fecha/Hora</th>
-                    <th class="text-center">IP</th>
-
-                    <th>Detalles</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for actividad in actividad_reciente|slice:':10' %}
-                <tr>
-                    <td>
-                        <i class="bi bi-person-circle me-1"></i>
-                        {{ actividad.usuario.get_full_name|default:actividad.usuario.username }}
-                    </td>
-                    <td>
-                        <span class="badge {% if actividad.accion == 'descarga' %}bg-success{% else %}bg-info{% endif %}">
-                            {{ actividad.get_accion_display|title }}
-                        </span>
-                    </td>
-                    <td>{{ actividad.comprobante.mes_periodo }}</td>
-                    <td>
-                        <span class="d-block">{{ actividad.fecha|date:"d/m/Y H:i" }}</span>
-                        <small class="text-muted">({{ actividad.fecha|timesince }} atrás)</small>
-                        
-                    </td>
-                    <td>{{ actividad.ip|default:'-' }}</td>
-
-                    <td>
-                        {% if actividad.correo_destino %}
-                            <i class="bi bi-envelope"></i> {{ actividad.correo_destino }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="7" class="text-center py-4">
-                        <i class="bi bi-inbox text-muted fs-1"></i>
-                        <p class="text-muted mt-2 mb-0">No hay actividad reciente</p>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-12 col-md-6">
+                            <div class="d-flex justify-content-center align-items-center" style="height:250px;">
+                                <canvas id="graficoCompromisos" width="200" height="200" style="max-width:200px;max-height:200px;"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6 mt-3 mt-md-0">
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="badge bg-success bg-opacity-10 text-success p-2 rounded me-2">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </span>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">Vigentes</h6>
+                                    <small class="text-muted">{{ compromisos_vigentes }} compromisos</small>
+                                </div>
+                                <span class="text-success fw-bold">
+                                    {% if compromisos_data.datos.0 > 0 or compromisos_data.datos.1 > 0 %}
+                                        {{ compromisos_data.porcentajes.0 }}%
+                                    {% else %}0%{% endif %}
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-danger bg-opacity-10 text-danger p-2 rounded me-2">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                </span>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">Vencidos</h6>
+                                    <small class="text-muted">{{ compromisos_vencidos }} compromisos</small>
+                                </div>
+                                <span class="text-danger fw-bold">
+                                    {% if compromisos_data.datos.0 > 0 or compromisos_data.datos.1 > 0 %}
+                                        {{ compromisos_data.porcentajes.1 }}%
+                                    {% else %}0%{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
 {% endblock %}
 
-{{ meses|json_script:"meses-data" }}
-{{ solicitudes_por_mes|json_script:"solicitudes-data" }}
 {% block extra_js %}
+{{ meses|json_script:"meses-data" }}
+{{ distribucion_cartera_data|json_script:"distribucion-cartera-data" }}
+{{ compromisos_data|json_script:"compromisos-data" }}
+
+<script>
+    // Gráfico de distribución de cartera por estado
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gráfico de cartera
+        const ctxCartera = document.getElementById('carteraChart');
+        if (ctxCartera) {
+            const carteraData = JSON.parse(document.getElementById('distribucion-cartera-data').textContent);
+            
+            // Verificar si hay datos para mostrar
+            if (carteraData.labels && carteraData.labels.length > 0) {
+                new Chart(ctxCartera.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: carteraData.labels,
+                        datasets: [{
+                            data: carteraData.datos,
+                            backgroundColor: carteraData.colores,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 15,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                        return `${label}: $${value.toLocaleString('es-CL')} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Mostrar mensaje si no hay datos
+                ctxCartera.parentElement.innerHTML = `
+                    <div class="text-center p-4">
+                        <i class="bi bi-pie-chart fs-1 text-muted"></i>
+                        <p class="mt-2 mb-0">No hay datos disponibles para mostrar</p>
+                    </div>`;
+            }
+        }
+
+        // Gráfico de compromisos de pago
+        const ctxCompromisos = document.getElementById('graficoCompromisos');
+        if (ctxCompromisos) {
+            const compromisosData = JSON.parse(document.getElementById('compromisos-data').textContent);
+            
+            new Chart(ctxCompromisos.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: compromisosData.labels,
+                    datasets: [{
+                        data: compromisosData.datos,
+                        backgroundColor: compromisosData.colores,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '80%',
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 <script>
 // Configuración de la fecha actual
 document.addEventListener('DOMContentLoaded', function() {
+    // Función para configurar opciones comunes de gráficos
+    function getChartOptions() {
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                    titleFont: {
+                        size: 13,
+                        weight: '600'
+                    },
+                    bodyFont: {
+                        size: 12
+                    },
+                    padding: 10,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += '$' + context.parsed.y.toLocaleString();
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        drawBorder: false,
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        },
+                        font: {
+                            size: 11
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 11
+                        }
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            elements: {
+                line: {
+                    tension: 0.3
+                }
+            }
+        };
+    }
+
+    // Configuración de la fecha actual
     const options = { 
         weekday: 'long', 
         year: 'numeric', 
@@ -279,132 +454,95 @@ document.addEventListener('DOMContentLoaded', function() {
     if (fechaElement) {
         fechaElement.textContent = new Date().toLocaleDateString('es-ES', options);
     }
-
-    // Gráfico de actividad
-    const ctxActividad = document.getElementById('graficoActividad');
-    const mesesDataEl = document.getElementById('meses-data');
-    const solicitudesDataEl = document.getElementById('solicitudes-data');
-    if (ctxActividad && mesesDataEl && solicitudesDataEl) {
-        const meses = JSON.parse(mesesDataEl.textContent);
-        const solicitudes = JSON.parse(solicitudesDataEl.textContent);
-        
-        new Chart(ctxActividad, {
+    
+    // Inicializar gráfico de cobranza mensual
+    var ctxCobranza = document.getElementById('grafico-cobranza');
+    if (ctxCobranza) {
+        new Chart(ctxCobranza, {
             type: 'line',
             data: {
-                labels: meses,
+                labels: JSON.parse('{{ meses_cobranza|safe }}'),
                 datasets: [{
-                    label: 'Solicitudes',
-                    data: solicitudes,
-                    borderColor: '#4e73df',
-                    backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                    label: 'Cobranza Mensual',
+                    data: JSON.parse('{{ valores_cobranza|safe }}'),
+                    borderColor: '#04084C',
+                    backgroundColor: 'rgba(4, 8, 76, 0.1)',
                     tension: 0.3,
-                    fill: true
+                    fill: true,
+                    borderWidth: 2,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#04084C',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
                 }]
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            display: true,
-                            drawOnChartArea: true,
-                            drawTicks: false,
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        },
-                        ticks: {
-                            stepSize: 1
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                }
-            }
+            options: getChartOptions()
         });
     }
-
-    // Gráfico de usuarios
-    const ctxUsuarios = document.getElementById('graficoUsuarios');
-    if (ctxUsuarios) {
-        const activos = parseInt('{{ usuarios_activos|default:0 }}');
-        const inactivos = parseInt('{{ usuarios_inactivos|default:0 }}');
-        new Chart(ctxUsuarios, {
+    
+    // Inicializar gráfico de distribución de cartera
+    var ctxDistribucion = document.getElementById('grafico-distribucion');
+    if (ctxDistribucion) {
+        new Chart(ctxDistribucion, {
             type: 'doughnut',
             data: {
-                labels: ['Activos', 'Inactivos'],
+                labels: JSON.parse('{{ etiquetas_distribucion|safe }}'),
                 datasets: [{
-                    data: [activos, inactivos],
-                    backgroundColor: ['#1cc88a', '#e74a3b'],
-                    borderWidth: 0
+                    data: JSON.parse('{{ valores_distribucion|safe }}'),
+                    backgroundColor: [
+                        '#04084C', '#14185C', '#34387C', '#54589C', '#7478BC',
+                        '#BB2BA3', '#C54AB0', '#D371BE', '#E297CF', '#EAB8DE'
+                    ],
+                    borderWidth: 0,
+                    offset: 5
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 cutout: '70%',
+                radius: '90%',
                 plugins: {
                     legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-    }
-
-    // Gráfico de usuarios en resumen (si existe)
-    const ctxUsuariosResumen = document.getElementById('graficoUsuariosResumen');
-    if (ctxUsuariosResumen) {
-        const activosResumen = parseInt('{{ usuarios_activos|default:0 }}');
-        const inactivosResumen = parseInt('{{ usuarios_inactivos|default:0 }}');
-        new Chart(ctxUsuariosResumen, {
-            type: 'doughnut',
-            data: {
-                labels: ['Activos', 'Inactivos'],
-                datasets: [{
-                    data: [activosResumen, inactivosResumen],
-                    backgroundColor: ['#6ee7b7', '#fca5a5'], 
-                    borderColor: ['#10b981', '#ef4444'],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: false,
-                cutout: '78%',
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'bottom',
+                        position: 'right',
                         labels: {
                             boxWidth: 14,
-                            boxHeight: 14,
-                            padding: 12,
-                            font: { size: 13 }
+                            padding: 15,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            font: {
+                                size: 12
+                            }
                         }
                     },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                let label = context.label || '';
-                                let value = context.parsed || 0;
-                                let total = context.dataset.data.reduce((a,b)=>a+b,0);
-                                let percent = total ? Math.round((value/total)*100) : 0;
-                                return `${label}: ${value} (${percent}%)`;
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: $${value.toLocaleString()} (${percentage}%)`;
                             }
                         }
+                    },
+                    datalabels: {
+                        formatter: (value, ctx) => {
+                            const dataPoints = ctx.chart.data.datasets[0].data;
+                            const total = dataPoints.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return percentage > 5 ? `${percentage}%` : '';
+                        },
+                        color: '#fff',
+                        font: {
+                            weight: 'bold',
+                            size: 11
+                        }
                     }
-                },
-                layout: {
-                    padding: 10
-                },
-                hover: { mode: null }
-            }
+                }
+            },
+            plugins: [ChartDataLabels]
         });
     }
 });

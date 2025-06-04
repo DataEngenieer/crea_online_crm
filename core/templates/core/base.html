@@ -32,8 +32,11 @@
             <a href="{% url 'inicio' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/' or request.path == '/inicio/' %}active{% endif %}">
                 <i class="bi bi-house-door me-2"></i> Inicio
             </a>
+            <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/dashboard/' %}active{% endif %}">
+                <i class="bi bi-speedometer2 me-2"></i> Dashboard
+            </a>
             {% if request.user.is_superuser or request.user.groups.all.0.name == "Administrador" %}
-            <a href="{% url 'admin_usuarios' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/admin/usuarios/' %}active{% endif %}">
+            <a href="{% url 'admin_usuarios' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'admin_usuarios' %}active{% endif %}">
                 <i class="bi bi-people me-2"></i> Usuarios
             </a>
             <a href="{% url 'clientes' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/clientes/' %}active{% endif %}">
@@ -120,8 +123,17 @@
             let notificacionesPermitidas = false;
             let intervaloVerificacion = null;
             
-            // Contador para seguir cuántas veces se ha mostrado cada notificación
+            // Cargar el contador de notificaciones desde localStorage (o inicializar si no existe)
             let contadorNotificaciones = {};
+            try {
+                const contadorGuardado = localStorage.getItem('notificacionesSeguimiento');
+                if (contadorGuardado) {
+                    contadorNotificaciones = JSON.parse(contadorGuardado);
+                    console.log('Contador de notificaciones cargado:', contadorNotificaciones);
+                }
+            } catch (e) {
+                console.error('Error al cargar contador de notificaciones:', e);
+            }
             
             if ('Notification' in window) {
                 // Solicitar permiso para notificaciones del navegador
@@ -204,6 +216,13 @@
                                     // Incrementar contador y mostrar notificación
                                     contadorNotificaciones[seguimiento.id]++;
                                     mostrarToastNotificacion(seguimiento);
+                                    
+                                    // Guardar el contador actualizado en localStorage
+                                    try {
+                                        localStorage.setItem('notificacionesSeguimiento', JSON.stringify(contadorNotificaciones));
+                                    } catch (e) {
+                                        console.error('Error al guardar contador de notificaciones:', e);
+                                    }
                                     
                                     // Mostrar notificación del navegador si hay permisos
                                     if (notificacionesPermitidas && contadorNotificaciones[seguimiento.id] === 1) {

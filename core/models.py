@@ -1,4 +1,8 @@
 from django.db import models
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 
 ESTADO_CONTACTO_CHOICES = [
     ('contacto_efectivo', 'Contacto Efectivo'),
@@ -69,10 +73,7 @@ GESTION_OPCIONES = {
         }
     }
 }
-from django.conf import settings
-from django.contrib.auth.models import User
-from django.utils.translation import gettext_lazy as _
-from django.utils import timezone
+
 
 class LoginUser(models.Model):
     created_user = models.DateTimeField(auto_now_add=True)
@@ -264,6 +265,7 @@ class Gestion(models.Model):
     seguimiento_requerido = models.BooleanField(default=False, verbose_name="¿Requiere seguimiento?")
     fecha_proximo_seguimiento = models.DateField(blank=True, null=True, verbose_name="Fecha Próximo Seguimiento")
     hora_proximo_seguimiento = models.TimeField(blank=True, null=True, verbose_name="Hora Próximo Seguimiento")
+    seguimiento_completado = models.BooleanField(default=False, verbose_name="Seguimiento completado")
 
     observaciones_generales = models.TextField(blank=True, null=True, verbose_name="Observaciones Generales de la Gestión")
     

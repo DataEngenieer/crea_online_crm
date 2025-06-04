@@ -6,7 +6,8 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django import forms
 from django.contrib.auth.models import User, Group
-from django.db.models import Q, Count, Sum, Max, F
+from django.db.models import Q, Count, Sum, Max, F, Value, functions
+from django.db.models.functions import Concat
 from django.utils import timezone
 from django.http import HttpResponseForbidden, FileResponse, Http404
 from django.core.mail import EmailMessage
@@ -20,6 +21,7 @@ from functools import wraps
 from datetime import datetime, timedelta
 import os
 import re
+import json
 import pandas as pd
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
@@ -28,10 +30,8 @@ from django.core.paginator import Paginator
 from django.contrib.auth import get_user_model
 from decimal import Decimal
 from django.db import IntegrityError
-
 from .models import Cliente, User, LoginUser, Gestion
 from .forms import EmailAuthenticationForm, ClienteForm, GestionForm
-
 from django.contrib.auth.views import LoginView, LogoutView
 
 class LoginAuditoriaView(LoginView):
@@ -136,6 +136,221 @@ def registro_usuario(request):
     else:
         form = RegistroUsuarioForm()
     return render(request, 'core/registro.html', {'form': form})
+
+@login_required
+def dashboard(request):
+    from django.db.models import Sum, Count, Q, F
+    from datetime import datetime, timedelta
+    
+    # Obtener la fecha actual y el primer día del mes
+    hoy = timezone.now().date()
+    primer_dia_mes = hoy.replace(day=1)
+    
+    # 1. Métricas de Clientes
+    # Clientes únicos por documento
+    total_clientes_unicos = Cliente.objects.values('documento').distinct().count()
+    # Total de registros en el modelo Cliente (productos)
+    total_productos = Cliente.objects.count()
+    
+    # Clientes con acuerdo de pago activo (últimos 30 días o futuros)
+    fecha_limite = hoy - timedelta(days=30)
+    print(f"\n[DEBUG] Buscando acuerdos desde: {fecha_limite}")
+    
+    # Consulta alternativa usando subconsulta para evitar problemas de relaciones
+    from django.db.models import Exists, OuterRef
+    
+    # Primero, obtener los IDs de las gestiones con acuerdo reciente
+    gestiones_recientes = Gestion.objects.filter(
+        acuerdo_pago_realizado=True,
+        fecha_acuerdo__isnull=False,
+        fecha_acuerdo__gte=fecha_limite
+    ).values_list('cliente_id', flat=True).distinct()
+    
+    # Luego, contar clientes únicos con esas gestiones
+    clientes_con_acuerdo = Cliente.objects.filter(
+        id__in=gestiones_recientes
+    ).count()
+    
+    # Depuración detallada
+    print(f"[DEBUG] Número de clientes con acuerdo (método alternativo): {clientes_con_acuerdo}")
+    
+    # Información adicional para depuración
+    gestiones_ejemplo = Gestion.objects.filter(
+        acuerdo_pago_realizado=True,
+        fecha_acuerdo__isnull=False
+    ).select_related('cliente').order_by('-fecha_acuerdo')[:5]
+    
+    print("\n[DEBUG] Ejemplo de gestiones con acuerdo:")
+    for g in gestiones_ejemplo:
+        cliente_info = f"{g.cliente.nombre_completo} (ID: {g.cliente_id})" if g.cliente else "Sin cliente"
+        print(f"  - Gestión ID: {g.id}, Fecha: {g.fecha_acuerdo}, Cliente: {cliente_info}")
+    
+    # Si no hay acuerdos recientes, mostrar un mensaje de advertencia
+    if clientes_con_acuerdo == 0:
+        print("\n[ADVERTENCIA] No se encontraron clientes con acuerdos recientes.")
+        print("[ADVERTENCIA] Verificar que existan gestiones con 'acuerdo_pago_realizado=True' y 'fecha_acuerdo' válida.")
+    clientes_activos = Cliente.objects.filter(estado='activo').values('documento').distinct().count()
+    clientes_nuevos_este_mes = Cliente.objects.filter(
+        fecha_registro__month=hoy.month, 
+        fecha_registro__year=hoy.year
+    ).values('documento').distinct().count()
+    
+    # 2. Métricas de Cartera
+    cartera_total = Cliente.objects.aggregate(total=Sum('deuda_total'))['total'] or 0
+    cartera_vencida = Cliente.objects.filter(estado='en_mora').aggregate(total=Sum('deuda_total'))['total'] or 0
+    
+    # Calcular porcentaje de mora
+    porcentaje_mora = (cartera_vencida / cartera_total * 100) if cartera_total > 0 else 0
+    
+    # 3. Total de compromisos de pago
+    total_compromisos = Gestion.objects.filter(acuerdo_pago_realizado=True).count()
+    
+    # 4. Pagos del mes actual (solo cuando se registra un pago)
+    pagos_este_mes = Gestion.objects.filter(
+        acuerdo_pago_realizado=True,
+        fecha_pago_efectivo__isnull=False,  # Solo pagos registrados
+        fecha_pago_efectivo__month=hoy.month,
+        fecha_pago_efectivo__year=hoy.year
+    ).count()
+    
+    # 5. Estados de los compromisos de pago
+    # Usamos fecha_acuerdo + 30 días como fecha de vencimiento temporal
+    compromisos_vigentes = Gestion.objects.filter(
+        acuerdo_pago_realizado=True,
+        fecha_acuerdo__gte=hoy - timedelta(days=30),  # Compromisos de los últimos 30 días
+        fecha_pago_efectivo__isnull=True  # Que no tengan pago registrado
+    ).count()
+    
+    compromisos_vencidos = Gestion.objects.filter(
+        acuerdo_pago_realizado=True,
+        fecha_acuerdo__lt=hoy - timedelta(days=30),  # Compromisos con más de 30 días
+        fecha_pago_efectivo__isnull=True  # Que no tengan pago registrado
+    ).count()
+    
+    # Datos para el gráfico de compromisos
+    total_compromisos_grafico = compromisos_vigentes + compromisos_vencidos
+    porcentaje_vigentes = (compromisos_vigentes / total_compromisos_grafico * 100) if total_compromisos_grafico > 0 else 0
+    porcentaje_vencidos = (compromisos_vencidos / total_compromisos_grafico * 100) if total_compromisos_grafico > 0 else 0
+    
+    compromisos_data = {
+        'labels': ['Vigentes', 'Vencidos'],
+        'datos': [compromisos_vigentes, compromisos_vencidos],
+        'porcentajes': [round(porcentaje_vigentes, 1), round(porcentaje_vencidos, 1)],
+        'colores': ['#28a745', '#dc3545']
+    }
+    
+    # 5. Datos para el gráfico de distribución de cartera por estado
+    distribucion_cartera = Cliente.objects.values('estado').annotate(
+        total=Sum('deuda_total'),
+        cantidad=Count('id')
+    ).order_by('-total')
+    
+    # Preparar datos para el gráfico
+    etiquetas_distribucion = []
+    valores_distribucion = []
+    colores_grafico = []
+    cantidades = []
+    
+    # Definir colores para cada estado
+    colores = {
+        'activo': 'rgba(40, 167, 69, 0.8)',    # Verde
+        'en_mora': 'rgba(220, 53, 69, 0.8)',   # Rojo
+        'incobrable': 'rgba(108, 117, 125, 0.8)', # Gris
+        'pagado': 'rgba(23, 162, 184, 0.8)',    # Celeste
+        'juridico': 'rgba(111, 66, 193, 0.8)'   # Morado
+    }
+    
+    for item in distribucion_cartera:
+        if item['estado'] in colores and item['total'] is not None and float(item['total']) > 0:
+            etiquetas_distribucion.append(dict(Cliente.ESTADO_CHOICES).get(item['estado'], item['estado']))
+            valores_distribucion.append(float(item['total']))
+            colores_grafico.append(colores[item['estado']])
+            cantidades.append(item['cantidades'])
+    
+    # 6. Próximos Seguimientos (para el calendario)
+    proximos_seguimientos = Gestion.objects.filter(
+        fecha_proximo_seguimiento__gte=hoy
+    ).order_by('fecha_proximo_seguimiento', 'hora_proximo_seguimiento')[:10]
+    
+    # 7. Actividad Reciente
+    actividad_reciente = Gestion.objects.select_related('cliente', 'usuario_gestion').order_by('-fecha_hora_gestion')[:10]
+    
+    # 8. Datos para el gráfico de distribución de cartera
+    distribucion_cartera_data = {
+        'labels': etiquetas_distribucion,
+        'datos': valores_distribucion,
+        'colores': colores_grafico,
+        'cantidades': cantidades
+    }
+    
+    # 9. Resumen de Gestiones por Tipo
+    resumen_gestiones = Gestion.objects.values('tipo_gestion_n1').annotate(
+        total=Count('id')
+    ).order_by('-total')
+    
+    # 10. Próximos Vencimientos (para la tabla)
+    # Usamos fecha_act como aproximación para próximos vencimientos
+    proximos_vencimientos = Cliente.objects.filter(
+        fecha_act__gte=hoy,
+        fecha_act__lte=hoy + timedelta(days=7)
+    ).order_by('fecha_act')[:10]
+    
+    # 11. Datos para el gráfico de cobranza mensual (últimos 12 meses)
+    fecha_hace_12_meses = hoy - timedelta(days=365)
+    cobranza_mensual = Gestion.objects.filter(
+        acuerdo_pago_realizado=True,
+        fecha_acuerdo__gte=fecha_hace_12_meses
+    ).extra(
+        select={'mes': "to_char(fecha_acuerdo, 'YYYY-MM')"}
+    ).values('mes').annotate(
+        total=Sum('monto_acuerdo')
+    ).order_by('mes')
+    
+    # Preparar datos para el gráfico de cobranza
+    meses_cobranza = []
+    valores_cobranza = []
+    
+    for mes in range(12):
+        fecha = hoy.replace(day=1) - timedelta(days=30*mes)
+        mes_str = fecha.strftime('%Y-%m')
+        meses_cobranza.insert(0, fecha.strftime('%b %Y'))
+        
+        # Buscar si hay datos para este mes
+        monto = next((item['total'] for item in cobranza_mensual if item['mes'] == mes_str), 0)
+        valores_cobranza.insert(0, float(monto) if monto else 0)
+    
+    # Preparar el contexto para la plantilla
+    context = {
+        'hoy': hoy,
+        'primer_dia_mes': primer_dia_mes,
+        'hoy_str': hoy.strftime('%Y-%m-%d'),
+        'total_clientes': total_clientes_unicos,  # Clientes únicos por documento
+        'total_productos': total_productos,  # Total de registros en el modelo Cliente
+        'clientes_con_acuerdo': clientes_con_acuerdo,
+        'clientes_activos': clientes_activos,
+        'clientes_nuevos_este_mes': clientes_nuevos_este_mes,
+        'cartera_total': cartera_total,
+        'cartera_vencida': cartera_vencida,
+        'porcentaje_mora': porcentaje_mora,
+        'pagos_este_mes': pagos_este_mes,
+        'total_compromisos': total_compromisos,  # Total de compromisos de pago
+        'compromisos_vigentes': compromisos_vigentes,
+        'compromisos_vencidos': compromisos_vencidos,
+        'compromisos_data': compromisos_data,
+        'proximos_seguimientos': proximos_seguimientos,
+        'actividad_reciente': actividad_reciente,
+        'distribucion_cartera': distribucion_cartera_data,
+        'resumen_gestiones': resumen_gestiones,
+        'proximos_vencimientos': proximos_vencimientos,
+        'cobranza_mensual': list(cobranza_mensual),
+        'meses': [f"{mes['mes']}" for mes in cobranza_mensual],
+        'solicitudes_por_mes': [float(mes['total']) for mes in cobranza_mensual],
+        'usuarios_activos': User.objects.filter(is_active=True).count(),
+        'usuarios_inactivos': User.objects.filter(is_active=False).count(),
+    }
+    
+    return render(request, 'core/dashboard.html', context)
+
 def inicio(request):
     return render(request, 'core/inicio.html')
 
@@ -203,7 +418,7 @@ def clientes(request):
 
     lista_para_paginar = sorted(list(clientes_info_agrupada.values()), key=lambda x: x['fecha_registro_grupo'], reverse=True)
 
-    paginator = Paginator(lista_para_paginar, 15)
+    paginator = Paginator(lista_para_paginar, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -290,16 +505,62 @@ def agregar_gestion_cliente(request, documento_cliente):
 
 @login_required
 def lista_gestiones(request):
-    gestiones_list = Gestion.objects.select_related('cliente', 'usuario_gestion').all().order_by('-fecha_hora_gestion')
-    paginator = Paginator(gestiones_list, 25) # Mostrar 25 gestiones por página
+    # Obtener parámetros de filtro
+    cliente_filtro = request.GET.get('cliente', '')
+    asesor_filtro = request.GET.get('asesor', '')
+    tipo_gestion_filtro = request.GET.get('tipo_gestion', '')
+    estado_contacto_filtro = request.GET.get('estado_contacto', '')
+    
+    # Iniciar consulta base
+    gestiones_list = Gestion.objects.select_related('cliente', 'usuario_gestion').all()
+    
+    # Aplicar filtros si se proporcionan
+    if cliente_filtro:
+        gestiones_list = gestiones_list.filter(
+            Q(cliente__nombre_completo__icontains=cliente_filtro) | 
+            Q(cliente__documento__icontains=cliente_filtro)
+        )
+    
+    if asesor_filtro:
+        gestiones_list = gestiones_list.filter(usuario_gestion_id=asesor_filtro)
+    
+    if tipo_gestion_filtro:
+        gestiones_list = gestiones_list.filter(
+            Q(tipo_gestion_n1__icontains=tipo_gestion_filtro) | 
+            Q(tipo_gestion_n2__icontains=tipo_gestion_filtro) | 
+            Q(tipo_gestion_n3__icontains=tipo_gestion_filtro)
+        )
+    
+    if estado_contacto_filtro:
+        gestiones_list = gestiones_list.filter(estado_contacto=estado_contacto_filtro)
+    
+    # Ordenar por fecha descendente
+    gestiones_list = gestiones_list.order_by('-fecha_hora_gestion')
+    
+    # Paginación
+    paginator = Paginator(gestiones_list, 10) # Mostrar 10 gestiones por página
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
+    # Obtener todos los asesores para el filtro
+    User = get_user_model()
+    asesores = User.objects.filter(is_active=True).order_by('first_name')
+    
     context = {
         'page_obj': page_obj,
-        'titulo_pagina': 'Listado de Gestiones',
+        'cliente': cliente_filtro,
+        'asesor': asesor_filtro,
+        'tipo_gestion': tipo_gestion_filtro,
+        'estado_contacto': estado_contacto_filtro,
+        'asesores': asesores,
         'total_gestiones': gestiones_list.count()
     }
+    
+    # Si es una solicitud AJAX, renderizar solo la tabla parcial
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render(request, 'core/_tabla_gestiones_parcial.html', context)
+    
+    # De lo contrario, renderizar la página completa
     return render(request, 'core/lista_gestiones.html', context)
 
 @login_required
@@ -551,9 +812,10 @@ def api_seguimientos_proximos(request):
     print(f"DEBUG: Buscando seguimientos próximos a las {ahora.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"DEBUG: Hora actual: {hora_actual}, Límite: {limite_tiempo}")
     
-    # Filtrar seguimientos pendientes (de hoy o de ayer)
+    # Filtrar seguimientos pendientes (de hoy o de ayer) que no estén completados
     seguimientos_pendientes = Gestion.objects.filter(
         seguimiento_requerido=True,
+        seguimiento_completado=False,
         fecha_proximo_seguimiento__in=[fecha_actual, ayer]
     )
     
@@ -945,13 +1207,16 @@ def es_admin(user):
 def admin_usuarios(request):
     q = request.GET.get('q', '').strip()
     grupo_filtro = request.GET.get('grupo', '').strip()
-    usuarios = User.objects.all().order_by('username')
+    usuarios = User.objects.annotate(
+        fullname=Concat('first_name', Value(' '), 'last_name')
+    ).order_by('username')
     grupos = Group.objects.all().order_by('name')
 
     if q:
         usuarios = usuarios.filter(
             Q(username__icontains=q) |
-            Q(email__icontains=q)
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q)
         )
     if grupo_filtro:
         usuarios = usuarios.filter(groups__name__iexact=grupo_filtro)
@@ -1112,6 +1377,42 @@ def enviar_email_prueba(request, documento_cliente):
         messages.error(request, f'Error al enviar el correo de prueba a {cliente_representativo.email}. Verifique la configuración SMTP.')
     
     return redirect('detalle_cliente', documento_cliente=documento_cliente)
+
+@login_required
+def marcar_seguimiento_completado(request, seguimiento_id):
+    """
+    Marca un seguimiento como completado y redirige a la página anterior.
+    """
+    if request.method == 'POST':
+        try:
+            seguimiento = Gestion.objects.get(id=seguimiento_id, usuario_gestion=request.user)
+            seguimiento.seguimiento_completado = True
+            seguimiento.save()
+            
+            # Mensaje de éxito
+            messages.success(request, f'Seguimiento para {seguimiento.cliente.nombre_completo} marcado como completado.')
+            
+            # Limpiar la notificación del localStorage si se está usando la API JavaScript
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Seguimiento ID {seguimiento_id} marcado como completado',
+                    'seguimiento_id': seguimiento_id
+                })
+                
+        except Gestion.DoesNotExist:
+            messages.error(request, 'No se encontró el seguimiento solicitado o no tienes permiso para modificarlo.')
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'message': 'No se encontró el seguimiento solicitado o no tienes permiso para modificarlo.'
+                }, status=404)
+    
+    # Redirigir a la página de referencia o a la lista de seguimientos por defecto
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
+    return redirect('seguimientos')
 
 
 # REPORTES

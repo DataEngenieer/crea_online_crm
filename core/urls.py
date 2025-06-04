@@ -18,8 +18,8 @@ urlpatterns = [
     path('password_reset/done/', PasswordResetDoneView.as_view(template_name='core/password_reset_done.html'), name='password_reset_done'),
     path('reset/<uidb64>/<token>/', PasswordResetConfirmView.as_view(template_name='core/password_reset_confirm.html'), name='password_reset_confirm'),
     path('reset/done/', PasswordResetCompleteView.as_view(template_name='core/password_reset_complete.html'), name='password_reset_complete'),
-    path('', views.inicio, name='inicio'),
-    path('inicio/', views.inicio, name='inicio'),
+    path('', views.inicio, name='inicio'),  # Ruta principal ahora apunta al dashboard
+    path('dashboard/', views.dashboard, name='dashboard'),  # Mantener compatibilidad con la ruta antigua
     path('registro/', views.registro_usuario, name='registro'),
     path('usuario/<int:user_id>/', views.detalle_usuario, name='detalle_usuario'),
     path('clientes/', views.clientes, name='clientes'),
@@ -32,6 +32,7 @@ urlpatterns = [
     path('seguimientos/', views.seguimientos, name='seguimientos'),
     path('api/seguimientos/proximos/', views.api_seguimientos_proximos, name='api_seguimientos_proximos'),
     path('api/opciones-gestion/', views.api_opciones_gestion, name='api_opciones_gestion'),
+    path('seguimientos/<int:seguimiento_id>/completar/', views.marcar_seguimiento_completado, name='marcar_seguimiento_completado'),
     # Rutas AJAX para los desplegables dependientes
     path('ajax/get_opciones_nivel1/', views.get_opciones_nivel1, name='ajax_get_opciones_nivel1'),
     path('ajax/get_opciones_nivel2/', views.get_opciones_nivel2, name='ajax_get_opciones_nivel2'),

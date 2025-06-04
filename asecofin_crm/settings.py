@@ -31,7 +31,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'clave-secreta-por-defecto-cambiar-en-produ
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 #DEBUG = False
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,asecofin.up.railway.app').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,crea_online_crm.up.railway.app').split(',')
 
 # Configuración para entornos de producción
 if not DEBUG:

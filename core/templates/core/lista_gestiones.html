@@ -5,143 +5,134 @@
 {% block content %}
 <div class="px-0">
     <div class="d-flex justify-content-between align-items-center mb-4 page-title-header">
-        <h2 class="mb-0"><i class="bi bi-card-checklist me-2"></i>{{ titulo_pagina|default:'Listado de Gestiones' }} ({{ total_gestiones|intcomma }})</h2>
+        <h2 class="mb-0"><i class="bi bi-card-checklist me-2"></i>Histórico de Gestiones</h2>
         <div>
             {# Aquí podrían ir botones de acción como exportar, si se necesitan en el futuro #}
         </div>
     </div>
 
     <div class="card shadow-sm border-0 mb-3">
-        <div class="card-body">
-            {# Aquí podrían ir filtros en el futuro #}
-            <div class="table-responsive">
-                <table class="table table-hover table-sm align-middle" style="font-size: 0.85rem;">
-                    <thead class="table-header-crea sticky-top shadow-sm">
-                        <tr>
-                            <th>Fecha/Hora</th>
-                            <th>Cliente</th>
-                            <th>Documento</th>
-                            <th>Usuario Gestión</th>
-                            <th>Canal</th>
-                            <th>Estado Contacto</th>
-                            <th>Tipo Gestión</th>
-                            <th>Acuerdo</th>
-                            <th>Seguimiento</th>
-                            <th class="text-center">Ver</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for gestion in page_obj %}
-                        <tr>
-                            <td>{{ gestion.fecha_hora_gestion|date:"d M Y H:i" }}</td>
-                            <td>
-                                <a href="{% url 'detalle_cliente' gestion.cliente.documento %}#gestiones-tab" title="Ver detalle del cliente">
-                                    {{ gestion.cliente.nombre_completo|truncatechars:30 }}
-                                </a>
-                            </td>
-                            <td>{{ gestion.cliente.documento }}</td>
-                            <td>{{ gestion.usuario_gestion.get_full_name|default:gestion.usuario_gestion.username|default:"N/A" }}</td>
-                            <td>{{ gestion.get_canal_contacto_display }}</td>
-                            <td>
-                                <span class="badge bg-{% if gestion.estado_contacto == 'contactado' %}success{% elif gestion.estado_contacto == 'no_contactado' %}warning text-dark{% elif gestion.estado_contacto == 'numero_errado' %}danger{% else %}secondary{% endif %} rounded-pill">
-                                    {{ gestion.get_estado_contacto_display }}
-                                </span>
-                            </td>
-                            <td>
-                                {{ gestion.tipo_gestion_n1|default_if_none:'' }}
-                                {% if gestion.tipo_gestion_n2 %}<i class="bi bi-chevron-right"></i> {{ gestion.tipo_gestion_n2 }}{% endif %}
-                                {% if gestion.tipo_gestion_n3 %}<i class="bi bi-chevron-right"></i> {{ gestion.tipo_gestion_n3 }}{% endif %}
-                            </td>
-                            <td>
-                                {% if gestion.acuerdo_pago_realizado %}
-                                    <span class="text-success"><i class="bi bi-check-circle-fill"></i> Sí</span>
-                                    {% if gestion.monto_acuerdo %} (${{ gestion.monto_acuerdo|intcomma }}){% endif %}
-                                {% else %}
-                                    <span class="text-muted">No</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if gestion.seguimiento_requerido %}
-                                    <span class="text-info"><i class="bi bi-calendar-event-fill"></i> Sí</span> 
-                                    ({{ gestion.fecha_proximo_seguimiento|date:"d M Y"|default:"N/A" }})
-                                {% else %}
-                                    <span class="text-muted">No</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <a href="{% url 'detalle_cliente' gestion.cliente.documento %}#gestiones-tab" class="btn btn-outline-primary btn-sm" title="Ver gestión en detalle del cliente">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="10" class="text-center py-4">
-                                <i class="bi bi-info-circle fs-3 text-muted"></i><br>
-                                No hay gestiones registradas.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            {% if page_obj.has_other_pages %}
-            <nav aria-label="Paginación de gestiones" class="mt-3">
-                <ul class="pagination justify-content-center pagination-sm">
-                    {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page=1" aria-label="Primera">
-                                <span aria-hidden="true">&laquo;&laquo;</span>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Anterior">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">&laquo;&laquo;</span>
-                        </li>
-                        <li class="page-item disabled">
-                            <span class="page-link">&laquo;</span>
-                        </li>
-                    {% endif %}
-
-                    {% for num in page_obj.paginator.page_range %}
-                        {% if page_obj.number == num %}
-                            <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
-                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
-                        {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
-                            <li class="page-item disabled"><span class="page-link">...</span></li>
-                        {% endif %}
-                    {% endfor %}
-
-                    {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Siguiente">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Última">
-                                <span aria-hidden="true">&raquo;&raquo;</span>
-                            </a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">&raquo;</span>
-                        </li>
-                        <li class="page-item disabled">
-                            <span class="page-link">&raquo;&raquo;</span>
-                        </li>
-                    {% endif %}
-                </ul>
-            </nav>
-            {% endif %}
+        <div class="card-body py-3">
+            <form method="get" id="filtroGestionesForm" class="mb-0">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label for="cliente" class="form-label">Cliente</label>
+                        <input type="text" name="cliente" id="cliente" class="form-control filtro-input" value="{{ cliente }}" placeholder="Nombre o documento">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="asesor" class="form-label">Asesor</label>
+                        <select name="asesor" id="asesor" class="form-select filtro-input">
+                            <option value="">Todos los asesores</option>
+                            {% for user in asesores %}
+                                <option value="{{ user.id }}" {% if user.id|stringformat:"s" == asesor %}selected{% endif %}>{{ user.get_full_name|default:user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="tipo_gestion" class="form-label">Tipo de Gestión</label>
+                        <input type="text" name="tipo_gestion" id="tipo_gestion" class="form-control filtro-input" value="{{ tipo_gestion }}" placeholder="Tipo de gestión">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="estado_contacto" class="form-label">Estado de Contacto</label>
+                        <select name="estado_contacto" id="estado_contacto" class="form-select filtro-input">
+                            <option value="">Todos los estados</option>
+                            <option value="contactado" {% if estado_contacto == 'contactado' %}selected{% endif %}>Contactado</option>
+                            <option value="no_contactado" {% if estado_contacto == 'no_contactado' %}selected{% endif %}>No Contactado</option>
+                            <option value="numero_errado" {% if estado_contacto == 'numero_errado' %}selected{% endif %}>Número Errado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-12 d-flex justify-content-start">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                        <a href="{% url 'lista_gestiones' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                        </a>
+                    </div>
+                </div>
+            </form>
         </div>
+    </div>
+    <div id="tabla-gestiones-wrapper">
+        {% include 'core/_tabla_gestiones_parcial.html' %}
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filtroForm = document.getElementById('filtroGestionesForm');
+    const inputsFiltro = filtroForm.querySelectorAll('.filtro-input');
+    const tablaWrapper = document.getElementById('tabla-gestiones-wrapper');
+    const baseUrl = "{% url 'lista_gestiones' %}";
+
+    async function buscarGestiones(urlConParams) {
+        try {
+            const response = await fetch(urlConParams, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const html = await response.text();
+            tablaWrapper.innerHTML = html;
+            agregarListenersPaginacion(); 
+        } catch (error) {
+            console.error('Error en la búsqueda AJAX:', error);
+        }
+    }
+
+    function obtenerUrlConFiltrosActuales() {
+        const formData = new FormData(filtroForm);
+        const params = new URLSearchParams();
+        for (const [key, value] of formData.entries()) {
+            if (value) { 
+                params.append(key, value);
+            }
+        }
+        const queryString = params.toString();
+        return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+    }
+
+    inputsFiltro.forEach(function(input) {
+        input.addEventListener('change', function() {
+            const url = obtenerUrlConFiltrosActuales();
+            buscarGestiones(url);
+        });
+    });
+
+    filtroForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const url = obtenerUrlConFiltrosActuales();
+        buscarGestiones(url);
+    });
+
+    function agregarListenersPaginacion() {
+        const enlacesPaginacion = tablaWrapper.querySelectorAll('.ajax-link');
+        enlacesPaginacion.forEach(function(enlace) {
+            enlace.addEventListener('click', function(event) {
+                event.preventDefault();
+                buscarGestiones(this.href);
+            });
+        });
+    }
+
+    agregarListenersPaginacion();
+
+    var btnLimpiar = document.querySelector('a[href="{% url 'lista_gestiones' %}"]');
+    if (btnLimpiar) {
+        btnLimpiar.addEventListener('click', function(event) {
+            event.preventDefault();
+            filtroForm.reset();
+            buscarGestiones(baseUrl);
+        });
+    }
+});
+</script>
+{% endblock extra_js %}

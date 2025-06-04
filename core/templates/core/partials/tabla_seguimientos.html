@@ -58,9 +58,23 @@
                     </span>
                 </td>
                 <td class="text-center">
-                    <a href="{% url 'detalle_cliente' documento_cliente=seguimiento.cliente.documento %}" class="btn btn-sm btn-primary">
-                        <i class="bi bi-eye"></i>
-                    </a>
+                    <div class="btn-group">
+                        <a href="{% url 'detalle_cliente' documento_cliente=seguimiento.cliente.documento %}" class="btn btn-sm btn-primary" title="Ver detalle cliente">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        {% if not seguimiento.seguimiento_completado %}
+                        <form method="POST" action="{% url 'marcar_seguimiento_completado' seguimiento_id=seguimiento.id %}" class="d-inline marcar-completado-form">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-success" title="Marcar como completado">
+                                <i class="bi bi-check-lg"></i>
+                            </button>
+                        </form>
+                        {% else %}
+                        <button type="button" class="btn btn-sm btn-outline-success" disabled title="Seguimiento completado">
+                            <i class="bi bi-check2-all"></i>
+                        </button>
+                        {% endif %}
+                    </div>
                 </td>
             </tr>
             {% empty %}
