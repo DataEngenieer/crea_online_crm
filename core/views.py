@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
+from .utils import determinar_estado_cliente
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponse
@@ -1175,9 +1176,17 @@ def detalle_cliente(request, documento_cliente):
     # Obtener la fecha actual para comparaciones en la plantilla
     today = datetime.now().date()
     
+    # Determinar el estado del cliente usando la función de utilidad
+    estado_cliente = determinar_estado_cliente(
+        cliente=cliente_representativo,
+        gestiones=gestiones_del_cliente,
+        today=today
+    )
+    
     context = {
         'cliente_representativo': cliente_representativo,
-        'referencias_cliente': referencias_cliente_list, 
+        'referencias_cliente': referencias_cliente_list,
+        'estado_cliente': estado_cliente, 
         'documento_cliente': documento_cliente,
         'deuda_total_consolidada': deuda_total_consolidada,
         'productos_count': productos_count,

@@ -25,22 +25,8 @@
                     <i class="bi bi-geo-alt"></i> {{ cliente_representativo.ciudad|default:"N/A" }} &nbsp;|&nbsp;
                     <i class="bi bi-phone"></i> {{ cliente_representativo.celular_1|default:"N/A" }} &nbsp;
                     
-                    {% comment %}Lógica para determinar el estado de negociación{% endcomment %}
-                    {% with ultimo_acuerdo=gestiones_cliente|dictsortreversed:'fecha_hora_gestion'|first %}
-                        {% if ultimo_acuerdo and ultimo_acuerdo.acuerdo_pago_realizado %}
-                            {% if ultimo_acuerdo.fecha_acuerdo and ultimo_acuerdo.fecha_acuerdo < today %}
-                                <span class="badge bg-warning ms-2" title="Acuerdo de pago vencido"><i class="bi bi-exclamation-triangle me-1"></i>Acuerdo Vencido</span>
-                            {% else %}
-                                <span class="badge bg-success ms-2" title="Acuerdo de pago vigente"><i class="bi bi-check-circle me-1"></i>Con Acuerdo</span>
-                            {% endif %}
-                        {% elif gestiones_cliente %}
-                            <span class="badge bg-info ms-2" title="En proceso de negociación"><i class="bi bi-arrow-repeat me-1"></i>En Negociación</span>
-                        {% elif cliente_representativo.estado == 'Activo' %}
-                            <span class="badge bg-primary ms-2" title="Cliente activo, sin gestión"><i class="bi bi-person-check me-1"></i>Sin Gestión</span>
-                        {% else %}
-                            <span class="badge bg-{% if cliente_representativo.estado == 'Activo' %}success{% elif cliente_representativo.estado == 'Inactivo' %}danger{% else %}secondary{% endif %} ms-2">{{ cliente_representativo.estado|default:"N/A" }}</span>
-                        {% endif %}
-                    {% endwith %}
+                    {# Estado del cliente usando la función de utils.py #}
+                    <span class="badge bg-{{ estado_cliente.color }} ms-2" title="{{ estado_cliente.descripcion }}"><i class="bi {{ estado_cliente.icono }} me-1"></i>{{ estado_cliente.nombre }}</span>
                 </div>
             </div>
             <div class="mt-2 mt-md-0">
