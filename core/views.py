@@ -127,9 +127,9 @@ def registro_usuario(request):
         form = RegistroUsuarioForm(request.POST)
         if form.is_valid():
             user = form.save()
-            # Asignar al grupo 'empleado' automáticamente
+            # Asignar al grupo 'asesor' automáticamente
             from django.contrib.auth.models import Group
-            grupo, creado = Group.objects.get_or_create(name='colaborador')
+            grupo, creado = Group.objects.get_or_create(name='asesor')
             user.groups.add(grupo)
             messages.success(request, 'Registro exitoso. Ahora puedes iniciar sesión.')
             return redirect('login')
