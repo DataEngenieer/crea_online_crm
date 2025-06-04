@@ -7,9 +7,9 @@
 <div class="px-0">
 <nav aria-label="breadcrumb" class="mt-3">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'inicio' %}">Inicio</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'clientes' %}">Clientes</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'detalle_cliente' cliente.documento %}">{{ cliente.nombre_completo }}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'core:inicio' %}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'core:clientes' %}">Clientes</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'core:detalle_cliente' cliente.documento %}">{{ cliente.nombre_completo }}</a></li>
         <li class="breadcrumb-item active" aria-current="page">Agregar Gestión</li>
     </ol>
 </nav>
@@ -91,7 +91,7 @@
 
             <div class="mt-4">
                 <button type="submit" class="btn btn-primary">Guardar Gestión</button>
-                <a href="{% url 'detalle_cliente' cliente.documento %}" class="btn btn-secondary">Cancelar</a>
+                <a href="{% url 'core:detalle_cliente' cliente.documento %}" class="btn btn-secondary">Cancelar</a>
             </div>
         </div>
     </div>

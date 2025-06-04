@@ -7,10 +7,10 @@
     <div class="d-flex justify-content-between align-items-center mb-4 page-title-header">
         <h2 class="mb-0">Acuerdos de Pago</h2>
         <div>
-            <a href="{% url 'clientes' %}" class="btn btn-light me-2">
+            <a href="{% url 'core:clientes' %}" class="btn btn-light me-2">
                 <i class="bi bi-people"></i> Clientes
-            </a>
-            <a href="{% url 'seguimientos' %}" class="btn btn-info text-white">
+            </a>    
+            <a href="{% url 'core:seguimientos' %}" class="btn btn-info text-white">
                 <i class="bi bi-calendar-check"></i> Seguimientos
             </a>
         </div>
@@ -49,7 +49,7 @@
                         <button type="submit" class="btn btn-primary me-2">
                             <i class="bi bi-search"></i> Buscar
                         </button>
-                        <a href="{% url 'acuerdos_pago' %}" class="btn btn-secondary">
+                        <a href="{% url 'core:acuerdos_pago' %}" class="btn btn-secondary">
                             <i class="bi bi-x-circle"></i> Limpiar
                         </a>
                     </div>
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const filtroForm = document.getElementById('filtroAcuerdosForm');
     const inputsFiltro = document.querySelectorAll('.filtro-input');
     const tablaWrapper = document.getElementById('tablaAcuerdosWrapper');
-    const baseUrl = "{% url 'acuerdos_pago' %}";
+    const baseUrl = "{% url 'core:acuerdos_pago' %}";
 
     async function buscarAcuerdos(url) {
         try {
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     agregarListenersPaginacion();
 
-    const btnLimpiar = document.querySelector('a[href="{% url 'acuerdos_pago' %}"]');
+    const btnLimpiar = document.querySelector('a[href="{% url 'core:acuerdos_pago' %}"]');
     if (btnLimpiar) {
         btnLimpiar.addEventListener('click', (event) => {
             event.preventDefault();

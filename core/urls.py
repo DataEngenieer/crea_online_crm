@@ -1,4 +1,6 @@
 from django.urls import path
+
+app_name = 'core'  # Necesario para definir el namespace de la aplicación
 from . import views
 from django.contrib.auth.views import (
     LoginView, LogoutView, PasswordResetView, PasswordResetDoneView, PasswordResetConfirmView, PasswordResetCompleteView

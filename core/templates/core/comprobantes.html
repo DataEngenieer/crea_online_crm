@@ -69,17 +69,17 @@
                     <td class="text-center">{{ comprobante.fecha_comprobante|date:'d/m/Y' }}</td>
                     <td class="text-center">{{ comprobante.fecha_registro|date:'d/m/Y H:i' }}</td>
                     <td class="text-center">
-                        <a href="{% url 'descargar_comprobante' comprobante.id %}" class="btn btn-sm btn-outline-success me-1" title="Descargar PDF">
+                        <a href="{% url 'core:descargar_comprobante' comprobante.id %}" class="btn btn-sm btn-outline-success me-1" title="Descargar PDF">
                             <i class="bi bi-download"></i>
                         </a>
                         <button type="button" class="btn btn-sm btn-outline-primary" title="Enviar por correo" data-bs-toggle="modal" data-bs-target="#modalCorreo{{ comprobante.id }}">
-    <i class="bi bi-envelope"></i>
-</button>
+                            <i class="bi bi-envelope"></i>
+                        </button>
 <!-- Modal para enviar por correo -->
 <div class="modal fade" id="modalCorreo{{ comprobante.id }}" tabindex="-1" aria-labelledby="modalCorreoLabel{{ comprobante.id }}" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-      <form action="{% url 'enviar_comprobante' comprobante.id %}" method="post">
+      <form action="{% url 'core:enviar_comprobante' comprobante.id %}" method="post">
         {% csrf_token %}
         <div class="modal-header">
           <h5 class="modal-title" id="modalCorreoLabel{{ comprobante.id }}">Enviar comprobante por correo</h5>

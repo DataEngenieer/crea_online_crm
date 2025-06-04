@@ -17,7 +17,7 @@
             {% for acuerdo in page_obj %}
             <tr class="{% if acuerdo.fecha_acuerdo < today %}table-danger{% endif %}">
                 <td>
-                    <a href="{% url 'detalle_cliente' documento_cliente=acuerdo.cliente.documento %}" class="text-decoration-none">
+                    <a href="{% url 'core:detalle_cliente' documento_cliente=acuerdo.cliente.documento %}" class="text-decoration-none">
                         {{ acuerdo.cliente.nombre_completo|truncatechars:30 }}
                     </a>
                 </td>
@@ -42,7 +42,7 @@
                     </span>
                 </td>
                 <td class="text-center">
-                    <a href="{% url 'detalle_cliente' documento_cliente=acuerdo.cliente.documento %}" class="btn btn-sm btn-primary">
+                    <a href="{% url 'core:detalle_cliente' documento_cliente=acuerdo.cliente.documento %}" class="btn btn-sm btn-primary">
                         <i class="bi bi-eye"></i>
                     </a>
                 </td>

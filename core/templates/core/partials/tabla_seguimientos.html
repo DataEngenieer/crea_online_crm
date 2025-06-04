@@ -17,7 +17,7 @@
             {% for seguimiento in page_obj %}
             <tr class="{% if seguimiento.fecha_proximo_seguimiento < today %}table-danger{% elif seguimiento.fecha_proximo_seguimiento == today %}table-warning{% else %}table-success{% endif %}">
                 <td>
-                    <a href="{% url 'detalle_cliente' documento_cliente=seguimiento.cliente.documento %}" class="text-decoration-none">
+                    <a href="{% url 'core:detalle_cliente' documento_cliente=seguimiento.cliente.documento %}" class="text-decoration-none">
                         {{ seguimiento.cliente.nombre_completo|truncatechars:30 }}
                     </a>
                 </td>
@@ -59,11 +59,11 @@
                 </td>
                 <td class="text-center">
                     <div class="btn-group">
-                        <a href="{% url 'detalle_cliente' documento_cliente=seguimiento.cliente.documento %}" class="btn btn-sm btn-primary" title="Ver detalle cliente">
+                        <a href="{% url 'core:detalle_cliente' documento_cliente=seguimiento.cliente.documento %}" class="btn btn-sm btn-primary" title="Ver detalle cliente">
                             <i class="bi bi-eye"></i>
                         </a>
                         {% if not seguimiento.seguimiento_completado %}
-                        <form method="POST" action="{% url 'marcar_seguimiento_completado' seguimiento_id=seguimiento.id %}" class="d-inline marcar-completado-form">
+                        <form method="POST" action="{% url 'core:marcar_seguimiento_completado' seguimiento_id=seguimiento.id %}" class="d-inline marcar-completado-form">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-sm btn-success" title="Marcar como completado">
                                 <i class="bi bi-check-lg"></i>

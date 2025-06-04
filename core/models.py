@@ -14,62 +14,34 @@ GESTION_OPCIONES = {
     'contacto_efectivo': {
         'label': 'Contacto Efectivo',
         'nivel1': {
-            'deudor': {
-                'label': 'Deudor',
-                'nivel2': {
-                    'AP': 'AP- Acuerdo de pago formalizado',
-                    'PP': 'PP - Promesa de pago',
-                    'NC': 'NC -Negociación en curso / pendiente de validación',
-                    'RN': 'RN - Rechaza negociación',
-                    'ND': 'ND - Niega deuda',
-                    'REMITE_ABOGADO': 'Remite a abogado',
-                    'SOLICITA_INFO': 'Solicita más información',
-                    'SOLICITA_LLAMADA': 'Solicita llamada posterior',
-                    'NO_CAPACIDAD_PAGO': 'No tiene capacidad de pago',
-                    'TRAMITE_RECLAMO': 'Trámite de reclamo en curso',
-                    'PAGADO': 'PAGADO',
-                }
-            },
-            'tercero': {
-                'label': 'Tercero',
-                'nivel2': {
-                    'AP': 'AP- Acuerdo de pago formalizado',
-                    'PP': 'PP - Promesa de pago',
-                    'NC': 'NC -Negociación en curso / pendiente de validación',
-                    'RN': 'RN - Rechaza negociación',
-                    'ND': 'ND - Niega deuda',
-                    'REMITE_ABOGADO': 'Remite a abogado',
-                    'SOLICITA_INFO': 'Solicita más información',
-                    'SOLICITA_LLAMADA': 'Solicita llamada posterior',
-                    'NO_CAPACIDAD_PAGO': 'No tiene capacidad de pago',
-                    'TRAMITE_RECLAMO': 'Trámite de reclamo en curso',
-                    'PAGADO': 'PAGADO',
-                }
-            }
+            'AP': {'label': 'AP- Acuerdo de pago formalizado'},
+            'PP': {'label': 'PP - Promesa de pago'},
+            'NC': {'label': 'NC -Negociación en curso / pendiente de validación'},
+            'RN': {'label': 'RN - Rechaza negociación'},
+            'ND': {'label': 'ND - Niega deuda'},
+            'REMITE_ABOGADO': {'label': 'Remite a abogado'},
+            'SOLICITA_INFO': {'label': 'Solicita más información'},
+            'SOLICITA_LLAMADA': {'label': 'Solicita llamada posterior'},
+            'NO_CAPACIDAD_PAGO': {'label': 'No tiene capacidad de pago'},
+            'TRAMITE_RECLAMO': {'label': 'Trámite de reclamo en curso'},
+            'PAGADO': {'label': 'PAGADO'},
+            'TERCERO_INFORMACION': {'label': 'Tercero brinda información'},
+            'TERCERO_NO_INFORMACION': {'label': 'Tercero no brinda información'}
         }
     },
     'contacto_no_efectivo': {
         'label': 'Contacto No Efectivo',
         'nivel1': {
-            'telefono_apagado': {
-                'label': 'Teléfono apagado / fuera de servicio',
-                'nivel2': {'MENSAJE_VOZ': 'Se deja mensaje de voz'}
-            },
-            'no_contesta': {
-                'label': 'No contesta',
-                'nivel2': {'MENSAJE_VOZ': 'Se deja mensaje de voz'}
-            },
-            'buzon_voz': {
-                'label': 'Buzón de voz',
-                'nivel2': {'MENSAJE_VOZ': 'Se deja mensaje de voz'}
-            }
+            'TELEFONO_APAGADO': {'label': 'Teléfono apagado / fuera de servicio'},
+            'NO_CONTESTA': {'label': 'No contesta'},
+            'BUZON_VOZ': {'label': 'Buzón de voz'},
         }
     },
     'contacto_fallido': {
         'label': 'Contacto Fallido',
         'nivel1': {
-            'numero_equivocado': {'label': 'Número equivocado', 'nivel2': {'NA': 'N/A'}},
-            'numero_inexistente': {'label': 'Número inexistente', 'nivel2': {'NA': 'N/A'}}
+            'NUMERO_EQUIVOCADO': {'label': 'Número equivocado'},
+            'NUMERO_INEXISTENTE': {'label': 'Número inexistente'}
         }
     }
 }
@@ -208,8 +180,19 @@ class Gestion(models.Model):
     # Opciones nivel 1 para cada estado de contacto
     TIPO_GESTION_N1_OPCIONES = {
         CONTACTO_EFECTIVO: [
-            ('deudor', 'Deudor'),
-            ('tercero', 'Tercero')
+            ('ap', 'AP - Acuerdo de pago formalizado'),
+            ('pp', 'PP - Promesa de pago'),
+            ('nc', 'NC - Negociación en curso / pendiente de validación'),
+            ('rn', 'RN - Rechaza negociación'),
+            ('nd', 'ND - Niega deuda'),
+            ('abogado', 'Remite a abogado'),
+            ('solicita_info', 'Solicita más información'),
+            ('solicita_llamada', 'Solicita llamada posterior'),
+            ('no_capacidad', 'No tiene capacidad de pago'),
+            ('reclamo', 'Trámite de reclamo en curso'),
+            ('pagado', 'PAGADO'),
+            ('tercero_informacion', 'Tercero brinda información'),
+            ('tercero_no_informacion', 'Tercero no brinda información')
         ],
         CONTACTO_NO_EFECTIVO: [
             ('telefono_apagado', 'Teléfono apagado / fuera de servicio'),
@@ -222,29 +205,6 @@ class Gestion(models.Model):
         ]
     }
     
-    # Opciones nivel 2 para cada opción de nivel 1
-    TIPO_GESTION_N2_OPCIONES = {
-        'deudor': [
-            ('ap', 'AP - Acuerdo de pago formalizado'),
-            ('pp', 'PP - Promesa de pago'),
-            ('nc', 'NC - Negociación en curso / pendiente de validación'),
-            ('rn', 'RN - Rechaza negociación'),
-            ('nd', 'ND - Niega deuda'),
-            ('abogado', 'Remite a abogado'),
-            ('solicita_info', 'Solicita más información'),
-            ('solicita_llamada', 'Solicita llamada posterior'),
-            ('no_capacidad', 'No tiene capacidad de pago'),
-            ('reclamo', 'Trámite de reclamo en curso'),
-            ('pagado', 'PAGADO')
-        ],
-        'tercero': [
-            ('informacion', 'Brinda información'),
-            ('no_informacion', 'No brinda información')
-        ],
-        'buzon_voz': [
-            ('mensaje_voz', 'Se deja mensaje de voz')
-        ]
-    }
 
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='gestiones')
     usuario_gestion = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='gestiones_realizadas')
@@ -254,8 +214,6 @@ class Gestion(models.Model):
     estado_contacto = models.CharField(max_length=50, choices=ESTADO_CONTACTO_CHOICES)
 
     tipo_gestion_n1 = models.CharField(max_length=100, blank=True, null=True, verbose_name="Tipo de Gestión (Nivel 1)")
-    tipo_gestion_n2 = models.CharField(max_length=100, blank=True, null=True, verbose_name="Tipo de Gestión (Nivel 2)")
-    tipo_gestion_n3 = models.CharField(max_length=100, blank=True, null=True, verbose_name="Tipo de Gestión (Nivel 3)")
 
     acuerdo_pago_realizado = models.BooleanField(default=False, verbose_name="¿Se realizó acuerdo de pago?")
     fecha_acuerdo = models.DateField(blank=True, null=True, verbose_name="Fecha de Acuerdo")

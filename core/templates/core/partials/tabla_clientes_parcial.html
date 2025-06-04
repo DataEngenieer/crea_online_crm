@@ -44,7 +44,7 @@
                 </td>
                 <td class="text-center">{{ grupo_cliente.num_referencias }}</td>
                 <td class="text-center">
-                    <a href="{% url 'detalle_cliente' grupo_cliente.documento %}" class="btn btn-sm btn-outline-primary" title="Ver detalle del cliente {{ grupo_cliente.documento }}"><i class="bi bi-eye"></i></a>
+                    <a href="{% url 'core:detalle_cliente' grupo_cliente.documento %}" class="btn btn-sm btn-outline-primary" title="Ver detalle del cliente {{ grupo_cliente.documento }}"><i class="bi bi-eye"></i></a>
                 </td>
             </tr>
         {% empty %}

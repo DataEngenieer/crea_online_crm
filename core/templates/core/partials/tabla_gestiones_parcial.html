@@ -21,7 +21,7 @@
             <tr>
                 <td>{{ gestion.fecha_hora_gestion|date:"d M Y H:i" }}</td>
                 <td>
-                    <a href="{% url 'detalle_cliente' gestion.cliente.documento %}#gestiones-tab" title="Ver detalle del cliente">
+                    <a href="{% url 'core:detalle_cliente' gestion.cliente.documento %}#gestiones-tab" title="Ver detalle del cliente">
                         {{ gestion.cliente.nombre_completo|truncatechars:30 }}
                     </a>
                 </td>
@@ -55,7 +55,7 @@
                     {% endif %}
                 </td>
                 <td class="text-center">
-                    <a href="{% url 'detalle_cliente' gestion.cliente.documento %}#gestiones-tab" class="btn btn-outline-primary btn-sm" title="Ver gestión en detalle del cliente">
+                    <a href="{% url 'core:detalle_cliente' gestion.cliente.documento %}#gestiones-tab" class="btn btn-outline-primary btn-sm" title="Ver gestión en detalle del cliente">
                         <i class="bi bi-eye"></i>
                     </a>
                 </td>

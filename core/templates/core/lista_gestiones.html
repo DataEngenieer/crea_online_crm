@@ -47,7 +47,7 @@
                         <button type="submit" class="btn btn-primary me-2">
                             <i class="bi bi-search"></i> Buscar
                         </button>
-                        <a href="{% url 'lista_gestiones' %}" class="btn btn-outline-secondary">
+                        <a href="{% url 'core:lista_gestiones' %}" class="btn btn-outline-secondary">
                             <i class="bi bi-arrow-counterclockwise"></i> Limpiar
                         </a>
                     </div>
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const filtroForm = document.getElementById('filtroGestionesForm');
     const inputsFiltro = filtroForm.querySelectorAll('.filtro-input');
     const tablaWrapper = document.getElementById('tabla-gestiones-wrapper');
-    const baseUrl = "{% url 'lista_gestiones' %}";
+    const baseUrl = "{% url 'core:lista_gestiones' %}";
 
     async function buscarGestiones(urlConParams) {
         try {
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     agregarListenersPaginacion();
 
-    var btnLimpiar = document.querySelector('a[href="{% url 'lista_gestiones' %}"]');
+    var btnLimpiar = document.querySelector('a[href="{% url 'core:lista_gestiones' %}"]');
     if (btnLimpiar) {
         btnLimpiar.addEventListener('click', function(event) {
             event.preventDefault();

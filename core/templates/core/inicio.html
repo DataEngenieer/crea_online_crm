@@ -19,7 +19,7 @@
                 </div>
                 <h5 class="fw-bold">Mi Perfil</h5>
                 <p>Actualiza tu información personal y preferencias de usuario.</p>
-                <a href="{% url 'perfil' %}" class="btn btn-primary w-75 card-btn-effect mx-auto mt-auto">
+                <a href="{% url 'core:perfil' %}" class="btn btn-primary w-75 card-btn-effect mx-auto mt-auto">
                     <i class="bi bi-person-check"></i> Ver Perfil
                 </a>
             </div>
@@ -36,7 +36,7 @@
                 </div>
                 <h5 class="fw-bold">Usuarios</h5>
                 <p>Administra los usuarios del sistema, asigna roles y permisos.</p>
-                <a href="{% url 'admin_usuarios' %}" class="btn btn-primary w-75 card-btn-effect mx-auto mt-auto">
+                <a href="{% url 'core:admin_usuarios' %}" class="btn btn-primary w-75 card-btn-effect mx-auto mt-auto">
                     <i class="bi bi-people"></i> Gestionar Usuarios
                 </a>
             </div>
@@ -52,7 +52,7 @@
                 </div>
                 <h5 class="fw-bold">Clientes</h5>
                 <p>Gestiona la cartera de clientes, consulta información y detalles.</p>
-                <a href="{% url 'clientes' %}" class="btn btn-primary w-75 card-btn-effect mx-auto mt-auto">
+                <a href="{% url 'core:clientes' %}" class="btn btn-primary w-75 card-btn-effect mx-auto mt-auto">
                     <i class="bi bi-person-vcard"></i> Ver Clientes
                 </a>
             </div>
@@ -68,7 +68,7 @@
                 </div>
                 <h5 class="fw-bold">Historial Gestiones</h5>
                 <p>Consulta el histórico de gestiones realizadas con los clientes.</p>
-                <a href="{% url 'lista_gestiones' %}" class="btn btn-primary w-75 card-btn-effect mx-auto mt-auto">
+                <a href="{% url 'core:lista_gestiones' %}" class="btn btn-primary w-75 card-btn-effect mx-auto mt-auto">
                     <i class="bi bi-card-checklist"></i> Ver Historial
                 </a>
             </div>
@@ -84,7 +84,7 @@
                 </div>
                 <h5 class="fw-bold">Acuerdos de Pago</h5>
                 <p>Administra los acuerdos de pago establecidos con los clientes.</p>
-                <a href="{% url 'acuerdos_pago' %}" class="btn btn-primary w-75 card-btn-effect mx-auto mt-auto">
+                <a href="{% url 'core:acuerdos_pago' %}" class="btn btn-primary w-75 card-btn-effect mx-auto mt-auto">
                     <i class="bi bi-cash-coin"></i> Ver Acuerdos
                 </a>
             </div>
@@ -100,7 +100,7 @@
                 </div>
                 <h5 class="fw-bold">Seguimientos</h5>
                 <p>Gestiona y programa los seguimientos pendientes con clientes.</p>
-                <a href="{% url 'seguimientos' %}" class="btn btn-primary w-75 card-btn-effect mx-auto mt-auto">
+                <a href="{% url 'core:seguimientos' %}" class="btn btn-primary w-75 card-btn-effect mx-auto mt-auto">
                     <i class="bi bi-calendar-check"></i> Ver Seguimientos
                 </a>
             </div>

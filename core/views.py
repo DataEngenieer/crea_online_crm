@@ -906,7 +906,7 @@ def api_seguimientos_proximos(request):
             'fecha_seguimiento': fecha_texto,
             'hora_seguimiento': hora_texto,
             'observaciones': seguimiento.observaciones_generales or 'Sin observaciones',
-            'url': reverse('detalle_cliente', kwargs={'documento_cliente': seguimiento.cliente.documento}),
+            'url': reverse('core:detalle_cliente', kwargs={'documento_cliente': seguimiento.cliente.documento}),
             'estado': estado
         })
     
@@ -1349,7 +1349,7 @@ def registrar_nueva_gestion(request):
                 gestion.save()
                 messages.success(request, f"Gestión guardada para {cliente_para_gestion.nombre_completo}.")
                 request.session.pop('cliente_encontrado_id', None)
-                return redirect('registrar_nueva_gestion')
+                return redirect('core:registrar_nueva_gestion')
             else:
                 # Si el form de gestión no es válido, necesitamos repopular el cliente_encontrado
                 # para que la plantilla muestre la sección de registrar gestión.
@@ -1376,7 +1376,7 @@ def registrar_nueva_gestion(request):
         'cliente_encontrado': cliente_encontrado,
         'titulo_pagina': "Registrar Nueva Gestión"
     }
-    return render(request, 'core/registrar_nueva_gestion.html', context)
+    return render(request, 'core/detalle_cliente.html', context)
 
 @login_required
 @user_passes_test(es_admin)
@@ -1467,21 +1467,17 @@ def get_opciones_nivel1(request):
 
 def get_opciones_nivel2(request):
     """
-    Vista AJAX que devuelve las opciones para el desplegable de nivel 2 según el estado de contacto 
-    y el tipo de gestión nivel 1 seleccionados.
+    Vista AJAX que devuelve las opciones para el desplegable de tipo de gestión según el estado de contacto.
+    Con la nueva estructura simplificada, devuelve directamente las opciones del nivel 1.
     """
     estado_contacto_id = request.GET.get('estado_contacto_id')
-    tipo_gestion_n1_id = request.GET.get('tipo_gestion_n1_id')
-    opciones_nivel2_data = {}
+    opciones_nivel1_data = {}
     
     # Importar aquí para evitar dependencias circulares
     from .models import GESTION_OPCIONES
     
-    if estado_contacto_id and tipo_gestion_n1_id and \
-       estado_contacto_id in GESTION_OPCIONES and \
-       GESTION_OPCIONES[estado_contacto_id].get('nivel1') and \
-       tipo_gestion_n1_id in GESTION_OPCIONES[estado_contacto_id]['nivel1']:
-        opciones_nivel2_data = GESTION_OPCIONES[estado_contacto_id]['nivel1'][tipo_gestion_n1_id].get('nivel2', {})
+    if estado_contacto_id and estado_contacto_id in GESTION_OPCIONES:
+        opciones_nivel1_data = GESTION_OPCIONES[estado_contacto_id].get('nivel1', {})
 
-    opciones_para_select = [{'value': key, 'label': text} for key, text in opciones_nivel2_data.items()]
+    opciones_para_select = [{'value': key, 'label': data['label']} for key, data in opciones_nivel1_data.items()]
     return JsonResponse(opciones_para_select, safe=False)

@@ -29,37 +29,37 @@
         </div>
 
         <div class="list-group list-group-flush flex-grow-1">
-            <a href="{% url 'inicio' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/' or request.path == '/inicio/' %}active{% endif %}">
+            <a href="{% url 'core:inicio' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/' or request.path == '/inicio/' %}active{% endif %}">
                 <i class="bi bi-house-door me-2"></i> Inicio
             </a>
             {% if request.user.is_superuser or request.user.groups.all.0.name == "administrador" %}
-            <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/dashboard/' %}active{% endif %}">
+            <a href="{% url 'core:dashboard' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/dashboard/' %}active{% endif %}">
                 <i class="bi bi-speedometer2 me-2"></i> Dashboard
             </a>
-            <a href="{% url 'admin_usuarios' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'admin_usuarios' %}active{% endif %}">
+            <a href="{% url 'core:admin_usuarios' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'core:admin_usuarios' %}active{% endif %}">
                 <i class="bi bi-people me-2"></i> Usuarios
             </a>
-            <a href="{% url 'clientes' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/clientes/' %}active{% endif %}">
+            <a href="{% url 'core:clientes' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/clientes/' %}active{% endif %}">
                 <i class="bi bi-person-vcard me-2"></i> Clientes
             </a>
-            <a href="{% url 'lista_gestiones' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'lista_gestiones' %}active{% endif %}">
+            <a href="{% url 'core:lista_gestiones' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'core:lista_gestiones' %}active{% endif %}">
                 <i class="bi bi-card-checklist me-2"></i> Historial Gestiones
             </a>
-            <a href="{% url 'acuerdos_pago' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'acuerdos_pago' %}active{% endif %}">
+            <a href="{% url 'core:acuerdos_pago' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'core:acuerdos_pago' %}active{% endif %}">
                 <i class="bi bi-cash-coin me-2"></i> Acuerdos de Pago
             </a>
-            <a href="{% url 'seguimientos' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'seguimientos' %}active{% endif %}">
+            <a href="{% url 'core:seguimientos' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'core:seguimientos' %}active{% endif %}">
                 <i class="bi bi-calendar-check me-2"></i> Seguimientos
             </a>
             
             {% elif request.user.groups.all.0.name == "asesor" %}
-            <a href="{% url 'clientes' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/clientes/' %}active{% endif %}">
+            <a href="{% url 'core:clientes' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/clientes/' %}active{% endif %}">
                 <i class="bi bi-person-vcard me-2"></i> Mis Clientes
             </a>
-            <a href="{% url 'lista_gestiones' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'lista_gestiones' %}active{% endif %}">
+            <a href="{% url 'core:lista_gestiones' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'core:lista_gestiones' %}active{% endif %}">
                 <i class="bi bi-card-checklist me-2"></i> Mis Gestiones
             </a>
-            <a href="{% url 'seguimientos' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'seguimientos' %}active{% endif %}">
+            <a href="{% url 'core:seguimientos' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'core:seguimientos' %}active{% endif %}">
                 <i class="bi bi-calendar-check me-2"></i> Mis Seguimientos
             </a>
             {% endif %}
@@ -67,11 +67,11 @@
 
         <div class="px-3 py-3">
             
-            <a href="{% url 'perfil' %}" class="d-block text-white text-decoration-none py-1">
+            <a href="{% url 'core:perfil' %}" class="d-block text-white text-decoration-none py-1">
                 <i class="bi bi-person me-2"></i> Mi Perfil
             </a>
             {% if user.is_authenticated %}
-            <form action="{% url 'logout' %}" method="post" class="d-inline">
+            <form action="{% url 'core:logout' %}" method="post" class="d-inline">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-link p-0 text-white text-decoration-none">
                     <i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión
@@ -254,7 +254,7 @@
 
             // Función para actualizar el contador en el menú
             function actualizarContadorSeguimientos(cantidad) {
-                const enlaceSeguimientos = document.querySelector('a[href="{% url "seguimientos" %}"]');
+                const enlaceSeguimientos = document.querySelector('a[href="{% url "core:seguimientos" %}"]');
                 if (enlaceSeguimientos) {
                     // Buscar si ya existe un badge
                     let badge = enlaceSeguimientos.querySelector('.badge');

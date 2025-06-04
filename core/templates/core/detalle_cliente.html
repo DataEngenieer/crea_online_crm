@@ -3,6 +3,17 @@
 {% load humanize %}
 
 {% block content %}
+
+{% if gestion_form.non_field_errors %}
+    <div class="alert alert-danger mb-3 fw-bold">
+        <ul class="mb-0">
+            {% for error in gestion_form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
 <div class="px-0">
     <!-- Resumen Superior -->
     <div class="card mb-4 shadow-sm">
@@ -36,8 +47,8 @@
                 <a href="https://wa.me/{{ cliente_representativo.celular_1|default:'' }}" target="_blank" class="btn btn-success btn-sm me-1"><i class="bi bi-whatsapp"></i> WhatsApp</a>
                 <a href="sms:{{ cliente_representativo.celular_1|default:'' }}" class="btn btn-info btn-sm me-1 text-white"><i class="bi bi-chat-text-fill"></i> SMS</a>
                 <a href="tel:{{ cliente_representativo.celular_1|default:'' }}" class="btn btn-warning btn-sm me-1"><i class="bi bi-telephone"></i> Llamar</a>
-                <a href="{% url 'enviar_email_prueba' documento_cliente=documento_cliente %}" class="btn btn-secondary btn-sm me-1"><i class="bi bi-envelope"></i> Enviar Correo</a>
-                <a href="{% url 'clientes' %}" class="btn btn-light me-1"><i class="bi bi-arrow-left"></i> Volver a Clientes</a>
+                <a href="{% url 'core:enviar_email_prueba' documento_cliente=documento_cliente %}" class="btn btn-secondary btn-sm me-1"><i class="bi bi-envelope"></i> Enviar Correo</a>
+                <a href="{% url 'core:clientes' %}" class="btn btn-light me-1"><i class="bi bi-arrow-left"></i> Volver a Clientes</a>
             </div>
         </div>
     </div>
@@ -470,7 +481,7 @@
                                             <span>{{ gestion_form.canal_contacto.label }}</span>
                                         </label>
                                         {{ gestion_form.canal_contacto }}
-                                        {% if gestion_form.canal_contacto.errors %}<div class="invalid-feedback d-block">{{ gestion_form.canal_contacto.errors|join:", " }}</div>{% endif %}
+                                        {% if gestion_form.canal_contacto.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.canal_contacto.errors|join:", " }}</div>{% endif %}
                                     </div>
                                     
                                     <!-- Estado de contacto -->
@@ -480,55 +491,33 @@
                                             <span>{{ gestion_form.estado_contacto.label }}</span>
                                         </label>
                                         {{ gestion_form.estado_contacto }}
-                                        {% if gestion_form.estado_contacto.errors %}<div class="invalid-feedback d-block">{{ gestion_form.estado_contacto.errors|join:", " }}</div>{% endif %}
+                                        {% if gestion_form.estado_contacto.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.estado_contacto.errors|join:", " }}</div>{% endif %}
                                     </div>
                                     
-                                    <!-- Tipo de gestión N1 -->
+                                    <!-- Tipo de gestión -->
                                     <div class="mb-3">
                                         <label for="{{ gestion_form.tipo_gestion_n1.id_for_label }}" class="form-label d-flex align-items-center">
                                             <i class="bi bi-grid-1x2 me-1 text-primary"></i>
-                                            <span>{{ gestion_form.tipo_gestion_n1.label }}</span>
+                                            <span>Tipo de Gestión</span>
                                         </label>
                                         <div class="input-group">
                                             <span class="input-group-text"><i class="bi bi-list"></i></span>
                                             {{ gestion_form.tipo_gestion_n1 }}
                                         </div>
-                                        {% if gestion_form.tipo_gestion_n1.errors %}<div class="invalid-feedback d-block">{{ gestion_form.tipo_gestion_n1.errors|join:", " }}</div>{% endif %}
-                                    </div>
-                                    
-                                    <!-- Tipo de gestión N2 -->
-                                    <div class="mb-3">
-                                        <label for="{{ gestion_form.tipo_gestion_n2.id_for_label }}" class="form-label d-flex align-items-center">
-                                            <i class="bi bi-grid-3x2 me-1 text-primary"></i>
-                                            <span>{{ gestion_form.tipo_gestion_n2.label }}</span>
-                                        </label>
-                                        <div class="input-group">
-                                            <span class="input-group-text"><i class="bi bi-list"></i></span>
-                                            {{ gestion_form.tipo_gestion_n2 }}
-                                        </div>
-                                        {% if gestion_form.tipo_gestion_n2.errors %}<div class="invalid-feedback d-block">{{ gestion_form.tipo_gestion_n2.errors|join:", " }}</div>{% endif %}
+                                        {% if gestion_form.tipo_gestion_n1.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.tipo_gestion_n1.errors|join:", " }}</div>{% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Sección 2: Acuerdo de Pago -->
-                        <div class="col-md-4">
+                        <div class="col-md-4" id="acuerdo_pago_section_container" style="display: none;">
                             <div class="card h-100 border-0 shadow-sm">
                                 <div class="card-header bg-light d-flex align-items-center">
                                     <i class="bi bi-cash-coin me-2 text-success"></i>
                                     <h6 class="mb-0">Acuerdo de Pago</h6>
                                 </div>
                                 <div class="card-body p-3">
-                                    <!-- Switch de acuerdo realizado -->
-                                    <div class="mb-4 form-check form-switch">
-                                        {{ gestion_form.acuerdo_pago_realizado }}
-                                        <label for="{{ gestion_form.acuerdo_pago_realizado.id_for_label }}" class="form-check-label fw-bold">
-                                            {{ gestion_form.acuerdo_pago_realizado.label }}
-                                        </label>
-                                        {% if gestion_form.acuerdo_pago_realizado.errors %}<div class="invalid-feedback d-block">{{ gestion_form.acuerdo_pago_realizado.errors|join:", " }}</div>{% endif %}
-                                    </div>
-                                    
                                     <!-- Campos de acuerdo -->
                                     <div id="campos-acuerdo" style="display: none;">
                                         <!-- Fecha de acuerdo -->
@@ -541,7 +530,7 @@
                                                 <span class="input-group-text"><i class="bi bi-calendar"></i></span>
                                                 {{ gestion_form.fecha_acuerdo }}
                                             </div>
-                                            {% if gestion_form.fecha_acuerdo.errors %}<div class="invalid-feedback d-block">{{ gestion_form.fecha_acuerdo.errors|join:", " }}</div>{% endif %}
+                                            {% if gestion_form.fecha_acuerdo.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.fecha_acuerdo.errors|join:", " }}</div>{% endif %}
                                         </div>
                                         
                                         <!-- Monto de acuerdo -->
@@ -554,7 +543,7 @@
                                                 <span class="input-group-text">$</span>
                                                 {{ gestion_form.monto_acuerdo }}
                                             </div>
-                                            {% if gestion_form.monto_acuerdo.errors %}<div class="invalid-feedback d-block">{{ gestion_form.monto_acuerdo.errors|join:", " }}</div>{% endif %}
+                                            {% if gestion_form.monto_acuerdo.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.monto_acuerdo.errors|join:", " }}</div>{% endif %}
                                         </div>
                                         
                                         <!-- Observaciones de acuerdo -->
@@ -564,7 +553,7 @@
                                                 <span>{{ gestion_form.observaciones_acuerdo.label }}</span>
                                             </label>
                                             {{ gestion_form.observaciones_acuerdo }}
-                                            {% if gestion_form.observaciones_acuerdo.errors %}<div class="invalid-feedback d-block">{{ gestion_form.observaciones_acuerdo.errors|join:", " }}</div>{% endif %}
+                                            {% if gestion_form.observaciones_acuerdo.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.observaciones_acuerdo.errors|join:", " }}</div>{% endif %}
                                         </div>
                                     </div>
                                 </div>
@@ -586,7 +575,7 @@
                                             <span>{{ gestion_form.comprobante_pago.label }}</span>
                                         </label>
                                         {{ gestion_form.comprobante_pago }}
-                                        {% if gestion_form.comprobante_pago.errors %}<div class="invalid-feedback d-block">{{ gestion_form.comprobante_pago.errors|join:", " }}</div>{% endif %}
+                                        {% if gestion_form.comprobante_pago.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.comprobante_pago.errors|join:", " }}</div>{% endif %}
                                     </div>
                                     
                                     <!-- Fecha de pago efectivo -->
@@ -599,29 +588,20 @@
                                             <span class="input-group-text"><i class="bi bi-calendar"></i></span>
                                             {{ gestion_form.fecha_pago_efectivo }}
                                         </div>
-                                        {% if gestion_form.fecha_pago_efectivo.errors %}<div class="invalid-feedback d-block">{{ gestion_form.fecha_pago_efectivo.errors|join:", " }}</div>{% endif %}
+                                        {% if gestion_form.fecha_pago_efectivo.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.fecha_pago_efectivo.errors|join:", " }}</div>{% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Sección 4: Seguimiento y Observaciones -->
-                        <div class="col-md-4">
+                        <div class="col-md-4" id="seguimiento_section_container" style="display: none;">
                             <div class="card h-100 border-0 shadow-sm">
                                 <div class="card-header bg-light d-flex align-items-center">
                                     <i class="bi bi-clipboard-check me-2 text-info"></i>
                                     <h6 class="mb-0">Seguimiento y Observaciones</h6>
                                 </div>
                                 <div class="card-body p-3">
-                                    <!-- Switch de seguimiento requerido -->
-                                    <div class="mb-4 form-check form-switch">
-                                        {{ gestion_form.seguimiento_requerido }}
-                                        <label for="{{ gestion_form.seguimiento_requerido.id_for_label }}" class="form-check-label fw-bold">
-                                            {{ gestion_form.seguimiento_requerido.label }}
-                                        </label>
-                                        {% if gestion_form.seguimiento_requerido.errors %}<div class="invalid-feedback d-block">{{ gestion_form.seguimiento_requerido.errors|join:", " }}</div>{% endif %}
-                                    </div>
-                                    
                                     <!-- Campos de seguimiento -->
                                     <div id="campos-seguimiento" style="display: none;">
                                         <div class="row">
@@ -635,7 +615,7 @@
                                                     <span class="input-group-text"><i class="bi bi-calendar"></i></span>
                                                     {{ gestion_form.fecha_proximo_seguimiento }}
                                                 </div>
-                                                {% if gestion_form.fecha_proximo_seguimiento.errors %}<div class="invalid-feedback d-block">{{ gestion_form.fecha_proximo_seguimiento.errors|join:", " }}</div>{% endif %}
+                                                {% if gestion_form.fecha_proximo_seguimiento.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.fecha_proximo_seguimiento.errors|join:", " }}</div>{% endif %}
                                             </div>
                                             
                                             <!-- Hora de próximo seguimiento -->
@@ -648,7 +628,7 @@
                                                     <span class="input-group-text"><i class="bi bi-clock"></i></span>
                                                     {{ gestion_form.hora_proximo_seguimiento }}
                                                 </div>
-                                                {% if gestion_form.hora_proximo_seguimiento.errors %}<div class="invalid-feedback d-block">{{ gestion_form.hora_proximo_seguimiento.errors|join:", " }}</div>{% endif %}
+                                                {% if gestion_form.hora_proximo_seguimiento.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.hora_proximo_seguimiento.errors|join:", " }}</div>{% endif %}
                                             </div>
                                         </div>
                                     </div>
@@ -660,7 +640,7 @@
                                             <span>{{ gestion_form.observaciones_generales.label }}</span>
                                         </label>
                                         {{ gestion_form.observaciones_generales }}
-                                        {% if gestion_form.observaciones_generales.errors %}<div class="invalid-feedback d-block">{{ gestion_form.observaciones_generales.errors|join:", " }}</div>{% endif %}
+                                        {% if gestion_form.observaciones_generales.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.observaciones_generales.errors|join:", " }}</div>{% endif %}
                                     </div>
                                 </div>
                             </div>
@@ -690,9 +670,7 @@
                                     <th class="text-center" style="width: 100px;">Usuario</th>
                                     <th class="text-center" style="width: 100px;">Canal</th>
                                     <th class="text-center" style="width: 120px;">Estado Contacto</th>
-                                    <th class="text-center" style="width: 140px;">Tipo Gestión N1</th>
-                                    <th class="text-center" style="width: 140px;">Tipo Gestión N2</th>
-                                    <th class="text-center" style="width: 140px;">Tipo Gestión N3</th>
+                                    <th class="text-center" style="width: 160px;">Tipo Gestión</th>
                                     <th class="text-center" style="width: 100px;">Acuerdo</th>
                                     <th class="text-center" style="width: 120px;">Fecha Acuerdo</th>
                                     <th class="text-center" style="width: 120px;">Monto</th>
@@ -730,8 +708,6 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ gestion.tipo_gestion_n1|default:"-" }}</td>
-                                    <td>{{ gestion.tipo_gestion_n2|default:"-" }}</td>
-                                    <td>{{ gestion.tipo_gestion_n3|default:"-" }}</td>
                                     <td class="text-center">
                                         {% if gestion.acuerdo_pago_realizado %}
                                             <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i></span>
@@ -806,207 +782,134 @@ document.addEventListener('DOMContentLoaded', function() {
         selectorHijo.disabled = (opcionesVisibles === 0);
     }
     // Al cargar la página, asegúrate de habilitar los selects si hay opciones
-    document.addEventListener('DOMContentLoaded', function () {
-        if (typeof tipoGestionN1Select !== 'undefined' && tipoGestionN1Select.options.length > 1) {
-            tipoGestionN1Select.disabled = false;
-        }
-        if (typeof tipoGestionN2Select !== 'undefined' && tipoGestionN2Select.options.length > 1) {
-            tipoGestionN2Select.disabled = false;
-        }
-    });
-    
-    // Referencias a los campos de formulario
-    const canalContactoSelect = document.getElementById('{{ gestion_form.canal_contacto.id_for_label }}');
+    // Referencias a los campos de formulario (MOVIDAS ARRIBA)
     const estadoContactoSelect = document.getElementById('{{ gestion_form.estado_contacto.id_for_label }}');
     const tipoGestionN1Select = document.getElementById('{{ gestion_form.tipo_gestion_n1.id_for_label }}');
-    const tipoGestionN2Select = document.getElementById('{{ gestion_form.tipo_gestion_n2.id_for_label }}');
+    const canalContactoSelect = document.getElementById('{{ gestion_form.canal_contacto.id_for_label }}');
+    // const tipoGestionN2Select = document.getElementById('{{ gestion_form.tipo_gestion_n2.id_for_label }}'); // Descomentar si se usa
+
+    // Al cargar la página, y después de declarar las constantes:
+    if (!tipoGestionN1Select) {
+        console.error("CRITICAL-INIT: El elemento select 'tipoGestionN1Select' (ID: {{ gestion_form.tipo_gestion_n1.id_for_label }}) NO fue encontrado en el DOM al inicializar.");
+    } else {
+        console.log("INIT: Elemento 'tipoGestionN1Select' (ID: {{ gestion_form.tipo_gestion_n1.id_for_label }}) encontrado correctamente.");
+        // Habilitar el select si hay opciones y fue encontrado
+        if (tipoGestionN1Select.options.length > 1) {
+            tipoGestionN1Select.disabled = false;
+        }
+    }
+    // if (tipoGestionN2Select && typeof tipoGestionN2Select !== 'undefined' && tipoGestionN2Select.options.length > 1) { // Si se usa tipoGestionN2Select
+    //     tipoGestionN2Select.disabled = false;
+    // }
+
+    // Referencias a los contenedores de sección principales
+    const acuerdoPagoSectionContainer = document.getElementById('acuerdo_pago_section_container');
+    const seguimientoSectionContainer = document.getElementById('seguimiento_section_container');
+    const comprobantePagoContainer = document.getElementById('comprobante_pago_container');
+    const fechaPagoEfectivoContainer = document.getElementById('fecha_pago_efectivo_container');
+    const urlTiposGestion = "{% url 'core:ajax_get_opciones_nivel2' %}";
+
+    console.log('Elementos del DOM inicializados:', {
+        canalContactoSelect,
+        estadoContactoSelect,
+        tipoGestionN1Select,
+        acuerdoPagoSectionContainer,
+        seguimientoSectionContainer,
+        comprobantePagoContainer,
+        fechaPagoEfectivoContainer
+    });
+
+    if (!estadoContactoSelect) console.error('ERROR: estadoContactoSelect no encontrado');
+    if (!tipoGestionN1Select) console.error('ERROR: tipoGestionN1Select no encontrado');
     
-    // Referencias a los campos de acuerdo de pago
-    const acuerdoPagoCheckbox = document.getElementById('{{ gestion_form.acuerdo_pago_realizado.id_for_label }}');
+    // Referencias a los campos de acuerdo de pago (el checkbox fue eliminado)
     const fechaAcuerdoGroup = document.getElementById('{{ gestion_form.fecha_acuerdo.id_for_label }}').closest('.mb-3');
     const montoAcuerdoGroup = document.getElementById('{{ gestion_form.monto_acuerdo.id_for_label }}').closest('.mb-3');
     const observacionesAcuerdoGroup = document.getElementById('{{ gestion_form.observaciones_acuerdo.id_for_label }}').closest('.mb-3');
     
-    // Referencias a los campos de seguimiento
-    const seguimientoCheckbox = document.getElementById('{{ gestion_form.seguimiento_requerido.id_for_label }}');
+    // Referencias a los campos de seguimiento (el checkbox fue eliminado)
     const camposSeguimientoDiv = document.getElementById('campos-seguimiento');
     
     // Establecer teléfono como opción por defecto en canal de contacto
     if (canalContactoSelect) {
         if (!canalContactoSelect.value) {
-            canalContactoSelect.value = 'telefono';
+            canalContactoSelect.value = 'whatsapp';
         }
     }
     
     // Evento para cambio en estado de contacto
-    estadoContactoSelect.addEventListener('change', function() {
-        actualizarOpcionesVisibles(estadoContactoSelect, tipoGestionN1Select);
-        tipoGestionN2Select.disabled = true;
-        tipoGestionN2Select.value = '';
-    });
-    
-    // Evento para cambio en nivel 1
-    tipoGestionN1Select.addEventListener('change', function() {
-        actualizarOpcionesVisibles(tipoGestionN1Select, tipoGestionN2Select);
-    });
-    
-    // Si hay valores preseleccionados, actualizar las opciones visibles
-    if (estadoContactoSelect.value) {
-        actualizarOpcionesVisibles(estadoContactoSelect, tipoGestionN1Select);
-        if (tipoGestionN1Select.options.length > 1) {
-            tipoGestionN1Select.disabled = false;
-        }
-        if (tipoGestionN1Select.value) {
-            actualizarOpcionesVisibles(tipoGestionN1Select, tipoGestionN2Select);
-            if (tipoGestionN2Select.options.length > 1) {
-                tipoGestionN2Select.disabled = false;
-            }
-        }
-    }
-    
-    // Función para mostrar/ocultar campos de acuerdo de pago
-    function toggleAcuerdoPagoFields() {
-        const isChecked = acuerdoPagoCheckbox.checked;
-        const camposAcuerdo = document.getElementById('campos-acuerdo');
-        
-        // Mostrar/ocultar el contenedor completo
-        if (camposAcuerdo) camposAcuerdo.style.display = isChecked ? 'block' : 'none';
-        
-        // Habilitar/deshabilitar campos individuales
-        document.getElementById('{{ gestion_form.fecha_acuerdo.id_for_label }}').disabled = !isChecked;
-        document.getElementById('{{ gestion_form.monto_acuerdo.id_for_label }}').disabled = !isChecked;
-        document.getElementById('{{ gestion_form.observaciones_acuerdo.id_for_label }}').disabled = !isChecked;
-        
-        // Si se desmarca, limpiar los campos
-        if (!isChecked) {
-            document.getElementById('{{ gestion_form.fecha_acuerdo.id_for_label }}').value = '';
-            document.getElementById('{{ gestion_form.monto_acuerdo.id_for_label }}').value = '';
-            document.getElementById('{{ gestion_form.observaciones_acuerdo.id_for_label }}').value = '';
-        }
-    }
-    
-    // Función para mostrar/ocultar campos de seguimiento
-    function toggleSeguimientoFields() {
-        const isChecked = seguimientoCheckbox.checked;
-        const camposSeguimiento = document.getElementById('campos-seguimiento');
-        
-        // Mostrar/ocultar el contenedor completo
-        if (camposSeguimiento) camposSeguimiento.style.display = isChecked ? 'block' : 'none';
-        
-        // Habilitar/deshabilitar campos individuales
-        document.getElementById('{{ gestion_form.fecha_proximo_seguimiento.id_for_label }}').disabled = !isChecked;
-        document.getElementById('{{ gestion_form.hora_proximo_seguimiento.id_for_label }}').disabled = !isChecked;
-        document.getElementById('{{ gestion_form.observaciones_generales.id_for_label }}').disabled = !isChecked;
-        
-        // Si se desmarca, limpiar los campos
-        if (!isChecked) {
-            document.getElementById('{{ gestion_form.fecha_proximo_seguimiento.id_for_label }}').value = '';
-            document.getElementById('{{ gestion_form.hora_proximo_seguimiento.id_for_label }}').value = '';
-            document.getElementById('{{ gestion_form.observaciones_generales.id_for_label }}').value = '';
-        }
-    }
-    
-    // Función para validar campos interdependientes
-    function validateForm() {
-        let isValid = true;
-        let messages = [];
-        
-        // Validar que se haya seleccionado un estado de contacto
-        if (!estadoContactoSelect.value) {
-            isValid = false;
-            messages.push('Debe seleccionar un estado de contacto');
-            estadoContactoSelect.classList.add('is-invalid');
-        } else {
-            estadoContactoSelect.classList.remove('is-invalid');
-        }
-        
-        // Si el estado es "contactado", validar que se haya seleccionado al menos el tipo de gestión nivel 1
-        if (estadoContactoSelect.value === 'contactado' && !tipoGestionN1Select.value) {
-            isValid = false;
-            messages.push('Debe seleccionar al menos el tipo de gestión nivel 1 cuando el cliente fue contactado');
-            tipoGestionN1Select.classList.add('is-invalid');
-        } else {
-            tipoGestionN1Select.classList.remove('is-invalid');
-        }
-        
-        // Si se marcó acuerdo de pago, validar campos relacionados
-        if (acuerdoPagoCheckbox.checked) {
-            const fechaAcuerdoInput = document.getElementById('{{ gestion_form.fecha_acuerdo.id_for_label }}');
-            const montoAcuerdoInput = document.getElementById('{{ gestion_form.monto_acuerdo.id_for_label }}');
+    if (estadoContactoSelect) {
+        console.log('estadoContactoSelect encontrado. Añadiendo event listener.');
+        estadoContactoSelect.addEventListener('change', function() {
+            console.log('Estado contacto cambiado. ID:', this.value);
+            const estadoContactoId = this.value;
+            console.log('Estado de contacto seleccionado:', estadoContactoId);
             
-            if (!fechaAcuerdoInput.value) {
-                isValid = false;
-                messages.push('Debe ingresar la fecha del acuerdo');
-                fechaAcuerdoInput.classList.add('is-invalid');
+            if (!tipoGestionN1Select) {
+                console.error('CRITICAL: tipoGestionN1Select NO encontrado al inicio del evento change de estadoContactoSelect.');
+                // return; // Podríamos detener la ejecución aquí si es crítico
             } else {
-                fechaAcuerdoInput.classList.remove('is-invalid');
+                console.log('tipoGestionN1Select SÍ encontrado al inicio del evento change.');
+            }
+            // Limpiar y deshabilitar tipoGestionN1Select antes de la carga.');
+            
+            // Limpiar y deshabilitar el selector de tipo de gestión
+            if (tipoGestionN1Select) {
+                tipoGestionN1Select.innerHTML = '';
+                tipoGestionN1Select.disabled = true;
+                console.log('tipoGestionN1Select limpiado y deshabilitado.');
+            } else {
+                console.error('ERROR: tipoGestionN1Select no encontrado al intentar limpiar/deshabilitar.');
+                return; // Salir si el select no existe
             }
             
-            if (!montoAcuerdoInput.value || parseFloat(montoAcuerdoInput.value) <= 0) {
-                isValid = false;
-                messages.push('Debe ingresar un monto válido para el acuerdo');
-                montoAcuerdoInput.classList.add('is-invalid');
-            } else {
-                montoAcuerdoInput.classList.remove('is-invalid');
-            }
-        }
-        
-        // Si se marcó seguimiento requerido, validar campos relacionados
-        if (seguimientoCheckbox.checked) {
-            const fechaSeguimientoInput = document.getElementById('{{ gestion_form.fecha_proximo_seguimiento.id_for_label }}');
-            const horaSeguimientoInput = document.getElementById('{{ gestion_form.hora_proximo_seguimiento.id_for_label }}');
-            
-            if (!fechaSeguimientoInput.value) {
-                isValid = false;
-                messages.push('Debe ingresar la fecha del próximo seguimiento');
-                fechaSeguimientoInput.classList.add('is-invalid');
-            } else {
-                fechaSeguimientoInput.classList.remove('is-invalid');
-            }
-            
-            if (!horaSeguimientoInput.value) {
-                isValid = false;
-                messages.push('Debe ingresar la hora del próximo seguimiento');
-                horaSeguimientoInput.classList.add('is-invalid');
-            } else {
-                horaSeguimientoInput.classList.remove('is-invalid');
-            }
-        }
-        
-        // Mostrar mensajes de error si los hay
-        if (!isValid) {
-            alert('Por favor corrija los siguientes errores:\n- ' + messages.join('\n- '));
-        }
-        
-        return isValid;
+            if (estadoContactoId) {
+                console.log(`Realizando fetch a: ${urlTiposGestion}?estado_contacto_id=${estadoContactoId}`);
+                fetch(`${urlTiposGestion}?estado_contacto_id=${estadoContactoId}`)
+                    .then(response => {
+                        console.log('Respuesta de fetch recibida:', response);
+                        if (!response.ok) {
+                            console.error('Error en la respuesta de fetch:', response.status, response.statusText);
+                            return response.text().then(text => { throw new Error('Respuesta de servidor no OK: ' + text); });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Datos JSON recibidos para Tipo de Gestión:', data);
+                        if (tipoGestionN1Select) {
+                            updateSelectWithOptions(tipoGestionN1Select, data, 'Seleccione Tipo de Gestión');
+                            tipoGestionN1Select.disabled = false;
+                            console.log('Opciones de tipo de gestión cargadas y tipoGestionN1Select habilitado.');
+                        } else {
+                            console.error('ERROR: tipoGestionN1Select no encontrado al intentar actualizar opciones.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error en la petición AJAX para tipos de gestión o al procesar JSON:', error);
+                        if (tipoGestionN1Select) {
+                            tipoGestionN1Select.innerHTML = '<option value="">Error al cargar</option>'; // Mostrar error en el select
+                            tipoGestionN1Select.disabled = false; // Habilitar para que el usuario vea el error
+                        }
+                    });
+            } // Cierre del if (estadoContactoId)
+        }); // Cierre del addEventListener
+    } else {
+        console.error('ERROR: estadoContactoSelect no encontrado, no se pudo añadir event listener.');
     }
     
-    // Inicializar estados al cargar la página
-    toggleAcuerdoPagoFields();
-    toggleSeguimientoFields();
-    
-    // Agregar event listeners
-    acuerdoPagoCheckbox.addEventListener('change', toggleAcuerdoPagoFields);
-    seguimientoCheckbox.addEventListener('change', toggleSeguimientoFields);
-    
-    // Agregar validación al formulario
-    const form = document.querySelector('#registrar-gestion form');
-    form.addEventListener('submit', function(event) {
-        if (!validateForm()) {
-            event.preventDefault();
-        }
-    });
-    
-    // Configuración de los desplegables dependientes usando AJAX
-    // URLs para las vistas AJAX
-    const urlNivel1 = "{% url 'ajax_get_opciones_nivel1' %}";
-    const urlNivel2 = "{% url 'ajax_get_opciones_nivel2' %}";
-    
-    // Obtener referencias a los contenedores de campos condicionales
-    const comprobantePagoContainer = document.getElementById('comprobante_pago_container');
-    const fechaPagoEfectivoContainer = document.getElementById('fecha_pago_efectivo_container');
-    
+    // Función para actualizar las opciones de un select (RESTAURADA)
     function updateSelectWithOptions(selectElement, options, defaultOptionText) {
+        console.log('updateSelectWithOptions llamada con:', selectElement, options, defaultOptionText);
+        if (!selectElement) {
+            console.error('CRITICAL: selectElement es nulo en updateSelectWithOptions');
+            return;
+        }
+        if (!Array.isArray(options)) {
+            console.error('Error: las opciones no son un array.', options);
+            // Mostrar un mensaje de error en el select
+            selectElement.innerHTML = '<option value="">Error: Formato de opciones incorrecto</option>';
+            return;
+        }
         selectElement.innerHTML = ''; // Limpiar opciones existentes
         
         // Añadir opción por defecto
@@ -1024,116 +927,212 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Función para mostrar u ocultar campos según la selección de tipo_gestion_n2
-    function toggleFieldsBasedOnSelection(tipoGestionN2Value) {
-        // Obtener referencias a los checkboxes y sus contenedores
-        const acuerdoPagoCheckbox = document.getElementById('id_acuerdo_pago_realizado');
-        const camposAcuerdo = document.getElementById('campos-acuerdo');
-        const seguimientoCheckbox = document.getElementById('id_seguimiento_requerido');
-        const camposSeguimiento = document.getElementById('campos-seguimiento');
-        
-        // Por defecto, ocultar todos los contenedores condicionales
-        if (comprobantePagoContainer) comprobantePagoContainer.style.display = 'none';
-        if (fechaPagoEfectivoContainer) fechaPagoEfectivoContainer.style.display = 'none';
-        if (camposAcuerdo) camposAcuerdo.style.display = 'none';
-        if (camposSeguimiento) camposSeguimiento.style.display = 'none';
-        
-        // Desmarcar los checkboxes por defecto
-        if (acuerdoPagoCheckbox) acuerdoPagoCheckbox.checked = false;
-        if (seguimientoCheckbox) seguimientoCheckbox.checked = false;
-        
-        if (tipoGestionN2Value === 'PAGADO') {
-            // Para PAGADO: mostrar comprobante y fecha de pago
-            if (comprobantePagoContainer) comprobantePagoContainer.style.display = 'block';
-            if (fechaPagoEfectivoContainer) fechaPagoEfectivoContainer.style.display = 'block';
-            
-        } else if (tipoGestionN2Value === 'AP' || tipoGestionN2Value === 'PP') {
-            // Para AP o PP: activar checkbox de acuerdo y mostrar sus campos
-            if (acuerdoPagoCheckbox) acuerdoPagoCheckbox.checked = true;
-            if (camposAcuerdo) camposAcuerdo.style.display = 'block';
-            
-        } else if (tipoGestionN2Value === 'SOLICITA_LLAMADA') {
-            // Para SOLICITA_LLAMADA: activar checkbox de seguimiento y mostrar sus campos
-            if (seguimientoCheckbox) seguimientoCheckbox.checked = true;
-            if (camposSeguimiento) camposSeguimiento.style.display = 'block';
+    // Evento para cambio en tipo de gestión
+    tipoGestionN1Select.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const tipoGestionValue = this.value;
+        console.log(`tipoGestionN1Select CHANGED. Value: '${tipoGestionValue}', Text: '${selectedOption ? selectedOption.text : 'N/A'}'`);
+        toggleFieldsBasedOnSelection(tipoGestionValue);
+    });
+    
+    // Si hay valores preseleccionados, disparar el evento change para cargar las opciones
+    if (estadoContactoSelect && estadoContactoSelect.value) {
+        console.log('Estado de contacto tiene valor preseleccionado:', estadoContactoSelect.value, '. Disparando evento change.');
+        estadoContactoSelect.dispatchEvent(new Event('change'));
+        // Si también hay un valor en tipo de gestión, aplicar la lógica condicional
+        if (tipoGestionN1Select && tipoGestionN1Select.value) {
+            console.log('Tipo de gestión tiene valor preseleccionado:', tipoGestionN1Select.value, '. Aplicando lógica condicional.');
+            toggleFieldsBasedOnSelection(tipoGestionN1Select.value);
         }
     }
     
+    // --- INICIO FUNCIONES DE GESTIÓN DE SECCIONES ---
+    function manageAcuerdoPagoSection(show) {
+        const section = document.getElementById('acuerdo_pago_section_container');
+        const fieldsContainer = document.getElementById('campos-acuerdo');
+        const fechaAcuerdoInput = document.getElementById('{{ gestion_form.fecha_acuerdo.id_for_label }}');
+        const montoAcuerdoInput = document.getElementById('{{ gestion_form.monto_acuerdo.id_for_label }}');
+        const observacionesAcuerdoInput = document.getElementById('{{ gestion_form.observaciones_acuerdo.id_for_label }}');
 
-    
-    // Función para actualizar el estado visual de los campos cuando cambia el estado de contacto
-    estadoContactoSelect.addEventListener('change', function() {
-        const estadoContactoId = this.value;
-        const isContactoEfectivo = estadoContactoId === 'contacto_efectivo';
-        
-        // Limpiar y deshabilitar Nivel 1 y Nivel 2
-        updateSelectWithOptions(tipoGestionN1Select, [], 'Seleccione Nivel 1');
-        tipoGestionN1Select.disabled = true;
-        updateSelectWithOptions(tipoGestionN2Select, [], 'Seleccione Nivel 2');
-        tipoGestionN2Select.disabled = true;
-        
-        // Manejar el caso de acuerdo de pago (solo disponible en contacto efectivo)
-        if (!isContactoEfectivo) {
-            acuerdoPagoCheckbox.checked = false;
-            toggleAcuerdoPagoFields();
+        if (section) section.style.display = show ? 'block' : 'none';
+        if (fieldsContainer) fieldsContainer.style.display = show ? 'block' : 'none';
+
+        const inputsToManage = [fechaAcuerdoInput, montoAcuerdoInput, observacionesAcuerdoInput];
+        inputsToManage.forEach(input => {
+            if (input) input.disabled = !show;
+        });
+
+        if (!show) {
+            inputsToManage.forEach(input => {
+                if (input) input.value = '';
+            });
         }
+    }
+
+    function manageSeguimientoSection(show) {
+        console.log(`manageSeguimientoSection llamada con show: ${show}`);
+        const section = document.getElementById('seguimiento_section_container');
+        const fieldsContainer = document.getElementById('campos-seguimiento');
+        if (!section) console.error('manageSeguimientoSection: No se encontró seguimiento_section_container');
+        if (!fieldsContainer) console.error('manageSeguimientoSection: No se encontró campos-seguimiento');
+        const fechaSeguimientoInput = document.getElementById('{{ gestion_form.fecha_proximo_seguimiento.id_for_label }}');
+        const horaSeguimientoInput = document.getElementById('{{ gestion_form.hora_proximo_seguimiento.id_for_label }}');
+        const observacionesGeneralesInput = document.getElementById('{{ gestion_form.observaciones_generales.id_for_label }}');
+
+        if (section) section.style.display = show ? 'block' : 'none';
+        if (fieldsContainer) fieldsContainer.style.display = show ? 'block' : 'none';
+
+        const inputsToManage = [fechaSeguimientoInput, horaSeguimientoInput, observacionesGeneralesInput];
+        inputsToManage.forEach(input => {
+            if (input) input.disabled = !show;
+        });
+
+        if (!show) {
+            inputsToManage.forEach(input => {
+                if (input) input.value = '';
+            });
+        }
+    }
+
+    function manageComprobantePagoSection(show) {
+        const section = document.getElementById('comprobante_pago_container'); // Este es el ID del col-md-4
+        // fechaPagoEfectivoContainer está dentro de comprobante_pago_container, por lo que se mostrará/ocultará con su padre.
+        const comprobantePagoInput = document.getElementById('{{ gestion_form.comprobante_pago.id_for_label }}');
+        const fechaPagoEfectivoInput = document.getElementById('{{ gestion_form.fecha_pago_efectivo.id_for_label }}');
+
+        if (section) section.style.display = show ? 'block' : 'none';
+
+        const inputsToManage = [comprobantePagoInput, fechaPagoEfectivoInput];
+        inputsToManage.forEach(input => {
+            if (input) input.disabled = !show;
+        });
+
+        if (!show) {
+            inputsToManage.forEach(input => {
+                if (input) {
+                    if (input.type === 'file') {
+                        input.value = null; // Para campos de archivo
+                    } else {
+                        input.value = '';
+                    }
+                }
+            });
+        }
+    }
+    // --- FIN FUNCIONES DE GESTIÓN DE SECCIONES ---
+    
+    // Función para validar campos interdependientes
+    function validateForm() {
+        let isValid = true;
+        let messages = [];
         
-        if (estadoContactoId) {
-            // Cargar opciones para nivel 1 vía AJAX
-            fetch(`${urlNivel1}?estado_contacto_id=${estadoContactoId}`)
-                .then(response => response.json())
-                .then(data => {
-                    updateSelectWithOptions(tipoGestionN1Select, data, 'Seleccione Nivel 1');
-                    tipoGestionN1Select.disabled = false;
-                    console.log('Opciones de nivel 1 cargadas correctamente');
-                })
-                .catch(error => {
-                    console.error('Error cargando opciones de Nivel 1:', error);
-                });
+        // Validar que se haya seleccionado un estado de contacto
+        if (!estadoContactoSelect || !estadoContactoSelect.value) {
+            isValid = false;
+            messages.push('Debe seleccionar un estado de contacto.');
+            if (estadoContactoSelect) estadoContactoSelect.classList.add('is-invalid');
+        } else {
+            if (estadoContactoSelect) estadoContactoSelect.classList.remove('is-invalid');
+        }
+
+        // Validar que se haya seleccionado un tipo de gestión N1
+        if (!tipoGestionN1Select || !tipoGestionN1Select.value) {
+            isValid = false;
+            messages.push('Debe seleccionar un tipo de gestión.');
+            if (tipoGestionN1Select) tipoGestionN1Select.classList.add('is-invalid');
+        } else {
+            if (tipoGestionN1Select) tipoGestionN1Select.classList.remove('is-invalid');
+        }
+
+        // Validar campos de Acuerdo de Pago si la sección está visible
+        const acuerdoSection = document.getElementById('acuerdo_pago_section_container');
+        if (acuerdoSection && acuerdoSection.style.display !== 'none') {
+            const fechaAcuerdoInput = document.getElementById('{{ gestion_form.fecha_acuerdo.id_for_label }}');
+            const montoAcuerdoInput = document.getElementById('{{ gestion_form.monto_acuerdo.id_for_label }}');
+            if (!fechaAcuerdoInput.value) {
+                isValid = false; messages.push('Acuerdo: Debe ingresar la fecha del acuerdo.'); fechaAcuerdoInput.classList.add('is-invalid');
+            } else { fechaAcuerdoInput.classList.remove('is-invalid'); }
+            if (!montoAcuerdoInput.value || parseFloat(montoAcuerdoInput.value) <= 0) {
+                isValid = false; messages.push('Acuerdo: Debe ingresar un monto válido.'); montoAcuerdoInput.classList.add('is-invalid');
+            } else { montoAcuerdoInput.classList.remove('is-invalid'); }
+        }
+
+        // Validar campos de Seguimiento si la sección está visible
+        const seguimientoSection = document.getElementById('seguimiento_section_container');
+        if (seguimientoSection && seguimientoSection.style.display !== 'none') {
+            const fechaSeguimientoInput = document.getElementById('{{ gestion_form.fecha_proximo_seguimiento.id_for_label }}');
+            const horaSeguimientoInput = document.getElementById('{{ gestion_form.hora_proximo_seguimiento.id_for_label }}');
+            if (!fechaSeguimientoInput.value) {
+                isValid = false; messages.push('Seguimiento: Debe ingresar la fecha.'); fechaSeguimientoInput.classList.add('is-invalid');
+            } else { fechaSeguimientoInput.classList.remove('is-invalid'); }
+            if (!horaSeguimientoInput.value) {
+                isValid = false; messages.push('Seguimiento: Debe ingresar la hora.'); horaSeguimientoInput.classList.add('is-invalid');
+            } else { horaSeguimientoInput.classList.remove('is-invalid'); }
+        }
+
+        // Validar campos de Comprobante de Pago si la sección está visible
+        const comprobanteSection = document.getElementById('comprobante_pago_container');
+        if (comprobanteSection && comprobanteSection.style.display !== 'none') {
+            const comprobantePagoInput = document.getElementById('{{ gestion_form.comprobante_pago.id_for_label }}');
+            const fechaPagoEfectivoInput = document.getElementById('{{ gestion_form.fecha_pago_efectivo.id_for_label }}');
+            // La validación del archivo es opcional aquí, podría ser más compleja (ej. verificar si se subió)
+            // if (!comprobantePagoInput.value) {
+            //     isValid = false; messages.push('Comprobante: Debe adjuntar un comprobante.'); comprobantePagoInput.classList.add('is-invalid');
+            // } else { comprobantePagoInput.classList.remove('is-invalid'); }
+            if (!fechaPagoEfectivoInput.value) {
+                isValid = false; messages.push('Comprobante: Debe ingresar la fecha de pago efectivo.'); fechaPagoEfectivoInput.classList.add('is-invalid');
+            } else { fechaPagoEfectivoInput.classList.remove('is-invalid'); }
+        }
+
+        if (!isValid) {
+            alert('Por favor corrija los siguientes errores:\n- ' + messages.join('\n- '));
+        }
+        return isValid;
+    }
+    
+    // Agregar validación al formulario
+    const form = document.querySelector('#registrar-gestion form');
+    form.addEventListener('submit', function(event) {
+        if (!validateForm()) {
+            event.preventDefault();
         }
     });
     
-    // Event listener para el selector de tipo de gestión nivel 1
-    tipoGestionN1Select.addEventListener('change', function() {
-        const estadoContactoId = estadoContactoSelect.value;
-        const tipoGestionN1Id = this.value;
-        
-        // Limpiar y deshabilitar Nivel 2
-        updateSelectWithOptions(tipoGestionN2Select, [], 'Seleccione Nivel 2');
-        tipoGestionN2Select.disabled = true;
-        
-        // Resetear campos condicionales cuando cambia el nivel 1
-        toggleFieldsBasedOnSelection('');
-        
-        if (estadoContactoId && tipoGestionN1Id) {
-            // Cargar opciones para nivel 2 vía AJAX
-            fetch(`${urlNivel2}?estado_contacto_id=${estadoContactoId}&tipo_gestion_n1_id=${tipoGestionN1Id}`)
-                .then(response => response.json())
-                .then(data => {
-                    updateSelectWithOptions(tipoGestionN2Select, data, 'Seleccione Nivel 2');
-                    tipoGestionN2Select.disabled = false;
-                    console.log('Opciones de nivel 2 cargadas correctamente');
-                })
-                .catch(error => {
-                    console.error('Error cargando opciones de Nivel 2:', error);
-                });
-        }
-    });
-    
-    // Añadir event listener para el selector de tipo_gestion_n2
-    tipoGestionN2Select.addEventListener('change', function() {
-        const tipoGestionN2Value = this.value;
-        toggleFieldsBasedOnSelection(tipoGestionN2Value);
-    });
+    // Configuración de los desplegables dependientes usando AJAX
+    // La constante urlTiposGestion ya ha sido declarada y movida al inicio del DOMContentLoaded.
+    // El addEventListener para estadoContactoSelect y la lógica de dispatchEvent ya están definidos anteriormente (around lines 800-900+)
+    // por lo que este bloque if (estadoContactoSelect) { ... } que estaba aquí y contenía erróneamente
+    // la declaración de fechaPagoEfectivoContainer y la definición de toggleFieldsBasedOnSelection
+    // ya no es necesario en esta posición con ese contenido.
+    // Si se necesita un if(estadoContactoSelect) para alguna lógica específica aquí, se debe añadir explícitamente.
 
+    // Función para mostrar u ocultar secciones según la selección de tipo de gestión
+    function toggleFieldsBasedOnSelection(tipoGestionValue) {
+        console.log('toggleFieldsBasedOnSelection llamado con:', tipoGestionValue);
+        // Ocultar todas las secciones primero
+        manageAcuerdoPagoSection(false);
+        manageSeguimientoSection(false);
+        manageComprobantePagoSection(false);
 
-    
-    // Disparar el evento para inicializar correctamente si hay un valor preseleccionado
-    if (estadoContactoSelect.value) {
-        estadoContactoSelect.dispatchEvent(new Event('change'));
-        // Si también hay un valor en nivel 1, disparar su evento también
-        if (tipoGestionN1Select.value) {
-            tipoGestionN1Select.dispatchEvent(new Event('change'));
+        if (!tipoGestionValue) return; // Si no hay valor, todas permanecen ocultas
+
+        switch (tipoGestionValue) {
+            case 'PAGADO':
+                manageComprobantePagoSection(true);
+                break;
+            case 'AP': // Acuerdo Pendiente
+            case 'PP': // Promesa de Pago
+                manageAcuerdoPagoSection(true);
+                break;
+            case 'SOLICITA_LLAMADA': // Solicita Llamada
+                console.log("toggleFieldsBasedOnSelection: Entrando en caso 'SL' (Solicita Llamada)");
+                manageSeguimientoSection(true);
+                break;
+            case 'NC': // Negociación en Curso
+                console.log("toggleFieldsBasedOnSelection: Entrando en caso 'NC' (Negociación en Curso)");
+                manageSeguimientoSection(true);
+                break;
+            // Añadir más casos según sea necesario
         }
     }
 });

@@ -63,7 +63,7 @@
                         </form>
                     </td>
                     <td class="text-center">
-                        <a href="{% url 'detalle_usuario' user.id %}" class="btn btn-sm {% if user.is_active %}btn-outline-success{% else %}btn-outline-secondary{% endif %}">
+                        <a href="{% url 'core:detalle_usuario' user.id %}" class="btn btn-sm {% if user.is_active %}btn-outline-success{% else %}btn-outline-secondary{% endif %}">
                             <i class="bi bi-{% if user.is_active %}check-circle{% else %}x-circle{% endif %}"></i>
                             {% if user.is_active %}Activo{% else %}Inactivo{% endif %}
                         </a>
