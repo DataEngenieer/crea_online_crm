@@ -1,3 +1,4 @@
+{% load core_extras %}
 <div class="table-responsive rounded shadow-sm" id="tabla-clientes-container">
     <table class="table table-bordered table-hover table-striped align-middle mb-0">
         <thead class="table-header-crea sticky-top shadow-sm">
@@ -21,9 +22,25 @@
                 <td class="text-center">{{ grupo_cliente.total_dias_mora|floatformat:0|default:'-' }}</td>
                 <td class="text-center">{{ grupo_cliente.fecha_cesion|date:"d/m/Y"|default:'-' }}</td>
                 <td class="text-center">
-                    <span class="badge bg-{% if grupo_cliente.estado == 'Activo' %}success{% elif grupo_cliente.estado == 'Inactivo' %}danger{% else %}secondary{% endif %}">
-                        {{ grupo_cliente.estado|default:'Sin definir' }}
-                    </span>
+                    {% with gestiones_cliente=gestiones_por_cliente|get_item:grupo_cliente.documento %}
+                        {% if gestiones_cliente %}
+                            {% with ultima_gestion=gestiones_cliente|first %}
+                                {% if ultima_gestion.acuerdo_pago_realizado %}
+                                    {% if ultima_gestion.fecha_acuerdo and ultima_gestion.fecha_acuerdo < today %}
+                                        <span class="badge bg-warning" title="Acuerdo de pago vencido"><i class="bi bi-exclamation-triangle me-1"></i>Acuerdo Vencido</span>
+                                    {% else %}
+                                        <span class="badge bg-success" title="Acuerdo de pago vigente"><i class="bi bi-check-circle me-1"></i>Con Acuerdo</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-info" title="En proceso de negociación"><i class="bi bi-arrow-repeat me-1"></i>En Negociación</span>
+                                {% endif %}
+                            {% endwith %}
+                        {% elif grupo_cliente.estado == 'Activo' %}
+                            <span class="badge bg-primary" title="Cliente activo, sin gestión"><i class="bi bi-person-check me-1"></i>Sin Gestión</span>
+                        {% else %}
+                            <span class="badge bg-{% if grupo_cliente.estado == 'Activo' %}success{% elif grupo_cliente.estado == 'Inactivo' %}danger{% else %}secondary{% endif %}">{{ grupo_cliente.estado|default:"N/A" }}</span>
+                        {% endif %}
+                    {% endwith %}
                 </td>
                 <td class="text-center">{{ grupo_cliente.num_referencias }}</td>
                 <td class="text-center">

@@ -1,12 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponse
-from django.urls import reverse
-from .utils import enviar_correo_prueba
-from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django import forms
 from django.contrib.auth.models import User, Group
-from django.db.models import Q, Count, Sum, Max, F, Value, functions
+from django.db.models import Q, Count, Sum, Max, F, Value, functions, Subquery, OuterRef
 from django.db.models.functions import Concat
 from django.utils import timezone
 from django.http import HttpResponseForbidden, FileResponse, Http404
@@ -365,8 +365,21 @@ def clientes(request):
     filtro_telefono = request.GET.get('telefono', '').strip()
     filtro_referencia = request.GET.get('referencia', '').strip()
 
-    # Queryset base, ordenado para obtener el representante más reciente del grupo
-    clientes_qs = Cliente.objects.all().order_by('documento', '-fecha_registro')
+    # Queryset base para clientes con anotaciones
+    clientes_qs = Cliente.objects.annotate(
+        num_referencias=Count('referencia', distinct=True)
+    ).order_by('documento', '-fecha_registro')
+
+    # Obtener las gestiones para cada cliente
+    clientes_con_gestiones = {}
+    for cliente in clientes_qs:
+        # Obtenemos todas las gestiones del cliente
+        gestiones = Gestion.objects.filter(
+            cliente__documento=cliente.documento  # Usamos documento para agrupar gestiones
+        ).order_by('-fecha_hora_gestion')
+        
+        # Guardamos las gestiones usando el documento como clave
+        clientes_con_gestiones[cliente.documento] = list(gestiones)
 
     # Construir filtros dinámicamente
     filtros = Q()
@@ -426,15 +439,18 @@ def clientes(request):
 
     context = {
         'page_obj': page_obj,
-        'form_nuevo_cliente': form_nuevo_cliente,
+        'total_clientes': paginator.count,
         'filtro_documento': filtro_documento,
         'filtro_nombre': filtro_nombre,
         'filtro_telefono': filtro_telefono,
         'filtro_referencia': filtro_referencia,
+        'today': timezone.now().date(),
+        'form_nuevo_cliente': form_nuevo_cliente,
+        'gestiones_por_cliente': clientes_con_gestiones,
     }
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return render(request, 'core/_tabla_clientes_parcial.html', context)
+        return render(request, 'core/partials/tabla_clientes_parcial.html', context)
     
     return render(request, 'core/clientes.html', context)
 
@@ -514,6 +530,11 @@ def lista_gestiones(request):
     # Iniciar consulta base
     gestiones_list = Gestion.objects.select_related('cliente', 'usuario_gestion').all()
     
+    # Filtrar por usuario si no es admin
+    if not (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists()):
+        # Si es asesor, solo ver sus gestiones
+        gestiones_list = gestiones_list.filter(usuario_gestion=request.user)
+    
     # Aplicar filtros si se proporcionan
     if cliente_filtro:
         gestiones_list = gestiones_list.filter(
@@ -558,7 +579,7 @@ def lista_gestiones(request):
     
     # Si es una solicitud AJAX, renderizar solo la tabla parcial
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return render(request, 'core/_tabla_gestiones_parcial.html', context)
+        return render(request, 'core/partials/tabla_gestiones_parcial.html', context)
     
     # De lo contrario, renderizar la página completa
     return render(request, 'core/lista_gestiones.html', context)
@@ -630,7 +651,6 @@ def acuerdos_pago(request):
     return render(request, 'core/acuerdos_pago.html', context)
 
 @login_required
-@user_passes_test(es_admin)
 def seguimientos(request):
     # Filtros para seguimientos
     documento = request.GET.get('documento', '')
@@ -641,8 +661,17 @@ def seguimientos(request):
     
     # Consulta base: solo gestiones con seguimiento requerido
     seguimientos_list = Gestion.objects.select_related('cliente', 'usuario_gestion')\
-                              .filter(seguimiento_requerido=True)\
-                              .order_by('fecha_proximo_seguimiento')
+                              .filter(seguimiento_requerido=True)
+    
+    # Filtrar por usuario si no es admin
+    if not (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists()):
+        # Si es asesor, solo ver sus seguimientos
+        seguimientos_list = seguimientos_list.filter(usuario_gestion=request.user)
+        # Eliminar el filtro de usuario ya que un asesor solo debe ver sus propios seguimientos
+        usuario = ''
+    
+    # Ordenar por fecha de próximo seguimiento
+    seguimientos_list = seguimientos_list.order_by('fecha_proximo_seguimiento')
     
     # Aplicar filtros si están presentes
     if documento:

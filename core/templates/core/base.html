@@ -32,10 +32,10 @@
             <a href="{% url 'inicio' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/' or request.path == '/inicio/' %}active{% endif %}">
                 <i class="bi bi-house-door me-2"></i> Inicio
             </a>
+            {% if request.user.is_superuser or request.user.groups.all.0.name == "administrador" %}
             <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/dashboard/' %}active{% endif %}">
                 <i class="bi bi-speedometer2 me-2"></i> Dashboard
             </a>
-            {% if request.user.is_superuser or request.user.groups.all.0.name == "Administrador" %}
             <a href="{% url 'admin_usuarios' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'admin_usuarios' %}active{% endif %}">
                 <i class="bi bi-people me-2"></i> Usuarios
             </a>
@@ -50,6 +50,17 @@
             </a>
             <a href="{% url 'seguimientos' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'seguimientos' %}active{% endif %}">
                 <i class="bi bi-calendar-check me-2"></i> Seguimientos
+            </a>
+            
+            {% elif request.user.groups.all.0.name == "asesor" %}
+            <a href="{% url 'clientes' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/clientes/' %}active{% endif %}">
+                <i class="bi bi-person-vcard me-2"></i> Mis Clientes
+            </a>
+            <a href="{% url 'lista_gestiones' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'lista_gestiones' %}active{% endif %}">
+                <i class="bi bi-card-checklist me-2"></i> Mis Gestiones
+            </a>
+            <a href="{% url 'seguimientos' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'seguimientos' %}active{% endif %}">
+                <i class="bi bi-calendar-check me-2"></i> Mis Seguimientos
             </a>
             {% endif %}
         </div>
