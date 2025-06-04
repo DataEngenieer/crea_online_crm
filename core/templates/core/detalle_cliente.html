@@ -460,9 +460,10 @@
                     <span class="badge bg-primary">Cliente: {{ cliente_representativo.nombre_completo }}</span>
                 </div>
                 
-                <form method="post" class="needs-validation" novalidate>
+                <form method="post" class="needs-validation" id="formulario_gestion" novalidate>
                     {% csrf_token %}
                     {{ gestion_form.cliente }} {# Campo oculto #}
+                    <input type="hidden" name="guardar_gestion" value="1">
                     
                     <!-- Secciones del formulario con tarjetas -->
                     <div class="row g-3">
@@ -649,7 +650,7 @@
                     
                     <!-- Botón de guardar -->
                     <div class="mt-4 text-end">
-                        <button type="submit" class="btn btn-primary btn-lg px-4">
+                        <button type="submit" name="guardar_gestion" id="btn_guardar_gestion" value="1" class="btn btn-primary btn-lg px-4">
                             <i class="bi bi-save me-2"></i>Guardar Gestión
                         </button>
                     </div>
@@ -753,6 +754,88 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Código para depurar el envío del formulario
+    const formularioGestion = document.querySelector('form.needs-validation');
+    const botonGuardar = document.getElementById('btn_guardar_gestion');
+    
+    // Verificar si los elementos existen
+    if (formularioGestion) {
+        console.log('Formulario de gestión encontrado, añadiendo evento para depuración');
+        
+        // Detectar clic en el botón de guardar
+        if (botonGuardar) {
+            console.log('Botón de guardar encontrado, añadiendo listener de clic');
+            botonGuardar.addEventListener('click', function(event) {
+                console.log('=== CLIC EN BOTÓN GUARDAR DETECTADO ===');
+                console.log('Tipo de evento:', event.type);
+                console.log('Target:', event.target);
+                console.log('Propiedades del botón:', {
+                    id: this.id,
+                    name: this.name,
+                    type: this.type,
+                    disabled: this.disabled,
+                    className: this.className
+                });
+                
+                // No prevenimos el evento para que continue y se ejecute el submit
+                // Solo estamos registrando que se hizo clic
+            });
+        } else {
+            console.error('CRÍTICO: Botón de guardar NO encontrado');
+        }
+
+        // Depurar envío del formulario
+        formularioGestion.addEventListener('submit', function(event) {
+            // Prevenir temporalmente el envío para poder ver los datos
+            event.preventDefault();
+            
+            console.log('=== DEPURACIÓN: EVENTO SUBMIT DEL FORMULARIO ===');
+            console.log('Tipo de evento:', event.type);
+            console.log('¿Event.defaultPrevented?', event.defaultPrevented);
+            console.log('Form action:', this.action || 'No tiene action específico');
+            console.log('Form method:', this.method || 'No tiene method específico');
+            console.log('Form enctype:', this.enctype);
+            
+            const formData = new FormData(this);
+            
+            // Verificar campos clave
+            console.log('\n=== CAMPOS CLAVE DEL FORMULARIO ===');
+            console.log('¿Existe campo cliente?', formData.has('cliente'), formData.get('cliente'));
+            console.log('¿Existe campo guardar_gestion?', formData.has('guardar_gestion'), formData.get('guardar_gestion'));
+            console.log('¿Existe canal_contacto?', formData.has('canal_contacto'), formData.get('canal_contacto'));
+            console.log('¿Existe estado_contacto?', formData.has('estado_contacto'), formData.get('estado_contacto'));
+            console.log('¿Existe tipo_gestion_n1?', formData.has('tipo_gestion_n1'), formData.get('tipo_gestion_n1'));
+            console.log('¿Existe csrfmiddlewaretoken?', formData.has('csrfmiddlewaretoken'));
+            
+            // Mostrar campos y valores
+            console.log('\n=== TODOS LOS CAMPOS DEL FORMULARIO ===');
+            const formDataObj = {};
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+                formDataObj[key] = value;
+            }
+            
+            // Validar campos requeridos manualmente
+            let camposVacios = [];
+            let camposConError = formularioGestion.querySelectorAll('.invalid-feedback');
+            if (camposConError.length > 0) {
+                console.log('\n=== ERRORES DE VALIDACIÓN HTML ===');
+                camposConError.forEach(campoError => {
+                    console.log('Error encontrado:', campoError.textContent.trim());
+                });
+            }
+            
+            // Continuar con el envío
+            console.log('\n=== ENVIANDO FORMULARIO EN 1 SEGUNDO ===');
+            setTimeout(() => {
+                console.log('Enviando formulario al servidor...');
+                this.submit();
+            }, 1000);
+        });
+    } else {
+        console.error('No se encontró el formulario de gestión en la página');
+    }
+    
     // Ocultar los contenedores de acuerdo de pago y seguimiento al cargar la página
     const camposAcuerdo = document.getElementById('campos-acuerdo');
     const camposSeguimiento = document.getElementById('campos-seguimiento');

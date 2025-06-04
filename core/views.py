@@ -1135,22 +1135,38 @@ def detalle_cliente(request, documento_cliente):
     gestion_form = GestionForm(initial={'cliente': cliente_representativo})
 
     if request.method == 'POST':
-        # Asumimos que el POST es para guardar una gestión.
-        # Para mayor robustez, se podría añadir un 'name' al botón de submit del formulario de gestión
-        # y comprobarlo aquí: if 'nombre_del_boton_submit_gestion' in request.POST:
-        gestion_form_posted = GestionForm(request.POST)
-        if gestion_form_posted.is_valid():
-            gestion = gestion_form_posted.save(commit=False)
-            # Asociar la gestión al cliente_representativo (el registro más reciente con ese documento)
-            gestion.cliente = cliente_representativo 
-            gestion.usuario_gestion = request.user
-            gestion.save()
-            messages.success(request, f'Gestión para {cliente_representativo.nombre_completo} guardada exitosamente.')
-            # Redirigir a la misma página para ver la nueva gestión y limpiar el formulario (evita re-POST)
-            return redirect('detalle_cliente', documento_cliente=documento_cliente)
-        else:
-            messages.error(request, 'Error al guardar la gestión. Por favor revise el formulario.')
-            gestion_form = gestion_form_posted # Pasa el formulario con errores para mostrar en la plantilla
+        # Depurar datos del formulario en la consola del servidor
+        print("\n" + "=" * 80)
+        print("DEPURACIÓN DE FORMULARIO EN DETALLE_CLIENTE - DATOS RECIBIDOS")
+        print("=" * 80)
+        print(f"Método: {request.method}")
+        print(f"URL: {request.path}")
+        print(f"Vista: detalle_cliente (documento: {documento_cliente})")
+        print("\nCAMPOS RECIBIDOS:")
+        for key, value in request.POST.items():
+            print(f"- {key}: {value}")
+        print("\n¿'guardar_gestion' en request.POST?", 'guardar_gestion' in request.POST)
+        print("=" * 80 + "\n")
+        
+        # Verificar si el POST es para guardar una gestión
+        if 'guardar_gestion' in request.POST:
+            print("Procesando guardar_gestion...")
+            # Procesar el formulario de gestión
+            gestion_form_posted = GestionForm(request.POST)
+            if gestion_form_posted.is_valid():
+                print("Formulario es válido! Guardando...")
+                gestion = gestion_form_posted.save(commit=False)
+                # Asociar la gestión al cliente_representativo (el registro más reciente con ese documento)
+                gestion.cliente = cliente_representativo 
+                gestion.usuario_gestion = request.user
+                gestion.save()
+                messages.success(request, f'Gestión para {cliente_representativo.nombre_completo} guardada exitosamente.')
+                # Redirigir a la misma página para ver la nueva gestión y limpiar el formulario (evita re-POST)
+                return redirect('core:detalle_cliente', documento_cliente=documento_cliente)
+            else:
+                print("Formulario NO es válido! Errores:", gestion_form_posted.errors.as_data())
+                messages.error(request, 'Error al guardar la gestión. Por favor revise el formulario.')
+                gestion_form = gestion_form_posted # Pasa el formulario con errores para mostrar en la plantilla
     
     # Gestiones para la pestaña de historial. Mostrar todas las gestiones asociadas a CUALQUIER cliente con ese documento.
     # Ordenadas por fecha de gestión descendente, y luego por ID descendente como desempate.
@@ -1328,6 +1344,20 @@ def registrar_nueva_gestion(request):
                 return redirect('registrar_nueva_gestion')
 
         elif 'guardar_gestion' in request.POST:
+            # Depurar datos del formulario en la consola del servidor
+            print("\n" + "=" * 50)
+            print("DEPURACIÓN DE FORMULARIO DE GESTIÓN - DATOS RECIBIDOS")
+            print("=" * 50)
+            print(f"Método: {request.method}")
+            print(f"URL: {request.path}")
+            print("\nCAMPOS RECIBIDOS:")
+            for key, value in request.POST.items():
+                print(f"- {key}: {value}")
+            print("\nARCHIVOS RECIBIDOS:")
+            for key, value in request.FILES.items():
+                print(f"- {key}: {value}")
+            print("=" * 50 + "\n")
+            
             cliente_id_sesion = request.session.get('cliente_encontrado_id')
             if not cliente_id_sesion:
                 messages.error(request, "No hay cliente seleccionado. Por favor, busque un cliente primero.")

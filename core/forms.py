@@ -107,7 +107,7 @@ class GestionForm(forms.ModelForm):
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     tipo_gestion_n2 = forms.CharField(
-        required=True,  # Ahora es obligatorio
+        required=False,  # Ya no es obligatorio
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     
@@ -199,8 +199,9 @@ class GestionForm(forms.ModelForm):
         if not tipo_gestion_n1 or tipo_gestion_n1 == '':
             self.add_error('tipo_gestion_n1', 'Debe seleccionar una opción válida de Nivel 1.')
             
-        if not tipo_gestion_n2 or tipo_gestion_n2 == '':
-            self.add_error('tipo_gestion_n2', 'Debe seleccionar una opción válida de Nivel 2.')
+        # Ya no validamos tipo_gestion_n2 como obligatorio
+        # if not tipo_gestion_n2 or tipo_gestion_n2 == '':
+        #    self.add_error('tipo_gestion_n2', 'Debe seleccionar una opción válida de Nivel 2.')
         
         # Validaciones condicionales según tipo_gestion_n2
         if tipo_gestion_n2 == 'PAGADO':

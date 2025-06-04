@@ -2,6 +2,7 @@ from django.core.mail import EmailMessage
 from django.conf import settings
 import os
 import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +48,85 @@ def enviar_correo(asunto, mensaje, destinatarios, archivos_adjuntos=None, html_c
         return True
     
     except Exception as e:
-        logger.error(f"Error al enviar correo: {str(e)}")
+        logger.error(f"Error al enviar correo electrónico: {str(e)}")
         return False
+
+
+def determinar_estado_cliente(cliente, gestiones=None, today=None):
+    """
+    Determina el estado de negociación de un cliente basado en sus gestiones y acuerdos.
+    
+    Args:
+        cliente: Instancia del modelo Cliente
+        gestiones: QuerySet de gestiones del cliente. Si es None, se considera que no hay gestiones
+        today: Fecha actual. Si es None, se utiliza la fecha del sistema
+        
+    Returns:
+        dict: Diccionario con información del estado del cliente:
+            - nombre: Nombre del estado (string)
+            - color: Color Bootstrap para el badge (string)
+            - icono: Clase de Bootstrap Icons (string)
+            - descripcion: Descripción detallada del estado (string)
+    """
+    # Si no se proporciona una fecha, se utiliza la fecha actual del sistema
+    if today is None:
+        today = datetime.now().date()
+    
+    # Valores por defecto
+    estado = {
+        'nombre': 'N/A',
+        'color': 'secondary',
+        'icono': 'bi-question-circle',
+        'descripcion': 'Estado no definido'
+    }
+    
+    # Si no hay gestiones, se verifica solo el estado base del cliente
+    if not gestiones or gestiones.count() == 0:
+        if cliente.estado == 'Activo':
+            estado = {
+                'nombre': 'Sin Gestión',
+                'color': 'primary',
+                'icono': 'bi-person-check',
+                'descripcion': 'Cliente activo, sin gestión'
+            }
+        else:
+            estado = {
+                'nombre': cliente.estado,
+                'color': 'success' if cliente.estado == 'Activo' else ('danger' if cliente.estado == 'Inactivo' else 'secondary'),
+                'icono': 'bi-person',
+                'descripcion': f'Cliente en estado {cliente.estado}'
+            }
+        return estado
+    
+    # Si hay gestiones, se obtiene la más reciente
+    ultima_gestion = gestiones.order_by('-fecha_hora_gestion', '-id').first()
+    
+    # Si la última gestión tiene un acuerdo de pago
+    if ultima_gestion and ultima_gestion.acuerdo_pago_realizado:
+        if ultima_gestion.fecha_acuerdo and ultima_gestion.fecha_acuerdo < today:
+            estado = {
+                'nombre': 'Acuerdo Vencido',
+                'color': 'warning',
+                'icono': 'bi-exclamation-triangle',
+                'descripcion': 'Acuerdo de pago vencido'
+            }
+        else:
+            estado = {
+                'nombre': 'Con Acuerdo',
+                'color': 'success',
+                'icono': 'bi-check-circle',
+                'descripcion': 'Acuerdo de pago vigente'
+            }
+    # Si hay gestiones pero sin acuerdo
+    else:
+        estado = {
+            'nombre': 'En Negociación',
+            'color': 'info',
+            'icono': 'bi-arrow-repeat',
+            'descripcion': 'En proceso de negociación'
+        }
+    
+    return estado
 
 def enviar_correo_prueba(destinatario, nombre_cliente=None):
     """
