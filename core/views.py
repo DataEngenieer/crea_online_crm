@@ -379,9 +379,27 @@ def clientes(request):
         limite_clientes = 50
         clientes_qs = clientes_qs[:limite_clientes]
         
+        # Obtenemos la última tipificación para cada cliente
+        ultima_tipificacion_por_cliente = {}
+        for cliente in clientes_qs:
+            # Buscamos la última gestión
+            ultima_gestion = Gestion.objects.filter(cliente__documento=cliente.documento).order_by('-fecha_hora_gestion').first()
+            if ultima_gestion:
+                tipificacion = ultima_gestion.tipo_gestion_n1 or 'Sin tipificación'
+                ultima_tipificacion_por_cliente[cliente.documento] = {
+                    'tipificacion': tipificacion,
+                    'fecha': ultima_gestion.fecha_hora_gestion
+                }
+        
         # Convertir a lista para la plantilla
         clientes_lista = []
         for cliente in clientes_qs:
+            # Obtener la última tipificación si existe
+            ultima_tip = ultima_tipificacion_por_cliente.get(cliente.documento, {
+                'tipificacion': 'Sin gestiones', 
+                'fecha': None
+            })
+            
             clientes_lista.append({
                 'documento': cliente.documento,
                 'nombre_completo': cliente.nombre_completo,
@@ -389,12 +407,27 @@ def clientes(request):
                 'deuda_total': cliente.deuda_total,
                 'total_dias_mora': cliente.total_dias_mora,
                 'fecha_cesion': cliente.fecha_cesion,
-                'num_referencias': 1,  # Valor por defecto
-                'estado_nombre': 'Pendiente',
-                'estado_color': 'secondary',
-                'estado_icono': 'circle',
-                'estado_descripcion': 'Estado temporal'
+                'num_referencias': 1,  # Por ahora usamos valor predeterminado
+                'ultima_tipificacion': ultima_tip['tipificacion'],
+                'fecha_ultima_gestion': ultima_tip['fecha']
             })
+        
+        # Función para manejar fechas con o sin timezone de forma segura
+        def fecha_segura(fecha):
+            if fecha is None:
+                # Usar la fecha más antigua posible como valor predeterminado
+                return datetime(1900, 1, 1)
+            # Asegurarse de que todas las fechas sean "naive"
+            if hasattr(fecha, 'tzinfo') and fecha.tzinfo is not None:
+                return fecha.replace(tzinfo=None)
+            return fecha
+            
+        # Ordenar la lista por fecha de última gestión (más recientes primero)
+        clientes_lista = sorted(
+            clientes_lista, 
+            key=lambda x: fecha_segura(x['fecha_ultima_gestion']),
+            reverse=True
+        )
         
         # Configurar paginación simple
         paginator = Paginator(clientes_lista, 10)

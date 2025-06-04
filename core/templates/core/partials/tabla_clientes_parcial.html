@@ -22,10 +22,15 @@
                 <td class="text-center">{{ grupo_cliente.total_dias_mora|floatformat:0|default:'-' }}</td>
                 <td class="text-center">{{ grupo_cliente.fecha_cesion|date:"d/m/Y"|default:'-' }}</td>
                 <td class="text-center">
-                    <!-- Simplificamos el estado para que la página cargue -->
-                    <span class="badge bg-secondary">
-                        <i class="bi bi-circle me-1"></i>Pendiente
-                    </span>
+                    {% if grupo_cliente.ultima_tipificacion == 'Sin gestiones' %}
+                        <span class="badge bg-secondary" title="No hay gestiones registradas">
+                            <i class="bi bi-dash-circle me-1"></i>Sin gestiones
+                        </span>
+                    {% else %}
+                        <span class="badge bg-info" title="Última gestión: {{ grupo_cliente.fecha_ultima_gestion|date:'d/m/Y H:i'|default:'-' }}">
+                            <i class="bi bi-tag me-1"></i>{{ grupo_cliente.ultima_tipificacion }}
+                        </span>
+                    {% endif %}
                 </td>
                 <td class="text-center">{{ grupo_cliente.num_referencias }}</td>
                 <td class="text-center">
