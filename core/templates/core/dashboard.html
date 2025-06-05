@@ -271,29 +271,31 @@
             </div>
         </div>
         
-        <!-- Gráfica de Pagos por Fecha -->
+        <!-- Gráfica de Pagos Diarios -->
         <div class="col-12 col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0">
-                    <h5 class="mb-0">Pagos por Fecha</h5>
-                    <p class="text-muted mb-0 small">Evolución de cobranza mensual</p>
+                    <h5 class="mb-0">Pagos Diarios</h5>
+                    <p class="text-muted mb-0 small">Evolución de pagos últimos 30 días</p>
                 </div>
                 <div class="card-body">
                     <div class="chart-container" style="position: relative; height:300px;">
-                        <canvas id="grafico-cobranza"></canvas>
+                        <canvas id="grafico-pagos-diarios"></canvas>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+
+
 {% endblock %}
 
 {% block extra_js %}
 {{ meses|json_script:"meses-data" }}
 {{ compromisos_data|json_script:"compromisos-data" }}
-{{ meses_cobranza|json_script:"meses-cobranza-data" }}
-{{ valores_cobranza|json_script:"valores-cobranza-data" }}
+{{ pagos_diarios.fechas|json_script:"fechas-pagos-diarios-data" }}
+{{ pagos_diarios.valores|json_script:"valores-pagos-diarios-data" }}
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -483,102 +485,33 @@ document.addEventListener('DOMContentLoaded', function() {
         fechaElement.textContent = new Date().toLocaleDateString('es-ES', options);
     }
     
-    // Inicializar gráfico de cobranza mensual
-    var ctxCobranza = document.getElementById('grafico-cobranza');
-    if (ctxCobranza) {
-        const mesesCobranza = JSON.parse(document.getElementById('meses-cobranza-data')?.textContent || '[]');
-        const valoresCobranza = JSON.parse(document.getElementById('valores-cobranza-data')?.textContent || '[]');
+
+    
+    // Inicializar gráfico de pagos diarios
+    var ctxPagosDiarios = document.getElementById('grafico-pagos-diarios');
+    if (ctxPagosDiarios) {
+        const fechasPagosDiarios = JSON.parse(document.getElementById('fechas-pagos-diarios-data')?.textContent || '[]');
+        const valoresPagosDiarios = JSON.parse(document.getElementById('valores-pagos-diarios-data')?.textContent || '[]');
         
-        new Chart(ctxCobranza, {
-            type: 'line',
+        new Chart(ctxPagosDiarios, {
+            type: 'bar',
             data: {
-                labels: mesesCobranza,
+                labels: fechasPagosDiarios,
                 datasets: [{
-                    label: 'Cobranza Mensual',
-                    data: valoresCobranza,
-                    borderColor: '#04084C',
-                    backgroundColor: 'rgba(4, 8, 76, 0.1)',
-                    tension: 0.3,
-                    fill: true,
-                    borderWidth: 2,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#04084C',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    label: 'Pagos Diarios',
+                    data: valoresPagosDiarios,
+                    backgroundColor: '#2c3e50',
+                    borderColor: '#2c3e50',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    maxBarThickness: 12
                 }]
             },
             options: getChartOptions()
         });
     }
     
-    // Inicializar gráfico de distribución de cartera
-    var ctxDistribucion = document.getElementById('grafico-distribucion');
-    if (ctxDistribucion) {
-        const etiquetasDistribucion = JSON.parse(document.getElementById('etiquetas-distribucion-data')?.textContent || '[]');
-        const valoresDistribucion = JSON.parse(document.getElementById('valores-distribucion-data')?.textContent || '[]');
-        
-        new Chart(ctxDistribucion, {
-            type: 'doughnut',
-            data: {
-                labels: etiquetasDistribucion,
-                datasets: [{
-                    data: valoresDistribucion,
-                    backgroundColor: [
-                        '#04084C', '#14185C', '#34387C', '#54589C', '#7478BC',
-                        '#BB2BA3', '#C54AB0', '#D371BE', '#E297CF', '#EAB8DE'
-                    ],
-                    borderWidth: 0,
-                    offset: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '70%',
-                radius: '90%',
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            boxWidth: 14,
-                            padding: 15,
-                            usePointStyle: true,
-                            pointStyle: 'circle',
-                            font: {
-                                size: 12
-                            }
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = Math.round((value / total) * 100);
-                                return `${label}: $${value.toLocaleString()} (${percentage}%)`;
-                            }
-                        }
-                    },
-                    datalabels: {
-                        formatter: (value, ctx) => {
-                            const dataPoints = ctx.chart.data.datasets[0].data;
-                            const total = dataPoints.reduce((a, b) => a + b, 0);
-                            const percentage = Math.round((value / total) * 100);
-                            return percentage > 5 ? `${percentage}%` : '';
-                        },
-                        color: '#fff',
-                        font: {
-                            weight: 'bold',
-                            size: 11
-                        }
-                    }
-                }
-            },
-            plugins: [ChartDataLabels]
-        });
-    }
+
 });
 </script>
 {% endblock %}

@@ -59,6 +59,9 @@
             <a href="{% url 'core:lista_gestiones' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'core:lista_gestiones' %}active{% endif %}">
                 <i class="bi bi-card-checklist me-2"></i> Mis Gestiones
             </a>
+            <a href="{% url 'core:acuerdos_pago' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'core:acuerdos_pago' %}active{% endif %}">
+                <i class="bi bi-cash-coin me-2"></i> Mis Acuerdos de Pago
+            </a>
             <a href="{% url 'core:seguimientos' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'core:seguimientos' %}active{% endif %}">
                 <i class="bi bi-calendar-check me-2"></i> Mis Seguimientos
             </a>

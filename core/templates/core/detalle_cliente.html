@@ -1462,22 +1462,53 @@ document.addEventListener('DOMContentLoaded', function() {
         manageAcuerdoPagoSection(false);
         manageSeguimientoSection(false);
         manageComprobantePagoSection(false);
+        
+        // Crear un campo oculto para seguimiento_requerido si no existe
+        let seguimientoRequeridoInput = document.getElementById('id_seguimiento_requerido');
+        if (!seguimientoRequeridoInput) {
+            seguimientoRequeridoInput = document.createElement('input');
+            seguimientoRequeridoInput.type = 'hidden';
+            seguimientoRequeridoInput.id = 'id_seguimiento_requerido';
+            seguimientoRequeridoInput.name = 'seguimiento_requerido';
+            document.getElementById('formulario_gestion').appendChild(seguimientoRequeridoInput);
+        }
+        
+        // Por defecto, el seguimiento no es requerido
+        seguimientoRequeridoInput.value = 'False';
 
         if (!tipoGestionValue) return; // Si no hay valor, todas permanecen ocultas
 
+        // Convertir a minúsculas para comparación insensible a mayúsculas/minúsculas
+        const tipoGestionLower = tipoGestionValue.toLowerCase();
+
+        // Verificar si el tipo de gestión es 'solicita_llamada' independientemente de mayúsculas/minúsculas
+        const esSolicitaLlamada = tipoGestionLower === 'solicita_llamada' || 
+                               tipoGestionValue === 'SOLICITA_LLAMADA' ||
+                               tipoGestionValue.includes('solicita') && tipoGestionValue.includes('llamada');
+
+        if (esSolicitaLlamada) {
+            console.log("toggleFieldsBasedOnSelection: Detectado tipo 'solicita_llamada'");
+            manageSeguimientoSection(true);
+            // Marcar automáticamente el seguimiento como requerido
+            seguimientoRequeridoInput.value = 'True';
+            console.log("Seguimiento requerido marcado automáticamente como True");
+            return;
+        }
+
+        // Continuar con el resto de casos
         switch (tipoGestionValue) {
             case 'PAGADO':
+            case 'pagado':
                 manageComprobantePagoSection(true);
                 break;
             case 'AP': // Acuerdo Pendiente
+            case 'ap':
             case 'PP': // Promesa de Pago
+            case 'pp':
                 manageAcuerdoPagoSection(true);
                 break;
-            case 'SOLICITA_LLAMADA': // Solicita Llamada
-                console.log("toggleFieldsBasedOnSelection: Entrando en caso 'SL' (Solicita Llamada)");
-                manageSeguimientoSection(true);
-                break;
             case 'NC': // Negociación en Curso
+            case 'nc':
                 console.log("toggleFieldsBasedOnSelection: Entrando en caso 'NC' (Negociación en Curso)");
                 manageSeguimientoSection(true);
                 break;

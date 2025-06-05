@@ -9,6 +9,7 @@
                 <th>Estado</th>
                 <th>Gestor</th>
                 <th>Canal</th>
+                <th>Tipo Gestión</th>
                 <th>Observaciones</th>
                 <th>Acciones</th>
             </tr>
@@ -40,7 +41,7 @@
                 </td>
                 <td>{{ seguimiento.usuario_gestion.get_full_name|default:seguimiento.usuario_gestion.username }}</td>
                 <td class="text-center">
-                    {% if seguimiento.canal_contacto == 'telefono' %}
+                    {% if seguimiento.canal_contacto == 'telefono_in' or seguimiento.canal_contacto == 'telefono_out' %}
                         <span class="badge bg-warning" title="Teléfono"><i class="bi bi-telephone"></i></span>
                     {% elif seguimiento.canal_contacto == 'whatsapp' %}
                         <span class="badge bg-success" title="WhatsApp"><i class="bi bi-whatsapp"></i></span>
@@ -50,6 +51,17 @@
                         <span class="badge bg-info" title="SMS"><i class="bi bi-chat"></i></span>
                     {% else %}
                         {{ seguimiento.get_canal_contacto_display|default:"N/A" }}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if seguimiento.tipo_gestion_n1 == 'solicita_llamada' %}
+                        <span class="badge bg-danger" title="Requiere llamada">
+                            <i class="bi bi-telephone-outbound me-1"></i>Solicita Llamada
+                        </span>
+                    {% else %}
+                        <span class="badge bg-secondary">
+                            {{ seguimiento.get_tipo_gestion_n1_display|default:"Sin especificar" }}
+                        </span>
                     {% endif %}
                 </td>
                 <td>
@@ -79,7 +91,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="8" class="text-center py-4">
+                <td colspan="9" class="text-center py-4">
                     <div class="alert alert-info mb-0">
                         <i class="bi bi-info-circle-fill me-2"></i>No se encontraron seguimientos pendientes con los filtros aplicados.
                     </div>
