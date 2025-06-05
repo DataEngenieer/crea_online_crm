@@ -330,14 +330,14 @@ def dashboard(request):
     # 11. Datos para el gráfico de cobranza mensual (últimos 12 meses)
     fecha_hace_12_meses = hoy - timedelta(days=365)
     
-    # Obtener pagos de cuotas de acuerdos en los últimos 12 meses
-    cobranza_mensual = CuotaAcuerdo.objects.filter(
-        estado='pagada',
-        fecha_pago__gte=fecha_hace_12_meses
+    # Obtener pagos de gestiones con acuerdos de pago realizados en los últimos 12 meses
+    cobranza_mensual = Gestion.objects.filter(
+        acuerdo_pago_realizado=True,
+        fecha_acuerdo__gte=fecha_hace_12_meses
     ).extra(
-        select={'mes': "to_char(fecha_pago, 'YYYY-MM')"}
+        select={'mes': "to_char(fecha_acuerdo, 'YYYY-MM')"}
     ).values('mes').annotate(
-        total=Sum('monto')
+        total=Sum('monto_acuerdo')
     ).order_by('mes')
     
     # Preparar datos para el gráfico de cobranza
@@ -355,13 +355,13 @@ def dashboard(request):
         
     # 12. Datos para el gráfico lineal de pagos por fecha (últimos 30 días)
     fecha_hace_30_dias = hoy - timedelta(days=30)
-    pagos_diarios = CuotaAcuerdo.objects.filter(
-        estado='pagada',
-        fecha_pago__isnull=False,
-        fecha_pago__gte=fecha_hace_30_dias
-    ).values('fecha_pago').annotate(
-        total=Sum('monto')
-    ).order_by('fecha_pago')
+    pagos_diarios = Gestion.objects.filter(
+        acuerdo_pago_realizado=True,
+        fecha_pago_efectivo__isnull=False,
+        fecha_pago_efectivo__gte=fecha_hace_30_dias
+    ).values('fecha_pago_efectivo').annotate(
+        total=Sum('monto_acuerdo')
+    ).order_by('fecha_pago_efectivo')
     
     # Preparar datos para el gráfico lineal de pagos
     fechas_pagos = []
@@ -375,7 +375,7 @@ def dashboard(request):
     
     # Llenar con los datos reales
     for pago in pagos_diarios:
-        fecha_str = pago['fecha_pago'].strftime('%Y-%m-%d')
+        fecha_str = pago['fecha_pago_efectivo'].strftime('%Y-%m-%d')
         pagos_por_dia[fecha_str] = float(pago['total'])
     
     # Convertir a listas ordenadas para el gráfico
@@ -1276,6 +1276,14 @@ def detalle_cliente(request, documento_cliente):
                         # Importar modelos necesarios
                         from .models import AcuerdoPago, CuotaAcuerdo
                         
+                        # Validar que la suma de las cuotas coincida con el monto del acuerdo
+                        cuotas_data = json.loads(cuotas_json)
+                        if cuotas_data:  # Solo validar si hay cuotas
+                            suma_cuotas = sum(Decimal(cuota.get('monto', 0)) for cuota in cuotas_data)
+                            if abs(suma_cuotas - gestion.monto_acuerdo) > Decimal('0.01'):  # Permitir pequeña diferencia por redondeo
+                                messages.error(request, f'La suma de las cuotas (${suma_cuotas}) no coincide con el monto del acuerdo (${gestion.monto_acuerdo})')
+                                return redirect('core:detalle_cliente', documento_cliente=documento_cliente)
+                        
                         # Crear acuerdo de pago
                         acuerdo = AcuerdoPago(
                             cliente=cliente_representativo,
@@ -1288,7 +1296,6 @@ def detalle_cliente(request, documento_cliente):
                         acuerdo.save()
                         
                         # Procesar cuotas
-                        cuotas_data = json.loads(cuotas_json)
                         for i, cuota_data in enumerate(cuotas_data):
                             # Crear cuota
                             fecha_pago = datetime.strptime(cuota_data['fecha'], '%Y-%m-%d').date()
@@ -1303,7 +1310,17 @@ def detalle_cliente(request, documento_cliente):
                             )
                             cuota.save()
                         
-                        messages.success(request, f'Acuerdo de pago con {len(cuotas_data)} cuota(s) creado exitosamente.')
+                        # Actualizar el campo acuerdo_id en la respuesta para el JavaScript
+                        response_data = {
+                            'acuerdo_id': acuerdo.id,
+                            'mensaje': f'Acuerdo de pago con {len(cuotas_data)} cuota(s) creado exitosamente.'
+                        }
+                        
+                        # Si es una solicitud AJAX, devolver JSON
+                        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                            return JsonResponse(response_data)
+                            
+                        messages.success(request, response_data['mensaje'])
                     except Exception as e:
                         print(f"Error al procesar cuotas: {e}")
                         messages.error(request, f'Error al procesar las cuotas: {str(e)}')

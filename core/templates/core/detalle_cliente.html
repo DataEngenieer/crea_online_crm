@@ -453,6 +453,7 @@
                     {% csrf_token %}
                     {{ gestion_form.cliente }} {# Campo oculto #}
                     <input type="hidden" name="guardar_gestion" value="1">
+                    <input type="hidden" name="acuerdo_id" id="acuerdo_id" value="">
                     
                     <!-- Secciones del formulario con tarjetas -->
                     <div class="row g-3">
@@ -534,6 +535,7 @@
                                                 {{ gestion_form.monto_acuerdo }}
                                             </div>
                                             {% if gestion_form.monto_acuerdo.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.monto_acuerdo.errors|join:", " }}</div>{% endif %}
+                                            <div id="monto-acuerdo-validacion" class="text-danger small" style="display: none;">El monto total de las cuotas debe coincidir con el monto del acuerdo</div>
                                         </div>
                                         
                                         <!-- Observaciones de acuerdo -->
@@ -939,12 +941,12 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Código para depurar el envío del formulario
-    const formularioGestion = document.querySelector('form.needs-validation');
-    const botonGuardar = document.getElementById('btn_guardar_gestion');
+    const formularioGestion = document.getElementById('gestion-form');
+    const botonGuardar = document.getElementById('btn-guardar-gestion');
     
     // Verificar si los elementos existen
     if (formularioGestion) {
-        console.log('Formulario de gestión encontrado, añadiendo evento para depuración');
+        console.log('Formulario de gestión encontrado, configurando listeners');
         
         // Detectar clic en el botón de guardar
         if (botonGuardar) {
@@ -960,6 +962,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     disabled: this.disabled,
                     className: this.className
                 });
+                
+                // Verificar si hay cuotas para enviar como AJAX
+                const acuerdoSection = document.getElementById('acuerdo_pago_section_container');
+                const cuotasJsonValue = document.getElementById('cuotas-json')?.value;
+                
+                if (acuerdoSection && acuerdoSection.style.display !== 'none' && cuotasJsonValue && cuotasJsonValue !== '[]') {
+                    // Marcar el formulario para procesamiento AJAX
+                    formularioGestion.setAttribute('data-ajax-submit', 'true');
+                }
                 
                 // No prevenimos el evento para que continue y se ejecute el submit
                 // Solo estamos registrando que se hizo clic
@@ -1009,12 +1020,73 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
             
-            // Continuar con el envío
-            console.log('\n=== ENVIANDO FORMULARIO EN 1 SEGUNDO ===');
-            setTimeout(() => {
-                console.log('Enviando formulario al servidor...');
-                this.submit();
-            }, 1000);
+            // Verificar si es un acuerdo de pago con cuotas para enviar como AJAX
+            const acuerdoSection = document.getElementById('acuerdo_pago_section_container');
+            const cuotasJsonValue = document.getElementById('cuotas-json')?.value;
+            
+            if (acuerdoSection && acuerdoSection.style.display !== 'none' && 
+                cuotasJsonValue && cuotasJsonValue !== '[]' && 
+                this.getAttribute('data-ajax-submit') === 'true') {
+                
+                console.log('\n=== ENVIANDO FORMULARIO VIA AJAX PARA CAPTURAR ID DE ACUERDO ===');
+                
+                // Agregar encabezado para indicar que es una solicitud AJAX
+                const headers = {
+                    'X-Requested-With': 'XMLHttpRequest'
+                };
+                
+                // Enviar formulario mediante fetch
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: headers
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Respuesta del servidor:', data);
+                    
+                    // Actualizar el campo acuerdo_id con el ID recibido
+                    if (data.acuerdo_id) {
+                        document.getElementById('acuerdo_id').value = data.acuerdo_id;
+                        console.log('Acuerdo ID actualizado:', data.acuerdo_id);
+                        
+                        // Mostrar el botón de múltiples pagos
+                        const multiplePagosContainer = document.getElementById('multiple-pagos-container');
+                        if (multiplePagosContainer) {
+                            multiplePagosContainer.style.display = 'block';
+                        }
+                    }
+                    
+                    // Mostrar mensaje de éxito
+                    if (data.mensaje) {
+                        // Crear elemento de alerta
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                        alertDiv.role = 'alert';
+                        alertDiv.innerHTML = `
+                            ${data.mensaje}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        `;
+                        
+                        // Insertar alerta al principio del contenido
+                        const container = document.querySelector('.container-fluid');
+                        if (container) {
+                            container.insertBefore(alertDiv, container.firstChild);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al guardar el acuerdo:', error);
+                    alert('Error al guardar el acuerdo. Por favor, inténtelo de nuevo.');
+                });
+            } else {
+                // Continuar con el envío normal
+                console.log('\n=== ENVIANDO FORMULARIO EN 1 SEGUNDO ===');
+                setTimeout(() => {
+                    console.log('Enviando formulario al servidor...');
+                    this.submit();
+                }, 1000);
+            }
         });
     } else {
         console.error('No se encontró el formulario de gestión en la página');
@@ -1316,12 +1388,34 @@ document.addEventListener('DOMContentLoaded', function() {
         if (acuerdoSection && acuerdoSection.style.display !== 'none') {
             const fechaAcuerdoInput = document.getElementById('{{ gestion_form.fecha_acuerdo.id_for_label }}');
             const montoAcuerdoInput = document.getElementById('{{ gestion_form.monto_acuerdo.id_for_label }}');
+            const montoAcuerdoValidacion = document.getElementById('monto-acuerdo-validacion');
+            
             if (!fechaAcuerdoInput.value) {
                 isValid = false; messages.push('Acuerdo: Debe ingresar la fecha del acuerdo.'); fechaAcuerdoInput.classList.add('is-invalid');
             } else { fechaAcuerdoInput.classList.remove('is-invalid'); }
+            
             if (!montoAcuerdoInput.value || parseFloat(montoAcuerdoInput.value) <= 0) {
                 isValid = false; messages.push('Acuerdo: Debe ingresar un monto válido.'); montoAcuerdoInput.classList.add('is-invalid');
-            } else { montoAcuerdoInput.classList.remove('is-invalid'); }
+            } else { 
+                montoAcuerdoInput.classList.remove('is-invalid'); 
+                
+                // Validar que la suma de las cuotas coincida con el monto del acuerdo (si hay cuotas)
+                if (cuotas.length > 0) {
+                    const montoTotal = parseFloat(montoAcuerdoInput.value);
+                    const sumaCuotas = cuotas.reduce((sum, cuota) => sum + parseFloat(cuota.monto || 0), 0);
+                    
+                    if (Math.abs(montoTotal - sumaCuotas) > 0.01) { // Permitir una pequeña diferencia por redondeo
+                        isValid = false;
+                        messages.push('El monto total de las cuotas debe coincidir con el monto del acuerdo.');
+                        if (montoAcuerdoValidacion) {
+                            montoAcuerdoValidacion.style.display = 'block';
+                            montoAcuerdoValidacion.textContent = `El monto del acuerdo ($${montoTotal.toFixed(2)}) debe coincidir con la suma de las cuotas ($${sumaCuotas.toFixed(2)})`;
+                        }
+                    } else if (montoAcuerdoValidacion) {
+                        montoAcuerdoValidacion.style.display = 'none';
+                    }
+                }
+            }
         }
 
         // Validar campos de Seguimiento si la sección está visible
@@ -1432,7 +1526,26 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Mostrar u ocultar el botón de múltiples pagos según si hay cuotas
         if (multiplePagosContainer) {
-            multiplePagosContainer.style.display = cuotas.length > 0 ? 'block' : 'none';
+            const acuerdoId = document.getElementById('acuerdo_id')?.value;
+            // Solo mostrar si hay cuotas Y hay un ID de acuerdo
+            multiplePagosContainer.style.display = (cuotas.length > 0 && acuerdoId) ? 'block' : 'none';
+        }
+        
+        // Validar si el monto total de las cuotas coincide con el monto del acuerdo
+        const montoAcuerdoInput = document.getElementById('{{ gestion_form.monto_acuerdo.id_for_label }}');
+        const montoAcuerdoValidacion = document.getElementById('monto-acuerdo-validacion');
+        
+        if (montoAcuerdoInput && montoAcuerdoInput.value && cuotas.length > 0) {
+            const montoTotal = parseFloat(montoAcuerdoInput.value);
+            
+            if (Math.abs(montoTotal - total) > 0.01) { // Permitir una pequeña diferencia por redondeo
+                if (montoAcuerdoValidacion) {
+                    montoAcuerdoValidacion.style.display = 'block';
+                    montoAcuerdoValidacion.textContent = `El monto del acuerdo ($${montoTotal.toFixed(2)}) debe coincidir con la suma de las cuotas ($${total.toFixed(2)})`;
+                }
+            } else if (montoAcuerdoValidacion) {
+                montoAcuerdoValidacion.style.display = 'none';
+            }
         }
     }
     
