@@ -44,6 +44,7 @@ urlpatterns = [
     path('cuotas/<int:cuota_id>/registrar-pago/', views_acuerdos.registrar_pago_cuota, name='registrar_pago_cuota'),
     path('acuerdos/<int:acuerdo_id>/registrar-multiple-pagos/', views_acuerdos.registrar_multiple_pagos, name='registrar_multiple_pagos'),
     path('api/acuerdos/<int:acuerdo_id>/cuotas/', views_acuerdos.obtener_cuotas_acuerdo, name='api_obtener_cuotas_acuerdo'),
+    path('api/acuerdos/detalle/', views.detalle_acuerdo_ajax, name='detalle_acuerdo_ajax'),
 ]
 
 if settings.DEBUG:

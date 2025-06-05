@@ -5,7 +5,13 @@
 {% block content %}
 <div class="px-0">
     <div class="d-flex justify-content-between align-items-center mb-4 page-title-header">
-        <h2 class="mb-0">Seguimientos Pendientes</h2>
+        <h2 class="mb-0">
+            {% if request.user.groups.all.0.name == "asesor" %}
+                Mis Seguimientos Pendientes
+            {% else %}
+                Seguimientos Pendientes
+            {% endif %}
+        </h2>
         <div>
             <a href="{% url 'core:clientes' %}" class="btn btn-light me-2">
                 <i class="bi bi-people"></i> Clientes
@@ -37,6 +43,7 @@
                     </div>
                 </div>
                 <div class="row g-3">
+                    {% if not request.user.groups.all.0.name == "asesor" %}
                     <div class="col-md-3">
                         <label for="usuario" class="form-label">Gestor</label>
                         <select name="usuario" id="usuario" class="form-select filtro-input">
@@ -48,6 +55,7 @@
                             {% endfor %}
                         </select>
                     </div>
+                    {% endif %}
                     <div class="col-md-9 d-flex align-items-end justify-content-end">
                         <button type="submit" class="btn btn-primary me-2">
                             <i class="bi bi-search"></i> Buscar
@@ -234,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
     manejarMarcarCompletado();
     document.addEventListener('tabla-actualizada', manejarMarcarCompletado, false);
 
-    const btnLimpiar = document.querySelector('a[href="{% url 'core:seguimientos' %}"]');
+    const btnLimpiar = document.querySelector('a[href="{% url "core:seguimientos" %}"]');
     if (btnLimpiar) {
         btnLimpiar.addEventListener('click', (event) => {
             event.preventDefault();

@@ -1,4 +1,5 @@
 {% if page_obj %}
+{% load humanize %}
 <div class="table-responsive">
     <table class="table table-sm table-hover table-striped table-bordered" style="font-size: 0.85rem;">
         <thead class="table-light">
@@ -6,16 +7,17 @@
                 <th>Cliente</th>
                 <th>Documento</th>
                 <th>Fecha Acuerdo</th>
-                <th>Monto</th>
+                <th>Monto Total</th>
+                <th>Cuotas</th>
                 <th>Estado</th>
+                <th>Tipo</th>
                 <th>Gestor</th>
-                <th>Observaciones</th>
                 <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
             {% for acuerdo in page_obj %}
-            <tr class="{% if acuerdo.fecha_acuerdo < today %}table-danger{% endif %}">
+            <tr class="{% if acuerdo.estado == 'incumplido' %}table-danger{% elif acuerdo.estado == 'completado' %}table-success{% elif acuerdo.estado == 'en_curso' %}table-info{% elif acuerdo.estado == 'cancelado' %}table-secondary{% endif %}">
                 <td>
                     <a href="{% url 'core:detalle_cliente' documento_cliente=acuerdo.cliente.documento %}" class="text-decoration-none">
                         {{ acuerdo.cliente.nombre_completo|truncatechars:30 }}
@@ -23,28 +25,43 @@
                 </td>
                 <td>{{ acuerdo.cliente.documento }}</td>
                 <td>{{ acuerdo.fecha_acuerdo|date:"d/m/Y" }}</td>
-                <td class="text-end">${{ acuerdo.monto_acuerdo|floatformat:0|default:"0" }}</td>
+                <td class="text-end">${{ acuerdo.monto_total|floatformat:0|intcomma|default:"0" }}</td>
+                <td class="text-center">{{ acuerdo.cuotas.count }} / {{ acuerdo.numero_cuotas }}</td>
                 <td class="text-center">
-                    {% if acuerdo.fecha_acuerdo >= today %}
-                        <span class="badge bg-success">
-                            <i class="bi bi-check-circle-fill me-1"></i>Vigente
+                    {% if acuerdo.estado == 'pendiente' %}
+                        <span class="badge bg-warning">
+                            <i class="bi bi-clock-fill me-1"></i>Pendiente
                         </span>
-                    {% else %}
+                    {% elif acuerdo.estado == 'en_curso' %}
+                        <span class="badge bg-info">
+                            <i class="bi bi-play-fill me-1"></i>En curso
+                        </span>
+                    {% elif acuerdo.estado == 'completado' %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle-fill me-1"></i>Completado
+                        </span>
+                    {% elif acuerdo.estado == 'incumplido' %}
                         <span class="badge bg-danger">
-                            <i class="bi bi-exclamation-circle-fill me-1"></i>Vencido
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>Incumplido
+                        </span>
+                    {% elif acuerdo.estado == 'cancelado' %}
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-x-circle-fill me-1"></i>Cancelado
                         </span>
                     {% endif %}
                 </td>
-                <td>{{ acuerdo.usuario_gestion.get_full_name|default:acuerdo.usuario_gestion.username }}</td>
-                <td>
-                    <span class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ acuerdo.observaciones_acuerdo }}">
-                        {{ acuerdo.observaciones_acuerdo|default:"-"|truncatechars:50 }}
-                    </span>
-                </td>
                 <td class="text-center">
-                    <a href="{% url 'core:detalle_cliente' documento_cliente=acuerdo.cliente.documento %}" class="btn btn-sm btn-primary">
-                        <i class="bi bi-eye"></i>
-                    </a>
+                    {% if acuerdo.tipo_acuerdo == 'pago_total' %}
+                        <span class="badge bg-primary">Total</span>
+                    {% else %}
+                        <span class="badge bg-info">Parcial</span>
+                    {% endif %}
+                </td>
+                <td>{{ acuerdo.usuario_creacion.get_full_name|default:acuerdo.usuario_creacion.username }}</td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-primary ver-detalle-acuerdo" data-bs-toggle="modal" data-bs-target="#modalDetalleAcuerdo" data-acuerdo-id="{{ acuerdo.id }}" title="Ver detalle del acuerdo">
+                        <i class="bi bi-eye"></i> Detalle
+                    </button>
                 </td>
             </tr>
             {% empty %}

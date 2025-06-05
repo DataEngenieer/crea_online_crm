@@ -152,6 +152,22 @@ class Cliente(models.Model):
         # verbose_name = "Cliente" 
         # verbose_name_plural = "Clientes" 
 
+    def calcular_dias_mora_actual(self):
+        """Calcula los días de mora actuales basados en la fecha actual y la fecha de cesión"""
+        from django.utils import timezone
+        import datetime
+        
+        if not self.fecha_cesion:
+            return self.dias_mora_originador or 0
+            
+        fecha_actual = timezone.localdate()
+        dias_adicionales = (fecha_actual - self.fecha_cesion).days
+        
+        # Sumamos los días de mora del originador con los días transcurridos desde la cesión
+        dias_mora_total = (self.dias_mora_originador or 0) + dias_adicionales
+        
+        return dias_mora_total
+    
     def __str__(self):
         return self.nombre_completo if self.nombre_completo else str(self.id)
 

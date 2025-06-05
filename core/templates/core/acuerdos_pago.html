@@ -17,7 +17,7 @@
     </div>
     <div class="card shadow-sm border-0 mb-3">
         <div class="card-body py-3">
-            <form method="get" id="filtroAcuerdosForm" class="mb-0">
+            <form method="get" action="{% url 'core:acuerdos_pago' %}" id="filtroForm" class="mb-0">
                 <div class="row g-3 mb-3">
                     <div class="col-md-3">
                         <label for="documento" class="form-label">Documento</label>
@@ -41,8 +41,11 @@
                         <label for="estado" class="form-label">Estado</label>
                         <select name="estado" id="estado" class="form-select filtro-input">
                             <option value="" {% if not filtros.estado %}selected{% endif %}>Todos</option>
-                            <option value="vigente" {% if filtros.estado == 'vigente' %}selected{% endif %}>Vigentes</option>
-                            <option value="vencido" {% if filtros.estado == 'vencido' %}selected{% endif %}>Vencidos</option>
+                            <option value="pendiente" {% if filtros.estado == 'pendiente' %}selected{% endif %}>Pendientes</option>
+                            <option value="en_curso" {% if filtros.estado == 'en_curso' %}selected{% endif %}>En curso</option>
+                            <option value="completado" {% if filtros.estado == 'completado' %}selected{% endif %}>Completados</option>
+                            <option value="incumplido" {% if filtros.estado == 'incumplido' %}selected{% endif %}>Incumplidos</option>
+                            <option value="cancelado" {% if filtros.estado == 'cancelado' %}selected{% endif %}>Cancelados</option>
                         </select>
                     </div>
                     <div class="col-md-9 d-flex align-items-end justify-content-end">
@@ -66,90 +69,393 @@
                     Acuerdos de Pago ({{ total_acuerdos }})
                 </h5>
                 <div>
-                    <span class="badge bg-success me-2">
-                        <i class="bi bi-check-circle"></i> Vigentes
+                    <span class="badge bg-warning me-1">
+                        <i class="bi bi-clock"></i> Pendientes
                     </span>
-                    <span class="badge bg-danger">
-                        <i class="bi bi-exclamation-circle"></i> Vencidos
+                    <span class="badge bg-info me-1">
+                        <i class="bi bi-play"></i> En curso
+                    </span>
+                    <span class="badge bg-success me-1">
+                        <i class="bi bi-check-circle"></i> Completados
+                    </span>
+                    <span class="badge bg-danger me-1">
+                        <i class="bi bi-exclamation-circle"></i> Incumplidos
+                    </span>
+                    <span class="badge bg-secondary">
+                        <i class="bi bi-x-circle"></i> Cancelados
                     </span>
                 </div>
             </div>
         </div>
         <div class="card-body p-0">
-            <div id="tablaAcuerdosWrapper">
+            <div id="tablaAcuerdos">
                 {% include 'core/partials/tabla_acuerdos.html' %}
             </div>
         </div>
     </div>
 </div>
+<!-- Modal para detalles del acuerdo -->
+<div class="modal fade" id="modalDetalleAcuerdo" tabindex="-1" aria-labelledby="modalDetalleAcuerdoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #2c3e50; color: white;">
+                <h5 class="modal-title" id="modalDetalleAcuerdoLabel">Detalle del Acuerdo de Pago</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger d-none" id="errorAcuerdo">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Error al cargar los detalles del acuerdo. Por favor, intente nuevamente.
+                </div>
+                
+                <div id="detalleAcuerdo">
+                    <!-- Aquí se cargará dinámicamente el contenido del acuerdo -->
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-2">Cargando detalles del acuerdo...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#" id="btnVerCliente" class="btn" style="background-color: #2c3e50; color: white;">
+                    <i class="bi bi-person-badge"></i> Ver Cliente
+                </a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
+// Esperar a que el documento esté completamente cargado
 document.addEventListener('DOMContentLoaded', function() {
-    const filtroForm = document.getElementById('filtroAcuerdosForm');
-    const inputsFiltro = document.querySelectorAll('.filtro-input');
-    const tablaWrapper = document.getElementById('tablaAcuerdosWrapper');
+    const filtroForm = document.getElementById('filtroForm');
     const baseUrl = "{% url 'core:acuerdos_pago' %}";
-
-    async function buscarAcuerdos(url) {
-        try {
-            tablaWrapper.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Cargando...</p></div>';
-            
-            const response = await fetch(url, {
-                headers: {
-                  'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const html = await response.text();
-            tablaWrapper.innerHTML = html;
-            agregarListenersPaginacion(); 
-        } catch (error) {
-            console.error('Error en la búsqueda AJAX:', error);
-        }
-    }
-
-    function obtenerUrlConFiltrosActuales() {
+    
+    // Función para buscar acuerdos con los filtros aplicados
+    function buscarAcuerdos(url) {
+        // Obtener todos los valores de los filtros
         const formData = new FormData(filtroForm);
         const params = new URLSearchParams();
+        
+        // Añadir cada campo del formulario a los parámetros
         for (const [key, value] of formData.entries()) {
-            if (value) { 
-                params.append(key, value);
-            }
+            if (value) params.append(key, value);
         }
-        const queryString = params.toString();
-        return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+        
+        // Construir URL con parámetros
+        const urlWithParams = `${url}?${params.toString()}`;
+        
+        // Actualizar URL del navegador sin recargar la página
+        window.history.pushState({}, '', urlWithParams);
+        
+        // Mostrar indicador de carga
+        document.getElementById('tablaAcuerdos').innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Cargando acuerdos...</p></div>';
+        
+        // Realizar petición AJAX
+        fetch(urlWithParams, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('tablaAcuerdos').innerHTML = html;
+            agregarListenersPaginacion(); 
+            agregarListenersDetalleAcuerdo();
+        })
+        .catch(error => {
+            console.error('Error al cargar acuerdos:', error);
+            document.getElementById('tablaAcuerdos').innerHTML = '<div class="alert alert-danger">Error al cargar los acuerdos. Por favor, intente nuevamente.</div>';
+        });
     }
-
-    inputsFiltro.forEach(input => {
-        input.addEventListener('input', function() {
-            const url = obtenerUrlConFiltrosActuales();
-            buscarAcuerdos(url);
+    
+    // Añadir listener para cambios en los filtros
+    document.querySelectorAll('.filtro-input').forEach(input => {
+        input.addEventListener('change', () => {
+            buscarAcuerdos(baseUrl);
         });
     });
+    
+    // Función para añadir event listeners a los enlaces de paginación
+    function agregarListenersPaginacion() {
+        document.querySelectorAll('.pagination .page-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                buscarAcuerdos(this.getAttribute('href'));
+            });
+        });
+    }
 
-    filtroForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        const url = obtenerUrlConFiltrosActuales();
-        buscarAcuerdos(url);
+    // Manejar el evento click en los botones de detalle
+    document.body.addEventListener('click', function(e) {
+        const button = e.target.closest('.ver-detalle-acuerdo');
+        if (button) {
+            const acuerdoId = button.getAttribute('data-acuerdo-id');
+            console.log('Botón de detalle clickeado, ID:', acuerdoId);
+            if (acuerdoId) {
+                cargarDetalleAcuerdo(acuerdoId);
+            } else {
+                console.error('No se encontró el ID del acuerdo');
+            }
+        }
     });
 
-    function agregarListenersPaginacion() {
-        const enlacesPaginacion = tablaWrapper.querySelectorAll('.ajax-link');
-        enlacesPaginacion.forEach(enlace => {
-            enlace.addEventListener('click', function(event) {
-                event.preventDefault();
-                buscarAcuerdos(this.href);
-            });
+    // Función para cargar los detalles de un acuerdo mediante AJAX
+    function cargarDetalleAcuerdo(acuerdoId) {
+        console.log('Cargando detalles del acuerdo:', acuerdoId);
+        
+        // Mostrar spinner o mensaje de carga
+        document.getElementById('detalleAcuerdo').innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2">Cargando detalles del acuerdo...</p>
+            </div>
+        `;
+        
+        // Realizar la petición AJAX
+        fetch(`{% url 'core:detalle_acuerdo_ajax' %}?acuerdo_id=${acuerdoId}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error al cargar los detalles del acuerdo');
+            }
+            return response.json();
+        })
+        .then(data => {
+            try {
+                // Reconstruir completamente el contenido del modal
+                const detalleAcuerdo = document.getElementById('detalleAcuerdo');
+                if (!detalleAcuerdo) {
+                    console.error('No se encontró el elemento detalleAcuerdo');
+                    return;
+                }
+                
+                // Crear el HTML para el detalle del acuerdo
+                let estadoHtml = '';
+                if (data.estado_codigo === 'pendiente') {
+                    estadoHtml = `<span class="badge bg-warning">${data.estado}</span>`;
+                } else if (data.estado_codigo === 'en_curso') {
+                    estadoHtml = `<span class="badge bg-info">${data.estado}</span>`;
+                } else if (data.estado_codigo === 'completado') {
+                    estadoHtml = `<span class="badge bg-success">${data.estado}</span>`;
+                } else if (data.estado_codigo === 'incumplido') {
+                    estadoHtml = `<span class="badge bg-danger">${data.estado}</span>`;
+                } else if (data.estado_codigo === 'cancelado') {
+                    estadoHtml = `<span class="badge bg-secondary">${data.estado}</span>`;
+                }
+                
+                let tipoHtml = '';
+                if (data.tipo_acuerdo_codigo === 'pago_total') {
+                    tipoHtml = `<span class="badge bg-primary">${data.tipo_acuerdo}</span>`;
+                } else {
+                    tipoHtml = `<span class="badge bg-info">${data.tipo_acuerdo}</span>`;
+                }
+                
+                // Construir la tabla de cuotas
+                let cuotasHtml = '';
+                data.cuotas.forEach(cuota => {
+                    let estadoCuotaHtml = '';
+                    if (cuota.estado_codigo === 'pendiente') {
+                        estadoCuotaHtml = `<span class="badge bg-warning">${cuota.estado}</span>`;
+                    } else if (cuota.estado_codigo === 'pagada') {
+                        estadoCuotaHtml = `<span class="badge bg-success">${cuota.estado}</span>`;
+                    } else if (cuota.estado_codigo === 'vencida') {
+                        estadoCuotaHtml = `<span class="badge bg-danger">${cuota.estado}</span>`;
+                    }
+                    
+                    let comprobanteHtml = '-';
+                    if (cuota.comprobante_url) {
+                        comprobanteHtml = `<a href="${cuota.comprobante_url}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-file-earmark"></i> Ver</a>`;
+                    }
+                    
+                    cuotasHtml += `
+                        <tr>
+                            <td class="text-center">${cuota.numero}</td>
+                            <td class="text-end">$${cuota.monto.toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+                            <td>${cuota.fecha_vencimiento}</td>
+                            <td>${cuota.fecha_pago}</td>
+                            <td class="text-center">${estadoCuotaHtml}</td>
+                            <td class="text-center">${comprobanteHtml}</td>
+                        </tr>
+                    `;
+                });
+                
+                // Construir todo el HTML del detalle
+                const detalleHtml = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-person-circle me-2"></i>Información del Cliente</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="bg-light rounded-circle p-3 me-3">
+                                            <i class="bi bi-person-fill fs-4 text-secondary"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">${data.cliente.nombre}</h6>
+                                            <small class="text-muted">Documento: ${data.cliente.documento}</small>
+                                        </div>
+                                    </div>
+                                    <a href="#" id="btnVerClienteInline" class="btn btn-sm btn-outline-secondary w-100" onclick="window.location.href = document.getElementById('btnVerCliente').href; return false;">
+                                        <i class="bi bi-file-person"></i> Ver historial completo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Información del Acuerdo</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-2">
+                                        <div class="col-6"><strong>Fecha:</strong></div>
+                                        <div class="col-6">${data.fecha_acuerdo}</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-6"><strong>Monto Total:</strong></div>
+                                        <div class="col-6">$${data.monto_total.toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-6"><strong>Estado:</strong></div>
+                                        <div class="col-6">${estadoHtml}</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-6"><strong>Tipo:</strong></div>
+                                        <div class="col-6">${tipoHtml}</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-6"><strong>Gestor:</strong></div>
+                                        <div class="col-6">${data.gestor}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>Observaciones</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="p-2 bg-light rounded">
+                                        <i class="bi bi-quote me-2 text-secondary"></i>
+                                        ${data.observaciones || 'No hay observaciones registradas para este acuerdo.'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                <h6 class="mb-0">Cuotas</h6>
+                                <span class="badge bg-secondary">${data.cuotas.length} cuota(s)</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered table-striped">
+                                    <thead class="table-light">
+                                        <tr class="text-center">
+                                            <th>N°</th>
+                                            <th>Monto</th>
+                                            <th>Vencimiento</th>
+                                            <th>Fecha Pago</th>
+                                            <th>Estado</th>
+                                            <th>Comprobante</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${cuotasHtml}
+                                    </tbody>
+                                    <tfoot class="table-light">
+                                        <tr>
+                                            <th colspan="1" class="text-end">Total:</th>
+                                            <th class="text-end">$${data.monto_total.toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</th>
+                                            <th colspan="4"></th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Insertar el HTML en el modal
+                detalleAcuerdo.innerHTML = `
+                    <div class="alert alert-success mb-3">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        Detalles del acuerdo cargados correctamente
+                    </div>
+                    ${detalleHtml}
+                `;
+                
+                // Ocultar el mensaje de éxito después de 2 segundos
+                setTimeout(() => {
+                    const alertSuccess = detalleAcuerdo.querySelector('.alert-success');
+                    if (alertSuccess) {
+                        alertSuccess.classList.add('fade');
+                        setTimeout(() => {
+                            if (alertSuccess.parentNode === detalleAcuerdo) {
+                                alertSuccess.remove();
+                            }
+                        }, 500);
+                    }
+                }, 2000);
+                
+                // Actualizar el enlace para ver el cliente
+                const btnVerCliente = document.getElementById('btnVerCliente');
+                if (btnVerCliente) {
+                    const urlBase = "{% url 'core:detalle_cliente' documento_cliente='PLACEHOLDER' %}";
+                    btnVerCliente.href = urlBase.replace('PLACEHOLDER', data.cliente.documento);
+                    console.log('URL del cliente actualizada:', btnVerCliente.href);
+                }
+            } catch (err) {
+                console.error('Error al procesar los datos del acuerdo:', err);
+                document.getElementById('detalleAcuerdo').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Error al procesar los detalles del acuerdo: ${err.message}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error al cargar los detalles del acuerdo:', error);
+            document.getElementById('detalleAcuerdo').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Error al cargar los detalles del acuerdo. Por favor, intente nuevamente.
+                </div>
+                <div class="text-center mt-3">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="cargarDetalleAcuerdo(${acuerdoId})">
+                        <i class="bi bi-arrow-clockwise"></i> Reintentar
+                    </button>
+                </div>
+            `;
         });
     }
 
     agregarListenersPaginacion();
+    agregarListenersDetalleAcuerdo();
 
-    const btnLimpiar = document.querySelector('a[href="{% url 'core:acuerdos_pago' %}"]');
+    const btnLimpiar = document.querySelector('a[href="{% url "core:acuerdos_pago" %}"]');
     if (btnLimpiar) {
         btnLimpiar.addEventListener('click', (event) => {
             event.preventDefault();

@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .utils import determinar_estado_cliente
@@ -638,12 +638,12 @@ def lista_gestiones(request):
     # Iniciar consulta base
     gestiones_list = Gestion.objects.select_related('cliente', 'usuario_gestion').all()
     
-    # Filtrar por usuario si no es admin
-    if not (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists()):
+    # Filtrar por usuario si es asesor
+    if request.user.groups.filter(name='asesor').exists():
         # Si es asesor, solo ver sus gestiones
         gestiones_list = gestiones_list.filter(usuario_gestion=request.user)
     
-    # Aplicar filtros si se proporcionan
+    # Aplicar filtros si se proporcionan 
     if cliente_filtro:
         gestiones_list = gestiones_list.filter(
             Q(cliente__nombre_completo__icontains=cliente_filtro) | 
@@ -693,7 +693,6 @@ def lista_gestiones(request):
     return render(request, 'core/lista_gestiones.html', context)
 
 @login_required
-@user_passes_test(es_admin)
 def acuerdos_pago(request):
     # Filtros para acuerdos de pago
     documento = request.GET.get('documento', '')
@@ -702,10 +701,15 @@ def acuerdos_pago(request):
     fecha_hasta = request.GET.get('fecha_hasta', '')
     estado = request.GET.get('estado', '')
     
-    # Consulta base: solo gestiones con acuerdo de pago
-    acuerdos_list = Gestion.objects.select_related('cliente', 'usuario_gestion')\
-                          .filter(acuerdo_pago_realizado=True)\
+    # Consulta base: acuerdos de pago con prefetch de cuotas
+    acuerdos_list = AcuerdoPago.objects.select_related('cliente', 'usuario_creacion', 'gestion')\
+                          .prefetch_related('cuotas')\
                           .order_by('-fecha_acuerdo')
+    
+    # Filtrar por usuario si es asesor
+    if request.user.groups.filter(name='asesor').exists():
+        # Si es asesor, solo ver sus acuerdos
+        acuerdos_list = acuerdos_list.filter(usuario_creacion=request.user)
     
     # Aplicar filtros si están presentes
     if documento:
@@ -725,12 +729,9 @@ def acuerdos_pago(request):
         except ValueError:
             pass
     if estado:
-        # Estado personalizado: 'vigente' o 'vencido'
-        today = datetime.now().date()
-        if estado == 'vigente':
-            acuerdos_list = acuerdos_list.filter(fecha_acuerdo__gte=today)
-        elif estado == 'vencido':
-            acuerdos_list = acuerdos_list.filter(fecha_acuerdo__lt=today)
+        # Filtrar por estado del acuerdo
+        if estado in ['pendiente', 'en_curso', 'completado', 'incumplido', 'cancelado']:
+            acuerdos_list = acuerdos_list.filter(estado=estado)
     
     # Paginación
     paginator = Paginator(acuerdos_list, 25)  # 25 acuerdos por página
@@ -758,6 +759,84 @@ def acuerdos_pago(request):
     
     return render(request, 'core/acuerdos_pago.html', context)
 
+
+@login_required
+def detalle_acuerdo_ajax(request):
+    """Vista para obtener los detalles de un acuerdo específico y sus cuotas mediante AJAX"""
+    acuerdo_id = request.GET.get('acuerdo_id')
+    
+    try:
+        # Obtener el acuerdo con sus relaciones
+        acuerdo = AcuerdoPago.objects.select_related(
+            'cliente', 'usuario_creacion', 'gestion'
+        ).prefetch_related('cuotas').get(id=acuerdo_id)
+        
+        # Verificar permisos: solo el creador o administradores pueden ver los detalles
+        if not request.user.is_superuser and not request.user.groups.filter(name='admin').exists():
+            if acuerdo.usuario_creacion != request.user:
+                return JsonResponse({'error': 'No tienes permisos para ver este acuerdo'}, status=403)
+        
+        # Obtener las cuotas ordenadas por número
+        cuotas = acuerdo.cuotas.all().order_by('numero_cuota')
+        cuotas_data = []
+        
+        # Formatear datos de las cuotas
+        for cuota in cuotas:
+            comprobante_url = ''
+            if cuota.comprobante_pago:
+                comprobante_url = cuota.comprobante_pago.url
+                
+            try:
+                fecha_vencimiento = cuota.fecha_vencimiento.strftime('%d/%m/%Y') if cuota.fecha_vencimiento else '-'
+                fecha_pago = cuota.fecha_pago.strftime('%d/%m/%Y') if cuota.fecha_pago else '-'
+                
+                cuotas_data.append({
+                    'numero': cuota.numero_cuota,
+                    'monto': float(cuota.monto),
+                    'fecha_vencimiento': fecha_vencimiento,
+                    'fecha_pago': fecha_pago,
+                    'estado': cuota.get_estado_display(),
+                    'estado_codigo': cuota.estado,
+                    'comprobante_url': comprobante_url,
+                    'observaciones': cuota.observaciones or '-'
+                })
+            except Exception as e:
+                # Si hay un error con una cuota específica, registrarlo pero continuar
+                print(f"Error al procesar cuota {cuota.id}: {str(e)}")
+                continue
+        
+        # Formatear datos del acuerdo
+        try:
+            fecha_acuerdo = acuerdo.fecha_acuerdo.strftime('%d/%m/%Y') if acuerdo.fecha_acuerdo else '-'
+            
+            data = {
+                'id': acuerdo.id,
+                'cliente': {
+                    'nombre': acuerdo.cliente.nombre_completo,
+                    'documento': acuerdo.cliente.documento
+                },
+                'fecha_acuerdo': fecha_acuerdo,
+                'monto_total': float(acuerdo.monto_total),
+                'numero_cuotas': acuerdo.numero_cuotas,
+                'estado': acuerdo.get_estado_display(),
+                'estado_codigo': acuerdo.estado,
+                'tipo_acuerdo': acuerdo.get_tipo_acuerdo_display(),
+                'tipo_acuerdo_codigo': acuerdo.tipo_acuerdo,
+                'gestor': acuerdo.usuario_creacion.get_full_name() or acuerdo.usuario_creacion.username,
+                'observaciones': acuerdo.observaciones or '-',
+                'cuotas': cuotas_data
+            }
+        except Exception as e:
+            # Si hay un error al formatear los datos del acuerdo
+            return JsonResponse({'error': f'Error al formatear datos del acuerdo: {str(e)}'}, status=500)
+        
+        return JsonResponse(data)
+        
+    except AcuerdoPago.DoesNotExist:
+        return JsonResponse({'error': 'Acuerdo no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
 @login_required
 def seguimientos(request):
     # Filtros para seguimientos
@@ -771,8 +850,8 @@ def seguimientos(request):
     seguimientos_list = Gestion.objects.select_related('cliente', 'usuario_gestion')\
                               .filter(seguimiento_requerido=True)
     
-    # Filtrar por usuario si no es admin
-    if not (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists()):
+    # Filtrar por usuario si es asesor
+    if request.user.groups.filter(name='asesor').exists():
         # Si es asesor, solo ver sus seguimientos
         seguimientos_list = seguimientos_list.filter(usuario_gestion=request.user)
         # Eliminar el filtro de usuario ya que un asesor solo debe ver sus propios seguimientos
@@ -1141,9 +1220,13 @@ def carga_clientes(request):
                  df_procesado[campo] = df_procesado[campo].astype(str).str.replace(r'[^\d\+]', '', regex=True)
                  df_procesado[campo] = df_procesado[campo].replace(r'^\+?$', None, regex=True)
 
-            for campo_fecha in ['fecha_cesion', 'fecha_act']:
-                if campo_fecha in df_procesado.columns:
-                    df_procesado[campo_fecha] = pd.to_datetime(df_procesado[campo_fecha], format='%d/%m/%Y', errors='coerce')
+            # Solo procesamos fecha_cesion, ya que fecha_act ahora se calcula dinámicamente
+            if 'fecha_cesion' in df_procesado.columns:
+                df_procesado['fecha_cesion'] = pd.to_datetime(df_procesado['fecha_cesion'], format='%d/%m/%Y', errors='coerce')
+                
+            # Eliminamos la columna fecha_act si existe para que no se utilice en la importación
+            if 'fecha_act' in df_procesado.columns:
+                df_procesado.drop('fecha_act', axis=1, inplace=True)
 
             registros = df_procesado.to_dict('records')
             
@@ -1161,7 +1244,8 @@ def carga_clientes(request):
                 
                 defaults_data = {}
                 for k, v in registro.items():
-                    if k not in ['documento', 'referencia']:
+                    # Ignorar el campo fecha_act ya que ahora se calcula dinámicamente
+                    if k not in ['documento', 'referencia', 'fecha_act']:
                         if pd.isna(v):
                             defaults_data[k] = None
                         else:
@@ -1227,6 +1311,19 @@ def detalle_cliente(request, documento_cliente):
     deuda_total_consolidada = sum(c.deuda_total for c in referencias_cliente_list if c.deuda_total is not None)
     productos_count = len(referencias_cliente_list)
     
+    # Calcular los días de mora actuales para cada cliente
+    for cliente in referencias_cliente_list:
+        cliente.dias_mora_actual = cliente.calcular_dias_mora_actual()
+    
+    # Calcular el promedio de días de mora actuales
+    dias_mora_actuales = [c.dias_mora_actual for c in referencias_cliente_list]
+    dias_mora_promedio = sum(dias_mora_actuales) / len(dias_mora_actuales) if dias_mora_actuales else 0
+    
+    # Obtener la fecha actual para mostrarla en lugar de fecha_act y para comparaciones en la plantilla
+    from django.utils import timezone
+    today = timezone.localdate()
+    
+    # Mantener el cálculo original para compatibilidad
     edades_cartera = [c.total_dias_mora for c in referencias_cliente_list if c.total_dias_mora is not None]
     edad_cartera_promedio = sum(edades_cartera) / len(edades_cartera) if edades_cartera else 0
     
@@ -1356,8 +1453,7 @@ def detalle_cliente(request, documento_cliente):
     for acuerdo in acuerdos_pago:
         acuerdo.cuotas_list = acuerdo.cuotas.all().order_by('numero_cuota')
 
-    # Obtener la fecha actual para comparaciones en la plantilla
-    today = datetime.now().date()
+    # La fecha actual ya fue definida anteriormente usando timezone.localdate()
     
     # Determinar el estado del cliente usando la función de utilidad
     estado_cliente = determinar_estado_cliente(
@@ -1374,6 +1470,7 @@ def detalle_cliente(request, documento_cliente):
         'deuda_total_consolidada': deuda_total_consolidada,
         'productos_count': productos_count,
         'edad_cartera_promedio': edad_cartera_promedio,
+        'dias_mora_promedio': dias_mora_promedio,
         'valor_pagado_total': valor_pagado_total,
         'saldo_capital_total': saldo_capital_total,
         'acuerdos_pago': acuerdos_pago,

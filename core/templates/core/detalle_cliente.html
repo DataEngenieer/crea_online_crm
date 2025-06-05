@@ -72,7 +72,7 @@
                 
                 <!-- Resumen financiero en tarjetas -->
                 <div class="row g-3 mb-4">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="card border-0 shadow-sm h-100 bg-light">
                             <div class="card-body p-3">
                                 <div class="d-flex align-items-center mb-2">
@@ -88,7 +88,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="card border-0 shadow-sm h-100 bg-light">
                             <div class="card-body p-3">
                                 <div class="d-flex align-items-center mb-2">
@@ -104,7 +104,23 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm h-100 bg-light">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="rounded-circle bg-danger p-2 me-2">
+                                        <i class="bi bi-calendar-x text-white"></i>
+                                    </div>
+                                    <h6 class="mb-0">Días de Mora</h6>
+                                </div>
+                                <div class="display-6 text-danger fw-bold">{{ dias_mora_promedio|floatformat:0 }}</div>
+                                <div class="small text-muted mt-2">
+                                    <i class="bi bi-clock-history"></i> Calculado en tiempo real
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
                         <div class="card border-0 shadow-sm h-100 bg-light">
                             <div class="card-body p-3">
                                 <div class="d-flex align-items-center mb-2">
@@ -167,7 +183,7 @@
                                                 <td>{{ ref.nombre_completo|truncatechars:30|default:'N/A' }}</td>
                                                 <td>{{ ref.fecha_cesion|date:'d M Y'|default:'N/A' }}</td>
                                                 <td>{{ ref.fecha_registro|date:'d M Y'|default:'N/A' }}</td>
-                                                <td>{{ ref.fecha_act|date:'d M Y'|default:'N/A' }}</td>
+                                                <td>{{ today|date:'d M Y' }}</td>
                                                 <td class="text-center">
                                                     <span class="badge bg-{% if ref.estado == 'Activo' %}success{% elif ref.estado == 'Inactivo' %}danger{% else %}secondary{% endif %}">
                                                         <i class="bi bi-circle-fill me-1"></i>{{ ref.estado|default:'N/A' }}
@@ -230,7 +246,8 @@
                                                                         <div class="col-md-6 mb-2">
                                                                             <div class="d-flex align-items-center">
                                                                                 <span class="text-muted me-2" style="width: 100px; font-size: 0.85rem;">Días Mora:</span>
-                                                                                <span class="fw-bold text-danger">{{ ref.dias_mora_caso_sas|default:'0' }}</span>
+                                                                                <span class="fw-bold text-danger">{{ ref.dias_mora_actual|floatformat:0 }}</span>
+                                                                                <span class="ms-1 small text-muted">(Actual)</span>
                                                                             </div>
                                                                         </div>
                                                                         <div class="col-md-6 mb-2">
@@ -268,7 +285,8 @@
                                                                         <div class="col-md-6 mb-2">
                                                                             <div class="d-flex align-items-center">
                                                                                 <span class="text-muted me-2" style="width: 100px; font-size: 0.85rem;">F. Act.:</span>
-                                                                                <span>{{ ref.fecha_act|date:'d M Y'|default:'N/A' }}</span>
+                                                                                <span>{{ today|date:'d M Y' }}</span>
+                                                                                <span class="ms-1 badge bg-info">Hoy</span>
                                                                             </div>
                                                                         </div>
                                                                         <div class="col-md-6 mb-2">
