@@ -178,6 +178,9 @@ class Gestion(models.Model):
     ]
     
     # Opciones nivel 1 para cada estado de contacto
+    # Nota: 
+    # - 'ap' y 'pp' en contacto_efectivo marcan automáticamente acuerdo_pago_realizado = True
+    # - 'solicita_llamada' marca automáticamente seguimiento_requerido = True
     TIPO_GESTION_N1_OPCIONES = {
         CONTACTO_EFECTIVO: [
             ('ap', 'AP - Acuerdo de pago formalizado'),
@@ -236,5 +239,17 @@ class Gestion(models.Model):
         verbose_name_plural = "Gestiones"
         ordering = ['-fecha_hora_gestion']
 
+    def save(self, *args, **kwargs):
+        # Si el tipo de gestión es AP o PP, marcar automáticamente como acuerdo de pago
+        if self.tipo_gestion_n1 in ['ap', 'pp']:
+            self.acuerdo_pago_realizado = True
+            
+        # Si el tipo de gestión es solicita_llamada, marcar como requiere seguimiento
+        if self.tipo_gestion_n1 == 'solicita_llamada':
+            self.seguimiento_requerido = True
+        
+        # Continuar con el guardado normal
+        super(Gestion, self).save(*args, **kwargs)
+    
     def __str__(self):
         return f"Gestión para {self.cliente.nombre_completo} el {self.fecha_hora_gestion.strftime('%Y-%m-%d %H:%M')}"

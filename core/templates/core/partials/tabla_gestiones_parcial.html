@@ -29,7 +29,7 @@
                 <td>{{ gestion.usuario_gestion.get_full_name|default:gestion.usuario_gestion.username|default:"N/A" }}</td>
                 <td>{{ gestion.get_canal_contacto_display }}</td>
                 <td>
-                    <span class="badge bg-{% if gestion.estado_contacto == 'contactado' %}success{% elif gestion.estado_contacto == 'no_contactado' %}warning text-dark{% elif gestion.estado_contacto == 'numero_errado' %}danger{% else %}secondary{% endif %} rounded-pill">
+                    <span class="badge {% if gestion.estado_contacto == 'contacto_efectivo' %}bg-success{% elif gestion.estado_contacto == 'contacto_no_efectivo' %}bg-warning text-dark{% elif gestion.estado_contacto == 'contacto_fallido' %}bg-danger bg-opacity-75{% else %}bg-secondary{% endif %} rounded-pill">
                         {{ gestion.get_estado_contacto_display }}
                     </span>
                 </td>
