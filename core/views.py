@@ -19,6 +19,8 @@ from django.contrib.auth import update_session_auth_hash, get_user_model
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from functools import wraps
+import json
+from .models import Cliente, Gestion, AcuerdoPago, CuotaAcuerdo
 from datetime import datetime, timedelta
 import os
 import re
@@ -327,13 +329,15 @@ def dashboard(request):
     
     # 11. Datos para el gráfico de cobranza mensual (últimos 12 meses)
     fecha_hace_12_meses = hoy - timedelta(days=365)
-    cobranza_mensual = Gestion.objects.filter(
-        acuerdo_pago_realizado=True,
-        fecha_acuerdo__gte=fecha_hace_12_meses
+    
+    # Obtener pagos de cuotas de acuerdos en los últimos 12 meses
+    cobranza_mensual = CuotaAcuerdo.objects.filter(
+        estado='pagada',
+        fecha_pago__gte=fecha_hace_12_meses
     ).extra(
-        select={'mes': "to_char(fecha_acuerdo, 'YYYY-MM')"}
+        select={'mes': "to_char(fecha_pago, 'YYYY-MM')"}
     ).values('mes').annotate(
-        total=Sum('monto_acuerdo')
+        total=Sum('monto')
     ).order_by('mes')
     
     # Preparar datos para el gráfico de cobranza
@@ -351,13 +355,13 @@ def dashboard(request):
         
     # 12. Datos para el gráfico lineal de pagos por fecha (últimos 30 días)
     fecha_hace_30_dias = hoy - timedelta(days=30)
-    pagos_diarios = Gestion.objects.filter(
-        acuerdo_pago_realizado=True,
-        fecha_pago_efectivo__isnull=False,
-        fecha_pago_efectivo__gte=fecha_hace_30_dias
-    ).values('fecha_pago_efectivo').annotate(
-        total=Sum('monto_acuerdo')
-    ).order_by('fecha_pago_efectivo')
+    pagos_diarios = CuotaAcuerdo.objects.filter(
+        estado='pagada',
+        fecha_pago__isnull=False,
+        fecha_pago__gte=fecha_hace_30_dias
+    ).values('fecha_pago').annotate(
+        total=Sum('monto')
+    ).order_by('fecha_pago')
     
     # Preparar datos para el gráfico lineal de pagos
     fechas_pagos = []
@@ -371,7 +375,7 @@ def dashboard(request):
     
     # Llenar con los datos reales
     for pago in pagos_diarios:
-        fecha_str = pago['fecha_pago_efectivo'].strftime('%Y-%m-%d')
+        fecha_str = pago['fecha_pago'].strftime('%Y-%m-%d')
         pagos_por_dia[fecha_str] = float(pago['total'])
     
     # Convertir a listas ordenadas para el gráfico
@@ -411,6 +415,11 @@ def dashboard(request):
         'solicitudes_por_mes': [float(mes['total']) for mes in cobranza_mensual],
         'usuarios_activos': User.objects.filter(is_active=True).count(),
         'usuarios_inactivos': User.objects.filter(is_active=False).count(),
+        # Añadir datos para el gráfico de cobranza mensual
+        'meses_cobranza': json.dumps(meses_cobranza),
+        'valores_cobranza': json.dumps(valores_cobranza),
+        'etiquetas_distribucion': json.dumps(etiquetas_distribucion),
+        'valores_distribucion': json.dumps(valores_distribucion),
     }
     
     return render(request, 'core/dashboard.html', context)
