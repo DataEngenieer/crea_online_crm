@@ -1230,7 +1230,18 @@ def detalle_cliente(request, documento_cliente):
     edades_cartera = [c.total_dias_mora for c in referencias_cliente_list if c.total_dias_mora is not None]
     edad_cartera_promedio = sum(edades_cartera) / len(edades_cartera) if edades_cartera else 0
     
-    valor_pagado_total = sum(c.total_pagado for c in referencias_cliente_list if c.total_pagado is not None)
+    # Obtener las cuotas pagadas solo para este cliente específico
+    from django.db import models
+    from .models import CuotaAcuerdo, AcuerdoPago
+    
+    # Obtener todos los acuerdos de pago de este cliente
+    acuerdos_cliente = AcuerdoPago.objects.filter(cliente__documento=documento_cliente)
+    
+    # Sumar los montos de las cuotas pagadas
+    valor_pagado_total = CuotaAcuerdo.objects.filter(
+        acuerdo__in=acuerdos_cliente,
+        estado='pagada'
+    ).aggregate(total=models.Sum('monto'))['total'] or 0
     saldo_capital_total = sum(c.principal for c in referencias_cliente_list if c.principal is not None)
     intereses_corrientes_total = sum(c.intereses for c in referencias_cliente_list if c.intereses is not None)
     intereses_mora_total = sum(0 for c in referencias_cliente_list) # Campo no existente, sumando 0 temporalmente

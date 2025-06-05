@@ -24,11 +24,11 @@ GESTION_OPCIONES = {
             'SOLICITA_LLAMADA': {'label': 'Solicita llamada posterior'},
             'NO_CAPACIDAD_PAGO': {'label': 'No tiene capacidad de pago'},
             'TRAMITE_RECLAMO': {'label': 'Trámite de reclamo en curso'},
-            'PAGADO': {'label': 'PAGADO'},
             'TERCERO_INFORMACION': {'label': 'Tercero brinda información'},
-            'TERCERO_NO_INFORMACION': {'label': 'Tercero no brinda información'}
+            'TERCERO_NO_INFORMACION': {'label': 'Tercero no brinda información'},
+            'SIN_RESPUESTA_WP': {'label': 'Sin respuesta en WhatsApp'}
         }
-    },
+    },  
     'contacto_no_efectivo': {
         'label': 'Contacto No Efectivo',
         'nivel1': {
@@ -193,9 +193,9 @@ class Gestion(models.Model):
             ('solicita_llamada', 'Solicita llamada posterior'),
             ('no_capacidad', 'No tiene capacidad de pago'),
             ('reclamo', 'Trámite de reclamo en curso'),
-            ('pagado', 'PAGADO'),
             ('tercero_informacion', 'Tercero brinda información'),
-            ('tercero_no_informacion', 'Tercero no brinda información')
+            ('tercero_no_informacion', 'Tercero no brinda información'),
+            ('sin_respuesta_wp', 'Sin respuesta en WhatsApp') 
         ],
         CONTACTO_NO_EFECTIVO: [
             ('telefono_apagado', 'Teléfono apagado / fuera de servicio'),
