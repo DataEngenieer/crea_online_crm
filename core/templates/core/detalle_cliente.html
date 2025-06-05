@@ -48,6 +48,9 @@
             <button class="nav-link" id="historial-gestiones-tab" data-bs-toggle="tab" data-bs-target="#historial-gestiones" type="button" role="tab" aria-controls="historial-gestiones" aria-selected="false">Historial de Gestiones</button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link" id="historial-acuerdos-tab" data-bs-toggle="tab" data-bs-target="#historial-acuerdos" type="button" role="tab" aria-controls="historial-acuerdos" aria-selected="false">Historial de Acuerdos</button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link" id="financiera-consolidada-tab" data-bs-toggle="tab" data-bs-target="#financiera-consolidada" type="button" role="tab" aria-controls="financiera-consolidada" aria-selected="false">Información Financiera</button>
         </li>
         <li class="nav-item" role="presentation">
@@ -542,6 +545,48 @@
                                             {{ gestion_form.observaciones_acuerdo }}
                                             {% if gestion_form.observaciones_acuerdo.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.observaciones_acuerdo.errors|join:", " }}</div>{% endif %}
                                         </div>
+                                        
+                                        <!-- Múltiples fechas y montos de pago -->
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <label class="form-label d-flex align-items-center mb-0">
+                                                    <i class="bi bi-calendar-plus me-1 text-success"></i>
+                                                    <span>Cuotas de pago</span>
+                                                </label>
+                                                <button type="button" class="btn btn-sm btn-outline-success" id="btn-agregar-cuota">
+                                                    <i class="bi bi-plus-circle"></i> Agregar cuota
+                                                </button>
+                                            </div>
+                                            
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-bordered" id="tabla-cuotas">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th style="width: 50%">Fecha de pago</th>
+                                                            <th style="width: 40%">Monto</th>
+                                                            <th style="width: 10%"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="cuotas-container">
+                                                        <!-- Las filas de cuotas se agregarán dinámicamente -->
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="d-flex justify-content-between mt-2">
+                                                <span class="text-muted small">Total cuotas: <span id="total-cuotas">0</span></span>
+                                                <span class="fw-bold">Total: $<span id="total-montos">0</span></span>
+                                            </div>
+                                            
+                                            <!-- Campo oculto para almacenar los datos de las cuotas -->
+                                            <input type="hidden" name="cuotas_json" id="cuotas-json" value="">
+                                        </div>
+                                        
+                                        <!-- Botón para registrar múltiples pagos -->
+                                        <div class="mt-3" id="multiple-pagos-container" style="display: none;">
+                                            <button type="button" class="btn btn-primary w-100" id="btn-multiple-pagos">
+                                                <i class="bi bi-cash-coin me-1"></i> Registrar múltiples pagos
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -644,6 +689,159 @@
             </div>
         </div>
 
+        <!-- Pestaña: Historial de Acuerdos -->
+        <div class="tab-pane fade" id="historial-acuerdos" role="tabpanel" aria-labelledby="historial-acuerdos-tab">
+            <div class="card card-body shadow-sm border-top-0 rounded-bottom">
+                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-cash-coin me-2 text-success"></i>Historial de Acuerdos de Pago
+                    </h5>
+                    <span class="badge bg-primary">Cliente: {{ cliente_representativo.nombre_completo }} | Total: {{ acuerdos_pago|length }} acuerdos</span>
+                </div>
+                
+                {% if acuerdos_pago %}
+                    <div class="row g-3">
+                        {% for acuerdo in acuerdos_pago %}
+                            <div class="col-md-6">
+                                <div class="card shadow-sm h-100 border-{% if acuerdo.estado == 'completado' %}success{% elif acuerdo.estado == 'incumplido' %}danger{% elif acuerdo.estado == 'en_curso' %}warning{% else %}info{% endif %}">
+                                    <div class="card-header bg-light">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">
+                                                <i class="bi bi-calendar-check me-1"></i>
+                                                Acuerdo del {{ acuerdo.fecha_acuerdo|date:"d/m/Y" }}
+                                            </h6>
+                                            <span class="badge bg-{% if acuerdo.estado == 'completado' %}success{% elif acuerdo.estado == 'incumplido' %}danger{% elif acuerdo.estado == 'en_curso' %}warning{% else %}info{% endif %}">
+                                                {{ acuerdo.get_estado_display }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <div class="rounded-circle bg-primary p-1 me-2">
+                                                        <i class="bi bi-cash text-white small"></i>
+                                                    </div>
+                                                    <span class="text-muted">Monto Total:</span>
+                                                </div>
+                                                <h5 class="text-primary">${{ acuerdo.monto_total|floatformat:2|intcomma }}</h5>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <div class="rounded-circle bg-info p-1 me-2">
+                                                        <i class="bi bi-list-ol text-white small"></i>
+                                                    </div>
+                                                    <span class="text-muted">Cuotas:</span>
+                                                </div>
+                                                <h5>{{ acuerdo.numero_cuotas }} <small class="text-muted">cuota{{ acuerdo.numero_cuotas|pluralize }}</small></h5>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="rounded-circle bg-secondary p-1 me-2">
+                                                    <i class="bi bi-chat-quote text-white small"></i>
+                                                </div>
+                                                <span class="text-muted">Observaciones:</span>
+                                            </div>
+                                            <p class="small mb-0">{{ acuerdo.observaciones|default:"Sin observaciones" }}</p>
+                                        </div>
+                                        
+                                        <hr>
+                                        
+                                        <h6 class="mb-3"><i class="bi bi-receipt me-1"></i>Cuotas del acuerdo</h6>
+                                        
+                                        <div class="row g-2">
+                                            {% for cuota in acuerdo.cuotas_list %}
+                                                <div class="col-md-6">
+                                                    <div class="card border-{% if cuota.estado == 'pagada' %}success{% elif cuota.estado == 'vencida' %}danger{% else %}warning{% endif %} mb-2">
+                                                        <div class="card-body p-2">
+                                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                <span class="badge bg-{% if cuota.estado == 'pagada' %}success{% elif cuota.estado == 'vencida' %}danger{% else %}warning{% endif %}">
+                                                                    {{ cuota.get_estado_display }}
+                                                                </span>
+                                                                <span class="fw-bold">${{ cuota.monto|floatformat:2|intcomma }}</span>
+                                                            </div>
+                                                            <div class="small">
+                                                                <div><i class="bi bi-calendar me-1"></i>Vence: {{ cuota.fecha_vencimiento|date:"d/m/Y" }}</div>
+                                                                {% if cuota.fecha_pago %}
+                                                                    <div><i class="bi bi-calendar-check me-1 text-success"></i>Pagada: {{ cuota.fecha_pago|date:"d/m/Y" }}</div>
+                                                                {% endif %}
+                                                            </div>
+                                                            
+                                                            {% if cuota.estado != 'pagada' %}
+                                                                <button type="button" class="btn btn-sm btn-outline-success w-100 mt-2" data-bs-toggle="modal" data-bs-target="#modalRegistrarPago{{ cuota.id }}">
+                                                                    <i class="bi bi-check-circle me-1"></i>Registrar pago
+                                                                </button>
+                                                                
+                                                                <!-- Modal para registrar pago -->
+                                                                <div class="modal fade" id="modalRegistrarPago{{ cuota.id }}" tabindex="-1" aria-labelledby="modalRegistrarPagoLabel{{ cuota.id }}" aria-hidden="true">
+                                                                    <div class="modal-dialog">
+                                                                        <div class="modal-content">
+                                                                            <div class="modal-header">
+                                                                                <h5 class="modal-title" id="modalRegistrarPagoLabel{{ cuota.id }}">Registrar pago de cuota</h5>
+                                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                            </div>
+                                                                            <div class="modal-body">
+                                                                                <form method="post" action="{% url 'core:registrar_pago_cuota' cuota_id=cuota.id %}" enctype="multipart/form-data" class="needs-validation" novalidate>
+                                                                                    {% csrf_token %}
+                                                                                    <div class="mb-3">
+                                                                                        <label for="fecha_pago{{ cuota.id }}" class="form-label">Fecha de pago</label>
+                                                                                        <input type="date" class="form-control" id="fecha_pago{{ cuota.id }}" name="fecha_pago" required>
+                                                                                    </div>
+                                                                                    <div class="mb-3">
+                                                                                        <label for="monto_pagado{{ cuota.id }}" class="form-label">Monto pagado</label>
+                                                                                        <div class="input-group">
+                                                                                            <span class="input-group-text">$</span>
+                                                                                            <input type="number" step="0.01" class="form-control" id="monto_pagado{{ cuota.id }}" name="monto_pagado" value="{{ cuota.monto }}" required>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div class="mb-3">
+                                                                                        <label for="comprobante{{ cuota.id }}" class="form-label">Comprobante de pago</label>
+                                                                                        <input type="file" class="form-control" id="comprobante{{ cuota.id }}" name="comprobante">
+                                                                                    </div>
+                                                                                    <div class="mb-3">
+                                                                                        <label for="observaciones{{ cuota.id }}" class="form-label">Observaciones</label>
+                                                                                        <textarea class="form-control" id="observaciones{{ cuota.id }}" name="observaciones" rows="2"></textarea>
+                                                                                    </div>
+                                                                                    <div class="text-end">
+                                                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                                                        <button type="submit" class="btn btn-success">Guardar pago</button>
+                                                                                    </div>
+                                                                                </form>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            {% else %}
+                                                                {% if cuota.comprobante %}
+                                                                    <a href="{{ cuota.comprobante.url }}" target="_blank" class="btn btn-sm btn-outline-info w-100 mt-2">
+                                                                        <i class="bi bi-file-earmark-text me-1"></i>Ver comprobante
+                                                                    </a>
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">Creado: {{ acuerdo.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                                        <small class="text-muted">Por: {{ acuerdo.usuario_creacion.username|default:"Sistema" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle-fill me-2"></i>No hay acuerdos de pago registrados para este cliente.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
         <!-- Pestaña: Historial de Gestiones -->
         <div class="tab-pane fade" id="historial-gestiones" role="tabpanel" aria-labelledby="historial-gestiones-tab">
             <div class="card card-body shadow-sm border-top-0 rounded-bottom">
@@ -1204,6 +1402,147 @@ document.addEventListener('DOMContentLoaded', function() {
             // Añadir más casos según sea necesario
         }
     }
+    
+    // ===== INICIO: CÓDIGO PARA MÚLTIPLES FECHAS Y MONTOS DE PAGO =====
+    // Referencias a elementos del DOM para múltiples pagos
+    const btnAgregarCuota = document.getElementById('btn-agregar-cuota');
+    const cuotasContainer = document.getElementById('cuotas-container');
+    const cuotasJson = document.getElementById('cuotas-json');
+    const totalCuotas = document.getElementById('total-cuotas');
+    const totalMontos = document.getElementById('total-montos');
+    const btnMultiplePagos = document.getElementById('btn-multiple-pagos');
+    const multiplePagosContainer = document.getElementById('multiple-pagos-container');
+    
+    // Array para almacenar las cuotas
+    let cuotas = [];
+    
+    // Función para actualizar el contador y el total de montos
+    function actualizarResumen() {
+        if (!totalCuotas || !totalMontos) return;
+        
+        totalCuotas.textContent = cuotas.length;
+        
+        const total = cuotas.reduce((sum, cuota) => sum + parseFloat(cuota.monto || 0), 0);
+        totalMontos.textContent = total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        
+        // Actualizar el campo oculto con los datos de las cuotas en formato JSON
+        if (cuotasJson) {
+            cuotasJson.value = JSON.stringify(cuotas);
+        }
+        
+        // Mostrar u ocultar el botón de múltiples pagos según si hay cuotas
+        if (multiplePagosContainer) {
+            multiplePagosContainer.style.display = cuotas.length > 0 ? 'block' : 'none';
+        }
+    }
+    
+    // Función para agregar una nueva cuota
+    function agregarCuota() {
+        if (!cuotasContainer) return;
+        
+        const id = Date.now(); // ID único basado en timestamp
+        const nuevaCuota = {
+            id: id,
+            fecha: '',
+            monto: ''
+        };
+        
+        cuotas.push(nuevaCuota);
+        
+        // Crear fila para la nueva cuota
+        const tr = document.createElement('tr');
+        tr.id = `cuota-${id}`;
+        tr.innerHTML = `
+            <td>
+                <input type="date" class="form-control form-control-sm fecha-cuota" 
+                       data-id="${id}" required>
+            </td>
+            <td>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">$</span>
+                    <input type="number" step="0.01" class="form-control form-control-sm monto-cuota" 
+                           data-id="${id}" required>
+                </div>
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger eliminar-cuota" 
+                        data-id="${id}">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+        
+        cuotasContainer.appendChild(tr);
+        
+        // Agregar event listeners a los nuevos campos
+        const fechaInput = tr.querySelector('.fecha-cuota');
+        const montoInput = tr.querySelector('.monto-cuota');
+        const btnEliminar = tr.querySelector('.eliminar-cuota');
+        
+        fechaInput.addEventListener('change', function() {
+            const id = this.getAttribute('data-id');
+            const cuota = cuotas.find(c => c.id == id);
+            if (cuota) {
+                cuota.fecha = this.value;
+                actualizarResumen();
+            }
+        });
+        
+        montoInput.addEventListener('change', function() {
+            const id = this.getAttribute('data-id');
+            const cuota = cuotas.find(c => c.id == id);
+            if (cuota) {
+                cuota.monto = this.value;
+                actualizarResumen();
+            }
+        });
+        
+        btnEliminar.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            eliminarCuota(id);
+        });
+        
+        actualizarResumen();
+    }
+    
+    // Función para eliminar una cuota
+    function eliminarCuota(id) {
+        const index = cuotas.findIndex(c => c.id == id);
+        if (index !== -1) {
+            cuotas.splice(index, 1);
+            const fila = document.getElementById(`cuota-${id}`);
+            if (fila) fila.remove();
+            actualizarResumen();
+        }
+    }
+    
+    // Event listener para el botón de agregar cuota
+    if (btnAgregarCuota) {
+        btnAgregarCuota.addEventListener('click', agregarCuota);
+    }
+    
+    // Event listener para el botón de registrar múltiples pagos
+    if (btnMultiplePagos) {
+        btnMultiplePagos.addEventListener('click', function() {
+            // Validar que todas las cuotas tengan fecha y monto
+            const cuotasIncompletas = cuotas.filter(c => !c.fecha || !c.monto);
+            if (cuotasIncompletas.length > 0) {
+                alert('Todas las cuotas deben tener fecha y monto');
+                return;
+            }
+            
+            // Obtener el ID del acuerdo desde el formulario (si existe)
+            const acuerdoId = document.querySelector('input[name="acuerdo_id"]')?.value;
+            if (!acuerdoId) {
+                alert('No se ha seleccionado un acuerdo de pago');
+                return;
+            }
+            
+            // Abrir la página de registro de múltiples pagos
+            window.location.href = `{% url 'core:registrar_multiple_pagos' acuerdo_id=0 %}`.replace('0', acuerdoId);
+        });
+    }
+    // ===== FIN: CÓDIGO PARA MÚLTIPLES FECHAS Y MONTOS DE PAGO =====
 });
 </script>
 {% endblock %}

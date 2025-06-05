@@ -1,10 +1,23 @@
 {% extends 'core/base.html' %}
 {% load humanize %}
+{% load core_extras %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.css">
 <style>
+    /* Estilos para los badges de estados de compromisos */
+    .badge-estado-pendiente { background-color: rgba(255, 193, 7, 0.15); color: #ffc107; }
+    .badge-estado-en-curso { background-color: rgba(13, 110, 253, 0.15); color: #0d6efd; }
+    .badge-estado-completado { background-color: rgba(25, 135, 84, 0.15); color: #198754; }
+    .badge-estado-incumplido { background-color: rgba(220, 53, 69, 0.15); color: #dc3545; }
+    .badge-estado-cancelado { background-color: rgba(108, 117, 125, 0.15); color: #6c757d; }
+    
+    .text-estado-pendiente { color: #ffc107; }
+    .text-estado-en-curso { color: #0d6efd; }
+    .text-estado-completado { color: #198754; }
+    .text-estado-incumplido { color: #dc3545; }
+    .text-estado-cancelado { color: #6c757d; }
     .card-metric {
         border-left: 4px solid #04084C;
         transition: transform 0.2s;
@@ -107,7 +120,7 @@
                         </div>
                     </div>
                     <div class="mt-2">
-                        <span class="text-success fw-bold">{{ clientes_activos|intcomma }} activos</span>
+                        <span class="text-muted">Total de clientes únicos</span>
                     </div>
                 </div>
             </div>
@@ -179,7 +192,7 @@
                         </div>
                     </div>
                     <div class="mt-2">
-                        <span class="text-muted">Acuerdos de pago</span>
+                        <span class="text-muted">Valor total de acuerdos</span>
                     </div>
                 </div>
             </div>
@@ -197,7 +210,25 @@
                         </div>
                     </div>
                     <div class="mt-2">
-                        <span class="text-muted">Registrados en el sistema</span>
+                        <span class="text-muted">{{ hoy|date:"F Y" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Total Pagos Históricos -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-2-4">
+            <div class="card card-metric h-100">
+                <div class="card-body">
+                    <h6 class="card-title">TOTAL PAGOS</h6>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="card-value">${{ total_pagos_historico|intcomma|default:"0" }}</div>
+                        <div class="bg-soft-success rounded p-2">
+                            <i class="fas fa-chart-line fa-2x text-success"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-muted">Histórico acumulado</span>
                     </div>
                 </div>
             </div>
@@ -211,7 +242,7 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0">
                     <h5 class="mb-0">Estado de Compromisos de Pago</h5>
-                    <p class="text-muted mb-0 small">Distribución de compromisos vigentes y vencidos</p>
+                    <p class="text-muted mb-0 small">Distribución de acuerdos por estado</p>
                 </div>
                 <div class="card-body">
                     <div class="row align-items-center">
@@ -221,34 +252,22 @@
                             </div>
                         </div>
                         <div class="col-12 col-md-6 mt-3 mt-md-0">
-                            <div class="d-flex align-items-center mb-3">
-                                <span class="badge bg-success bg-opacity-10 text-success p-2 rounded me-2">
-                                    <i class="bi bi-check-circle-fill"></i>
-                                </span>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-0">Vigentes</h6>
-                                    <small class="text-muted">{{ compromisos_vigentes }} compromisos</small>
+                            {% for i in compromisos_data.labels|length|get_range %}
+                                {% with label=compromisos_data.labels|get_item:i count=compromisos_data.datos|get_item:i percentage=compromisos_data.porcentajes|get_item:i color=compromisos_data.colores|get_item:i %}
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge p-2 rounded me-2 badge-estado-{% if label == 'Completado' %}completado{% elif label == 'Incumplido' %}incumplido{% elif label == 'En curso' %}en-curso{% elif label == 'Pendiente' %}pendiente{% else %}cancelado{% endif %}">
+                                        <i class="bi {% if label == 'Completado' %}bi-check-circle-fill{% elif label == 'Incumplido' %}bi-exclamation-triangle-fill{% elif label == 'En curso' %}bi-arrow-repeat{% elif label == 'Pendiente' %}bi-hourglass-split{% else %}bi-x-circle-fill{% endif %}"></i>
+                                    </span>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-0">{{ label }}</h6>
+                                        <small class="text-muted">{{ count }} acuerdo{% if count != 1 %}s{% endif %}</small>
+                                    </div>
+                                    <span class="fw-bold text-estado-{% if label == 'Completado' %}completado{% elif label == 'Incumplido' %}incumplido{% elif label == 'En curso' %}en-curso{% elif label == 'Pendiente' %}pendiente{% else %}cancelado{% endif %}">
+                                        {{ percentage }}%
+                                    </span>
                                 </div>
-                                <span class="text-success fw-bold">
-                                    {% if compromisos_data.datos.0 > 0 or compromisos_data.datos.1 > 0 %}
-                                        {{ compromisos_data.porcentajes.0 }}%
-                                    {% else %}0%{% endif %}
-                                </span>
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <span class="badge bg-danger bg-opacity-10 text-danger p-2 rounded me-2">
-                                    <i class="bi bi-exclamation-triangle-fill"></i>
-                                </span>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-0">Vencidos</h6>
-                                    <small class="text-muted">{{ compromisos_vencidos }} compromisos</small>
-                                </div>
-                                <span class="text-danger fw-bold">
-                                    {% if compromisos_data.datos.0 > 0 or compromisos_data.datos.1 > 0 %}
-                                        {{ compromisos_data.porcentajes.1 }}%
-                                    {% else %}0%{% endif %}
-                                </span>
-                            </div>
+                                {% endwith %}
+                            {% endfor %}
                         </div>
                     </div>
                 </div>

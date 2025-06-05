@@ -2,6 +2,7 @@ from django.urls import path
 
 app_name = 'core'  # Necesario para definir el namespace de la aplicación
 from . import views
+from . import views_acuerdos
 from django.contrib.auth.views import (
     LoginView, LogoutView, PasswordResetView, PasswordResetDoneView, PasswordResetConfirmView, PasswordResetCompleteView
 )
@@ -38,6 +39,11 @@ urlpatterns = [
     # Rutas AJAX para los desplegables dependientes
     path('ajax/get_opciones_nivel1/', views.get_opciones_nivel1, name='ajax_get_opciones_nivel1'),
     path('ajax/get_opciones_nivel2/', views.get_opciones_nivel2, name='ajax_get_opciones_nivel2'),
+    
+    # Rutas para acuerdos de pago
+    path('cuotas/<int:cuota_id>/registrar-pago/', views_acuerdos.registrar_pago_cuota, name='registrar_pago_cuota'),
+    path('acuerdos/<int:acuerdo_id>/registrar-multiple-pagos/', views_acuerdos.registrar_multiple_pagos, name='registrar_multiple_pagos'),
+    path('api/acuerdos/<int:acuerdo_id>/cuotas/', views_acuerdos.obtener_cuotas_acuerdo, name='api_obtener_cuotas_acuerdo'),
 ]
 
 if settings.DEBUG:

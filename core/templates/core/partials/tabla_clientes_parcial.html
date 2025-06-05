@@ -18,19 +18,15 @@
             <tr>
                 <td>{{ grupo_cliente.documento }}</td>
                 <td>{{ grupo_cliente.nombre_completo|default:'-' }}</td>
-                <td class="text-end">${{ grupo_cliente.deuda_total|floatformat:2|default:'0.00' }}</td>
+                <td class="text-end">${{ grupo_cliente.deuda_total|formato_numero|default:'0,00' }}</td>
                 <td class="text-center">{{ grupo_cliente.total_dias_mora|floatformat:0|default:'-' }}</td>
                 <td class="text-center">{{ grupo_cliente.fecha_cesion|date:"d/m/Y"|default:'-' }}</td>
                 <td class="text-center">
-                    {% if grupo_cliente.ultima_tipificacion == 'Sin gestiones' %}
-                        <span class="badge bg-secondary" title="No hay gestiones registradas">
-                            <i class="bi bi-dash-circle me-1"></i>Sin gestiones
+                    {% with estilo=grupo_cliente.ultima_tipificacion|estilo_tipificacion %}
+                        <span class="badge {{ estilo.clase }}" title="Última gestión: {{ grupo_cliente.fecha_ultima_gestion|date:'d/m/Y H:i'|default:'-' }}">
+                            <i class="bi {{ estilo.icono }} me-1"></i>{{ grupo_cliente.ultima_tipificacion }}
                         </span>
-                    {% else %}
-                        <span class="badge bg-info" title="Última gestión: {{ grupo_cliente.fecha_ultima_gestion|date:'d/m/Y H:i'|default:'-' }}">
-                            <i class="bi bi-tag me-1"></i>{{ grupo_cliente.ultima_tipificacion }}
-                        </span>
-                    {% endif %}
+                    {% endwith %}
                 </td>
                 <td class="text-center">{{ grupo_cliente.num_referencias }}</td>
                 <td class="text-center">

@@ -1,9 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
-from .utils import determinar_estado_cliente
+from django.http import HttpResponse, JsonResponse
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from .utils import determinar_estado_cliente
 from django.core.paginator import Paginator
-from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django import forms
 from django.contrib.auth.models import User, Group
@@ -203,41 +203,70 @@ def dashboard(request):
     # Calcular porcentaje de mora
     porcentaje_mora = (cartera_vencida / cartera_total * 100) if cartera_total > 0 else 0
     
-    # 3. Total de compromisos de pago
-    total_compromisos = Gestion.objects.filter(acuerdo_pago_realizado=True).count()
+    # 3. Total de compromisos de pago (suma del valor total de acuerdos)
+    from .models import AcuerdoPago, CuotaAcuerdo
     
-    # 4. Pagos del mes actual (solo cuando se registra un pago)
+    # Calcular el total de compromisos sumando el valor total de los acuerdos
+    total_compromisos = AcuerdoPago.objects.aggregate(total=Sum('monto_total'))['total'] or 0
+    
+    # 4. Pagos del mes actual (suma de los montos de pagos)
     pagos_este_mes = Gestion.objects.filter(
         acuerdo_pago_realizado=True,
         fecha_pago_efectivo__isnull=False,  # Solo pagos registrados
         fecha_pago_efectivo__month=hoy.month,
         fecha_pago_efectivo__year=hoy.year
-    ).count()
+    ).aggregate(total=Sum('monto_acuerdo'))['total'] or 0
     
-    # 5. Estados de los compromisos de pago
-    # Usamos fecha_acuerdo + 30 días como fecha de vencimiento temporal
-    compromisos_vigentes = Gestion.objects.filter(
+    # 4.1 Total de pagos históricos (sin filtro de mes)
+    total_pagos_historico = Gestion.objects.filter(
         acuerdo_pago_realizado=True,
-        fecha_acuerdo__gte=hoy - timedelta(days=30),  # Compromisos de los últimos 30 días
-        fecha_pago_efectivo__isnull=True  # Que no tengan pago registrado
-    ).count()
+        fecha_pago_efectivo__isnull=False  # Solo pagos registrados
+    ).aggregate(total=Sum('monto_acuerdo'))['total'] or 0
     
-    compromisos_vencidos = Gestion.objects.filter(
-        acuerdo_pago_realizado=True,
-        fecha_acuerdo__lt=hoy - timedelta(days=30),  # Compromisos con más de 30 días
-        fecha_pago_efectivo__isnull=True  # Que no tengan pago registrado
-    ).count()
+    # 5. Estados de los compromisos de pago usando los estados reales del modelo AcuerdoPago
+    # Obtener conteo de acuerdos por estado
+    acuerdos_por_estado = AcuerdoPago.objects.values('estado').annotate(count=Count('id'))
+    
+    # Crear un diccionario para almacenar los conteos por estado
+    conteos_estados = {estado[0]: 0 for estado in AcuerdoPago.ESTADO_CHOICES}
+    
+    # Llenar el diccionario con los conteos reales
+    for item in acuerdos_por_estado:
+        conteos_estados[item['estado']] = item['count']
+    
+    # Definir colores para cada estado
+    colores_estados = {
+        AcuerdoPago.PENDIENTE: '#ffc107',    # Amarillo
+        AcuerdoPago.EN_CURSO: '#28a745',     # Verde
+        AcuerdoPago.COMPLETADO: '#17a2b8',    # Azul
+        AcuerdoPago.INCUMPLIDO: '#dc3545',    # Rojo
+        AcuerdoPago.CANCELADO: '#6c757d'      # Gris
+    }
+    
+    # Preparar datos para el gráfico
+    labels = []
+    datos = []
+    colores = []
+    porcentajes = []
+    
+    # Calcular el total de acuerdos para los porcentajes
+    total_acuerdos = sum(conteos_estados.values())
+    
+    # Preparar los datos en el orden deseado
+    for estado, nombre in AcuerdoPago.ESTADO_CHOICES:
+        labels.append(nombre)
+        count = conteos_estados[estado]
+        datos.append(count)
+        colores.append(colores_estados[estado])
+        porcentaje = (count / total_acuerdos * 100) if total_acuerdos > 0 else 0
+        porcentajes.append(round(porcentaje, 1))
     
     # Datos para el gráfico de compromisos
-    total_compromisos_grafico = compromisos_vigentes + compromisos_vencidos
-    porcentaje_vigentes = (compromisos_vigentes / total_compromisos_grafico * 100) if total_compromisos_grafico > 0 else 0
-    porcentaje_vencidos = (compromisos_vencidos / total_compromisos_grafico * 100) if total_compromisos_grafico > 0 else 0
-    
     compromisos_data = {
-        'labels': ['Vigentes', 'Vencidos'],
-        'datos': [compromisos_vigentes, compromisos_vencidos],
-        'porcentajes': [round(porcentaje_vigentes, 1), round(porcentaje_vencidos, 1)],
-        'colores': ['#28a745', '#dc3545']
+        'labels': labels,
+        'datos': datos,
+        'porcentajes': porcentajes,
+        'colores': colores
     }
     
     # 5. Datos para el gráfico de distribución de cartera por estado
@@ -319,6 +348,37 @@ def dashboard(request):
         # Buscar si hay datos para este mes
         monto = next((item['total'] for item in cobranza_mensual if item['mes'] == mes_str), 0)
         valores_cobranza.insert(0, float(monto) if monto else 0)
+        
+    # 12. Datos para el gráfico lineal de pagos por fecha (últimos 30 días)
+    fecha_hace_30_dias = hoy - timedelta(days=30)
+    pagos_diarios = Gestion.objects.filter(
+        acuerdo_pago_realizado=True,
+        fecha_pago_efectivo__isnull=False,
+        fecha_pago_efectivo__gte=fecha_hace_30_dias
+    ).values('fecha_pago_efectivo').annotate(
+        total=Sum('monto_acuerdo')
+    ).order_by('fecha_pago_efectivo')
+    
+    # Preparar datos para el gráfico lineal de pagos
+    fechas_pagos = []
+    valores_pagos = []
+    
+    # Crear un diccionario con todos los días de los últimos 30 días
+    pagos_por_dia = {}
+    for i in range(31):
+        fecha = hoy - timedelta(days=i)
+        pagos_por_dia[fecha.strftime('%Y-%m-%d')] = 0
+    
+    # Llenar con los datos reales
+    for pago in pagos_diarios:
+        fecha_str = pago['fecha_pago_efectivo'].strftime('%Y-%m-%d')
+        pagos_por_dia[fecha_str] = float(pago['total'])
+    
+    # Convertir a listas ordenadas para el gráfico
+    for fecha_str, valor in sorted(pagos_por_dia.items()):
+        fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d')
+        fechas_pagos.append(fecha_obj.strftime('%d/%m'))
+        valores_pagos.append(valor)
     
     # Preparar el contexto para la plantilla
     context = {
@@ -334,10 +394,13 @@ def dashboard(request):
         'cartera_vencida': cartera_vencida,
         'porcentaje_mora': porcentaje_mora,
         'pagos_este_mes': pagos_este_mes,
+        'total_pagos_historico': total_pagos_historico,  # Total histórico de pagos
         'total_compromisos': total_compromisos,  # Total de compromisos de pago
-        'compromisos_vigentes': compromisos_vigentes,
-        'compromisos_vencidos': compromisos_vencidos,
-        'compromisos_data': compromisos_data,
+        'compromisos_data': compromisos_data,  # Datos para el gráfico de compromisos con estados reales
+        'pagos_diarios': {
+            'fechas': fechas_pagos,
+            'valores': valores_pagos
+        },  # Datos para el gráfico lineal de pagos diarios
         'proximos_seguimientos': proximos_seguimientos,
         'actividad_reciente': actividad_reciente,
         'distribucion_cartera': distribucion_cartera_data,
@@ -360,24 +423,36 @@ def es_admin(user):
 
 @login_required
 def clientes(request):
-    # Versión simplificada para resolver problema de carga infinita
+    # Versión con agrupación por documento y suma de deudas
     try:
-        # Obtener parámetros básicos
+        # Obtener parámetros de filtro
         filtro_documento = request.GET.get('documento', '').strip()
         filtro_nombre = request.GET.get('nombre', '').strip()
+        filtro_telefono = request.GET.get('telefono', '').strip()
+        filtro_referencia = request.GET.get('referencia', '').strip()
         
-        # Consulta simplificada - primero filtrar, luego limitar
+        # Consulta inicial - todos los clientes
         clientes_qs = Cliente.objects.all().order_by('-fecha_registro')
         
-        # Aplicamos todos los filtros antes del slice
+        # Aplicamos todos los filtros
         if filtro_documento:
             clientes_qs = clientes_qs.filter(documento__icontains=filtro_documento)
         if filtro_nombre:
             clientes_qs = clientes_qs.filter(nombre_completo__icontains=filtro_nombre)
+        if filtro_telefono:
+            clientes_qs = clientes_qs.filter(
+                Q(telefono_principal__icontains=filtro_telefono) | 
+                Q(telefono_alternativo__icontains=filtro_telefono)
+            )
+        if filtro_referencia:
+            clientes_qs = clientes_qs.filter(referencia__icontains=filtro_referencia)
             
         # Limite para mostrar sólo algunos clientes (después de filtrar)
-        limite_clientes = 50
+        limite_clientes = 100
         clientes_qs = clientes_qs[:limite_clientes]
+        
+        # Diccionario para agrupar clientes por documento
+        clientes_agrupados = {}
         
         # Obtenemos la última tipificación para cada cliente
         ultima_tipificacion_por_cliente = {}
@@ -391,26 +466,44 @@ def clientes(request):
                     'fecha': ultima_gestion.fecha_hora_gestion
                 }
         
-        # Convertir a lista para la plantilla
-        clientes_lista = []
+        # Agrupar clientes por documento y sumar deudas
         for cliente in clientes_qs:
+            documento = cliente.documento
             # Obtener la última tipificación si existe
-            ultima_tip = ultima_tipificacion_por_cliente.get(cliente.documento, {
+            ultima_tip = ultima_tipificacion_por_cliente.get(documento, {
                 'tipificacion': 'Sin gestiones', 
                 'fecha': None
             })
             
-            clientes_lista.append({
-                'documento': cliente.documento,
-                'nombre_completo': cliente.nombre_completo,
-                'email': cliente.email,
-                'deuda_total': cliente.deuda_total,
-                'total_dias_mora': cliente.total_dias_mora,
-                'fecha_cesion': cliente.fecha_cesion,
-                'num_referencias': 1,  # Por ahora usamos valor predeterminado
-                'ultima_tipificacion': ultima_tip['tipificacion'],
-                'fecha_ultima_gestion': ultima_tip['fecha']
-            })
+            # Si el documento ya existe en el diccionario, actualizamos los datos
+            if documento in clientes_agrupados:
+                # Sumar la deuda total
+                clientes_agrupados[documento]['deuda_total'] += cliente.deuda_total
+                # Incrementar el contador de referencias
+                clientes_agrupados[documento]['num_referencias'] += 1
+                # Actualizar el total de días mora si es mayor
+                if cliente.total_dias_mora > clientes_agrupados[documento]['total_dias_mora']:
+                    clientes_agrupados[documento]['total_dias_mora'] = cliente.total_dias_mora
+                # Actualizar la fecha de cesión si es más reciente
+                if cliente.fecha_cesion and (not clientes_agrupados[documento]['fecha_cesion'] or 
+                                           cliente.fecha_cesion > clientes_agrupados[documento]['fecha_cesion']):
+                    clientes_agrupados[documento]['fecha_cesion'] = cliente.fecha_cesion
+            else:
+                # Si es la primera vez que vemos este documento, creamos una nueva entrada
+                clientes_agrupados[documento] = {
+                    'documento': documento,
+                    'nombre_completo': cliente.nombre_completo,
+                    'email': cliente.email,
+                    'deuda_total': cliente.deuda_total,
+                    'total_dias_mora': cliente.total_dias_mora,
+                    'fecha_cesion': cliente.fecha_cesion,
+                    'num_referencias': 1,
+                    'ultima_tipificacion': ultima_tip['tipificacion'],
+                    'fecha_ultima_gestion': ultima_tip['fecha']
+                }
+        
+        # Convertir el diccionario a lista
+        clientes_lista = list(clientes_agrupados.values())
         
         # Función para manejar fechas con o sin timezone de forma segura
         def fecha_segura(fecha):
@@ -429,7 +522,7 @@ def clientes(request):
             reverse=True
         )
         
-        # Configurar paginación simple
+        # Configurar paginación
         paginator = Paginator(clientes_lista, 10)
         page_number = request.GET.get('page', 1)
         page_obj = paginator.get_page(page_number)
@@ -442,11 +535,10 @@ def clientes(request):
             'total_clientes': len(clientes_lista),
             'filtro_documento': filtro_documento,
             'filtro_nombre': filtro_nombre,
-            'filtro_telefono': '',
-            'filtro_referencia': '',
+            'filtro_telefono': filtro_telefono,
+            'filtro_referencia': filtro_referencia,
             'today': timezone.now().date(),
             'form_nuevo_cliente': form_nuevo_cliente,
-            # Ya no pasamos gestiones_por_cliente
         }
         
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -1167,6 +1259,46 @@ def detalle_cliente(request, documento_cliente):
                 gestion.cliente = cliente_representativo 
                 gestion.usuario_gestion = request.user
                 gestion.save()
+                
+                # Procesar datos de cuotas múltiples si existen
+                cuotas_json = request.POST.get('cuotas_json')
+                if cuotas_json and gestion.monto_acuerdo and gestion.monto_acuerdo > 0:
+                    try:
+                        # Importar modelos necesarios
+                        from .models import AcuerdoPago, CuotaAcuerdo
+                        
+                        # Crear acuerdo de pago
+                        acuerdo = AcuerdoPago(
+                            cliente=cliente_representativo,
+                            fecha_acuerdo=gestion.fecha_acuerdo,
+                            monto_total=gestion.monto_acuerdo,
+                            observaciones=gestion.observaciones_acuerdo if gestion.observaciones_acuerdo else '',
+                            usuario_creacion=request.user,
+                            gestion=gestion
+                        )
+                        acuerdo.save()
+                        
+                        # Procesar cuotas
+                        cuotas_data = json.loads(cuotas_json)
+                        for i, cuota_data in enumerate(cuotas_data):
+                            # Crear cuota
+                            fecha_pago = datetime.strptime(cuota_data['fecha'], '%Y-%m-%d').date()
+                            monto = Decimal(cuota_data['monto'])
+                            
+                            cuota = CuotaAcuerdo(
+                                acuerdo=acuerdo,
+                                numero_cuota=i+1,
+                                fecha_vencimiento=fecha_pago,
+                                monto=monto,
+                                estado='PENDIENTE'
+                            )
+                            cuota.save()
+                        
+                        messages.success(request, f'Acuerdo de pago con {len(cuotas_data)} cuota(s) creado exitosamente.')
+                    except Exception as e:
+                        print(f"Error al procesar cuotas: {e}")
+                        messages.error(request, f'Error al procesar las cuotas: {str(e)}')
+                
                 messages.success(request, f'Gestión para {cliente_representativo.nombre_completo} guardada exitosamente.')
                 # Redirigir a la misma página para ver la nueva gestión y limpiar el formulario (evita re-POST)
                 return redirect('core:detalle_cliente', documento_cliente=documento_cliente)
@@ -1178,6 +1310,14 @@ def detalle_cliente(request, documento_cliente):
     # Gestiones para la pestaña de historial. Mostrar todas las gestiones asociadas a CUALQUIER cliente con ese documento.
     # Ordenadas por fecha de gestión descendente, y luego por ID descendente como desempate.
     gestiones_del_cliente = Gestion.objects.filter(cliente__documento=documento_cliente).order_by('-fecha_hora_gestion', '-id')[:20]
+    
+    # Obtener todos los acuerdos de pago asociados a cualquier cliente con ese documento
+    from .models import AcuerdoPago, CuotaAcuerdo
+    acuerdos_pago = AcuerdoPago.objects.filter(cliente__documento=documento_cliente).order_by('-fecha_acuerdo')
+    
+    # Para cada acuerdo, precargar sus cuotas para evitar múltiples consultas
+    for acuerdo in acuerdos_pago:
+        acuerdo.cuotas_list = acuerdo.cuotas.all().order_by('numero_cuota')
 
     # Obtener la fecha actual para comparaciones en la plantilla
     today = datetime.now().date()
@@ -1199,6 +1339,7 @@ def detalle_cliente(request, documento_cliente):
         'edad_cartera_promedio': edad_cartera_promedio,
         'valor_pagado_total': valor_pagado_total,
         'saldo_capital_total': saldo_capital_total,
+        'acuerdos_pago': acuerdos_pago,
         'intereses_corrientes_total': intereses_corrientes_total,
         'intereses_mora_total': intereses_mora_total,
         'gastos_cobranza_total': gastos_cobranza_total,

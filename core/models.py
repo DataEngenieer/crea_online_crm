@@ -240,6 +240,9 @@ class Gestion(models.Model):
         ordering = ['-fecha_hora_gestion']
 
     def save(self, *args, **kwargs):
+        # Verificar si es una creación nueva o una actualización
+        es_nuevo = self.pk is None
+        
         # Si el tipo de gestión es AP o PP, marcar automáticamente como acuerdo de pago
         if self.tipo_gestion_n1 in ['ap', 'pp']:
             self.acuerdo_pago_realizado = True
@@ -250,6 +253,145 @@ class Gestion(models.Model):
         
         # Continuar con el guardado normal
         super(Gestion, self).save(*args, **kwargs)
+        
+        # Crear acuerdo de pago si es necesario (solo para nuevas gestiones)
+        if es_nuevo and self.acuerdo_pago_realizado and self.monto_acuerdo and self.fecha_acuerdo:
+            # Crear el acuerdo de pago
+            acuerdo = AcuerdoPago.objects.create(
+                cliente=self.cliente,
+                gestion=self,
+                fecha_acuerdo=self.fecha_acuerdo,
+                monto_total=self.monto_acuerdo,
+                numero_cuotas=1,  # Por defecto una sola cuota
+                tipo_acuerdo=AcuerdoPago.PAGO_TOTAL,
+                observaciones=self.observaciones_acuerdo,
+                usuario_creacion=self.usuario_gestion
+            )
+            
+            # Crear la cuota única (por defecto)
+            CuotaAcuerdo.objects.create(
+                acuerdo=acuerdo,
+                numero_cuota=1,
+                monto=self.monto_acuerdo,
+                fecha_vencimiento=self.fecha_acuerdo,
+                estado=CuotaAcuerdo.PENDIENTE,
+                observaciones="Cuota única creada automáticamente"
+            )
     
     def __str__(self):
         return f"Gestión para {self.cliente.nombre_completo} el {self.fecha_hora_gestion.strftime('%Y-%m-%d %H:%M')}"
+
+
+class AcuerdoPago(models.Model):
+    # Estados posibles del acuerdo
+    PENDIENTE = 'pendiente'
+    EN_CURSO = 'en_curso'
+    COMPLETADO = 'completado'
+    INCUMPLIDO = 'incumplido'
+    CANCELADO = 'cancelado'
+    
+    ESTADO_CHOICES = [
+        (PENDIENTE, 'Pendiente'),
+        (EN_CURSO, 'En curso'),
+        (COMPLETADO, 'Completado'),
+        (INCUMPLIDO, 'Incumplido'),
+        (CANCELADO, 'Cancelado'),
+    ]
+    
+    # Tipos de acuerdo
+    PAGO_TOTAL = 'pago_total'
+    PAGO_PARCIAL = 'pago_parcial'
+    
+    TIPO_ACUERDO_CHOICES = [
+        (PAGO_TOTAL, 'Pago total'),
+        (PAGO_PARCIAL, 'Pago parcial'),
+    ]
+    
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='acuerdos_pago')
+    gestion = models.ForeignKey(Gestion, on_delete=models.CASCADE, related_name='acuerdos')
+    fecha_acuerdo = models.DateField(verbose_name="Fecha de creación del acuerdo")
+    monto_total = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Monto total del acuerdo")
+    numero_cuotas = models.PositiveIntegerField(default=1, verbose_name="Número de cuotas")
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default=PENDIENTE, verbose_name="Estado del acuerdo")
+    tipo_acuerdo = models.CharField(max_length=20, choices=TIPO_ACUERDO_CHOICES, default=PAGO_TOTAL, verbose_name="Tipo de acuerdo")
+    observaciones = models.TextField(blank=True, null=True, verbose_name="Observaciones")
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de registro")
+    fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Última actualización")
+    usuario_creacion = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='acuerdos_creados')
+    
+    class Meta:
+        verbose_name = "Acuerdo de pago"
+        verbose_name_plural = "Acuerdos de pago"
+        ordering = ['-fecha_acuerdo']
+    
+    def __str__(self):
+        return f"Acuerdo de {self.cliente.nombre_completo} por ${self.monto_total:,} del {self.fecha_acuerdo}"
+    
+    def actualizar_estado(self):
+        """Actualiza el estado del acuerdo basado en el estado de sus cuotas"""
+        cuotas = self.cuotas.all()
+        total_cuotas = cuotas.count()
+        
+        if total_cuotas == 0:
+            self.estado = self.PENDIENTE
+            self.save()
+            return
+            
+        cuotas_pagadas = cuotas.filter(estado='pagada').count()
+        cuotas_vencidas = cuotas.filter(fecha_vencimiento__lt=timezone.now().date(), estado='pendiente').count()
+        
+        if cuotas_pagadas == total_cuotas:
+            self.estado = self.COMPLETADO
+        elif cuotas_vencidas > 0:
+            self.estado = self.INCUMPLIDO
+        elif cuotas_pagadas > 0:
+            self.estado = self.EN_CURSO
+        else:
+            self.estado = self.PENDIENTE
+            
+        self.save()
+
+
+class CuotaAcuerdo(models.Model):
+    # Estados posibles de la cuota
+    PENDIENTE = 'pendiente'
+    PAGADA = 'pagada'
+    VENCIDA = 'vencida'
+    
+    ESTADO_CHOICES = [
+        (PENDIENTE, 'Pendiente'),
+        (PAGADA, 'Pagada'),
+        (VENCIDA, 'Vencida'),
+    ]
+    
+    acuerdo = models.ForeignKey(AcuerdoPago, on_delete=models.CASCADE, related_name='cuotas')
+    numero_cuota = models.PositiveIntegerField(verbose_name="Número de cuota")
+    monto = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Monto de la cuota")
+    fecha_vencimiento = models.DateField(verbose_name="Fecha de vencimiento")
+    fecha_pago = models.DateField(null=True, blank=True, verbose_name="Fecha de pago efectivo")
+    comprobante_pago = models.FileField(upload_to='comprobantes_cuotas/', null=True, blank=True, verbose_name="Comprobante de pago")
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default=PENDIENTE, verbose_name="Estado de la cuota")
+    observaciones = models.TextField(blank=True, null=True, verbose_name="Observaciones")
+    
+    class Meta:
+        verbose_name = "Cuota de acuerdo"
+        verbose_name_plural = "Cuotas de acuerdos"
+        ordering = ['acuerdo', 'numero_cuota']
+        unique_together = ['acuerdo', 'numero_cuota']
+    
+    def __str__(self):
+        return f"Cuota {self.numero_cuota} de acuerdo {self.acuerdo.id} - ${self.monto:,}"
+    
+    def save(self, *args, **kwargs):
+        # Si se marca como pagada y no tiene fecha de pago, establecer fecha actual
+        if self.estado == self.PAGADA and not self.fecha_pago:
+            self.fecha_pago = timezone.now().date()
+        
+        # Si está pendiente y la fecha de vencimiento ya pasó, marcar como vencida
+        if self.estado == self.PENDIENTE and self.fecha_vencimiento < timezone.now().date():
+            self.estado = self.VENCIDA
+            
+        super().save(*args, **kwargs)
+        
+        # Actualizar el estado del acuerdo padre
+        self.acuerdo.actualizar_estado()

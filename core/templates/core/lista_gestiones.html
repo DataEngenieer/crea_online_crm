@@ -36,9 +36,9 @@
                         <label for="estado_contacto" class="form-label">Estado de Contacto</label>
                         <select name="estado_contacto" id="estado_contacto" class="form-select filtro-input">
                             <option value="">Todos los estados</option>
-                            <option value="contactado" {% if estado_contacto == 'contactado' %}selected{% endif %}>Contactado</option>
-                            <option value="no_contactado" {% if estado_contacto == 'no_contactado' %}selected{% endif %}>No Contactado</option>
-                            <option value="numero_errado" {% if estado_contacto == 'numero_errado' %}selected{% endif %}>Número Errado</option>
+                            <option value="contacto_efectivo" {% if estado_contacto == 'contacto_efectivo' %}selected{% endif %}>Contacto Efectivo</option>
+                            <option value="contacto_no_efectivo" {% if estado_contacto == 'contacto_no_efectivo' %}selected{% endif %}>Contacto No Efectivo</option>
+                            <option value="contacto_fallido" {% if estado_contacto == 'contacto_fallido' %}selected{% endif %}>Contacto Fallido</option>
                         </select>
                     </div>
                 </div>
