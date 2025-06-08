@@ -158,6 +158,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SESSION_COOKIE_AGE = 43200  # 12 horas
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
+# Nombre único para la cookie de sesión para evitar conflictos con otras aplicaciones Django
+SESSION_COOKIE_NAME = 'crea_online_crm_sessionid'
+
 # Configuración de correo electrónico (usando variables de entorno)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.getenv('EMAIL_HOST', '')

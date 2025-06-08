@@ -245,6 +245,7 @@ class Gestion(models.Model):
     seguimiento_completado = models.BooleanField(default=False, verbose_name="Seguimiento completado")
 
     observaciones_generales = models.TextField(blank=True, null=True, verbose_name="Observaciones Generales de la Gestión")
+    observaciones = models.TextField(blank=True, null=True, verbose_name="Observaciones")
     
     # Campos para comprobante de pago
     comprobante_pago = models.FileField(upload_to='comprobantes_pago/', blank=True, null=True, verbose_name="Comprobante de Pago")

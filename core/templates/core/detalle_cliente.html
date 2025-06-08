@@ -661,6 +661,16 @@
                                         {{ gestion_form.observaciones_generales }}
                                         {% if gestion_form.observaciones_generales.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.observaciones_generales.errors|join:", " }}</div>{% endif %}
                                     </div>
+                                    
+                                    <!-- Observaciones -->
+                                    <div class="mb-3" id="observaciones-container">
+                                        <label for="{{ gestion_form.observaciones.id_for_label }}" class="form-label d-flex align-items-center">
+                                            <i class="bi bi-chat-square-text me-1 text-info"></i>
+                                            <span>{{ gestion_form.observaciones.label }}</span>
+                                        </label>
+                                        {{ gestion_form.observaciones }}
+                                        {% if gestion_form.observaciones.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.observaciones.errors|join:", " }}</div>{% endif %}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1463,6 +1473,12 @@ document.addEventListener('DOMContentLoaded', function() {
         manageSeguimientoSection(false);
         manageComprobantePagoSection(false);
         
+        // Controlar la visibilidad del campo de observaciones
+        const observacionesContainer = document.getElementById('observaciones-container');
+        if (observacionesContainer) {
+            observacionesContainer.style.display = 'block'; // Por defecto mostrar el campo de observaciones
+        }
+        
         // Crear un campo oculto para seguimiento_requerido si no existe
         let seguimientoRequeridoInput = document.getElementById('id_seguimiento_requerido');
         if (!seguimientoRequeridoInput) {
@@ -1492,6 +1508,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Marcar automáticamente el seguimiento como requerido
             seguimientoRequeridoInput.value = 'True';
             console.log("Seguimiento requerido marcado automáticamente como True");
+            // Ocultar el campo de observaciones cuando se muestra el módulo de seguimiento
+            if (observacionesContainer) {
+                observacionesContainer.style.display = 'none';
+            }
             return;
         }
 
@@ -1506,13 +1526,17 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'PP': // Promesa de Pago
             case 'pp':
                 manageAcuerdoPagoSection(true);
+                // Ocultar el campo de observaciones cuando se muestra el módulo de acuerdos de pago
+                if (observacionesContainer) {
+                    observacionesContainer.style.display = 'none';
+                }
                 break;
             case 'NC': // Negociación en Curso
             case 'nc':
                 console.log("toggleFieldsBasedOnSelection: Entrando en caso 'NC' (Negociación en Curso)");
-                manageSeguimientoSection(true);
+                // Ya no activamos el módulo de seguimiento para NC
                 break;
-            // Añadir más casos según sea necesario
+            // Para el resto de tipificaciones, el campo de observaciones permanece visible por defecto
         }
     }
     

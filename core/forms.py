@@ -123,6 +123,7 @@ class GestionForm(forms.ModelForm):
     fecha_proximo_seguimiento = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}))
     hora_proximo_seguimiento = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}))
     observaciones_generales = forms.CharField(required=False, widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}))
+    observaciones = forms.CharField(required=False, widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}))
 
     class Meta:
         model = Gestion
@@ -131,7 +132,7 @@ class GestionForm(forms.ModelForm):
             'tipo_gestion_n1', 'tipo_gestion_n2',
             'acuerdo_pago_realizado', 'fecha_acuerdo', 'monto_acuerdo', 'observaciones_acuerdo',
             'seguimiento_requerido', 'fecha_proximo_seguimiento', 'hora_proximo_seguimiento',
-            'observaciones_generales', 'comprobante_pago', 'fecha_pago_efectivo',
+            'observaciones_generales', 'observaciones', 'comprobante_pago', 'fecha_pago_efectivo',
         ]
         widgets = {
             'cliente': forms.HiddenInput(),
