@@ -4,7 +4,6 @@
         <h5 class="card-title mb-0">
             <i class="bi bi-headset me-2 text-primary"></i>Registrar Nueva Gestión
         </h5>
-        <span class="badge bg-primary">Cliente: {{ cliente_representativo.nombre_completo }}</span>
     </div>
     
     <form method="post" class="needs-validation" id="formulario_gestion" novalidate>
@@ -54,6 +53,16 @@
                                 {{ gestion_form.tipo_gestion_n1 }}
                             </div>
                             {% if gestion_form.tipo_gestion_n1.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.tipo_gestion_n1.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        
+                        <!-- Observaciones generales (siempre visible) -->
+                        <div class="mb-3">
+                            <label for="{{ gestion_form.observaciones_generales.id_for_label }}" class="form-label d-flex align-items-center">
+                                <i class="bi bi-journal-text me-1 text-primary"></i>
+                                <span>{{ gestion_form.observaciones_generales.label }}</span>
+                            </label>
+                            {{ gestion_form.observaciones_generales }}
+                            {% if gestion_form.observaciones_generales.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.observaciones_generales.errors|join:", " }}</div>{% endif %}
                         </div>
                     </div>
                 </div>
@@ -190,16 +199,6 @@
                                     {% if gestion_form.hora_proximo_seguimiento.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.hora_proximo_seguimiento.errors|join:", " }}</div>{% endif %}
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Observaciones generales -->
-                        <div class="mb-3">
-                            <label for="{{ gestion_form.observaciones_generales.id_for_label }}" class="form-label d-flex align-items-center">
-                                <i class="bi bi-journal-text me-1 text-info"></i>
-                                <span>{{ gestion_form.observaciones_generales.label }}</span>
-                            </label>
-                            {{ gestion_form.observaciones_generales }}
-                            {% if gestion_form.observaciones_generales.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.observaciones_generales.errors|join:", " }}</div>{% endif %}
                         </div>
                         
                         <!-- Observaciones -->

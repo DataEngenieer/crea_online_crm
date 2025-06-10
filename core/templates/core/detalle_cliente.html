@@ -410,6 +410,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const tipoGestionValue = this.value;
         console.log(`tipoGestionN1Select CHANGED. Value: '${tipoGestionValue}', Text: '${selectedOption ? selectedOption.text : 'N/A'}'`);
         toggleFieldsBasedOnSelection(tipoGestionValue);
+        
+        // Asegurar que el campo permanezca habilitado después de seleccionar un valor
+        setTimeout(() => {
+            this.disabled = false;
+            console.log('tipoGestionN1Select habilitado nuevamente después de cambio');
+        }, 100);
     });
     
     // Si hay valores preseleccionados, disparar el evento change para cargar las opciones
@@ -420,6 +426,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tipoGestionN1Select && tipoGestionN1Select.value) {
             console.log('Tipo de gestión tiene valor preseleccionado:', tipoGestionN1Select.value, '. Aplicando lógica condicional.');
             toggleFieldsBasedOnSelection(tipoGestionN1Select.value);
+            // Asegurar que el campo permanezca habilitado
+            tipoGestionN1Select.disabled = false;
         }
     }
     
@@ -454,12 +462,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!fieldsContainer) console.error('manageSeguimientoSection: No se encontró campos-seguimiento');
         const fechaSeguimientoInput = document.getElementById('{{ gestion_form.fecha_proximo_seguimiento.id_for_label }}');
         const horaSeguimientoInput = document.getElementById('{{ gestion_form.hora_proximo_seguimiento.id_for_label }}');
-        const observacionesGeneralesInput = document.getElementById('{{ gestion_form.observaciones_generales.id_for_label }}');
+        // Eliminamos observacionesGeneralesInput de esta función ya que debe estar siempre habilitado
 
         if (section) section.style.display = show ? 'block' : 'none';
         if (fieldsContainer) fieldsContainer.style.display = show ? 'block' : 'none';
 
-        const inputsToManage = [fechaSeguimientoInput, horaSeguimientoInput, observacionesGeneralesInput];
+        // Solo manejamos los campos específicos de seguimiento
+        const inputsToManage = [fechaSeguimientoInput, horaSeguimientoInput];
         inputsToManage.forEach(input => {
             if (input) input.disabled = !show;
         });
@@ -613,6 +622,13 @@ document.addEventListener('DOMContentLoaded', function() {
         manageSeguimientoSection(false);
         manageComprobantePagoSection(false);
         
+        // Asegurar que el campo de observaciones generales siempre esté habilitado
+        const observacionesGeneralesInput = document.getElementById('{{ gestion_form.observaciones_generales.id_for_label }}');
+        if (observacionesGeneralesInput) {
+            observacionesGeneralesInput.disabled = false;
+            console.log('Campo de observaciones generales habilitado');
+        }
+        
         // Controlar la visibilidad del campo de observaciones
         const observacionesContainer = document.getElementById('observaciones-container');
         if (observacionesContainer) {
@@ -737,9 +753,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!cuotasContainer) return;
         
         const id = Date.now(); // ID único basado en timestamp
+        
+        // Obtener la fecha actual en formato YYYY-MM-DD para usar como valor mínimo
+        const hoy = new Date();
+        const fechaActual = hoy.toISOString().split('T')[0];
+        
         const nuevaCuota = {
             id: id,
-            fecha: '',
+            fecha: '', // No establecer fecha por defecto
             monto: ''
         };
         
@@ -750,8 +771,13 @@ document.addEventListener('DOMContentLoaded', function() {
         tr.id = `cuota-${id}`;
         tr.innerHTML = `
             <td>
-                <input type="date" class="form-control form-control-sm fecha-cuota" 
-                       data-id="${id}" required>
+                <input type="date" class="form-control form-control-sm fecha-cuota is-invalid" 
+                       data-id="${id}" value="" min="${fechaActual}" required 
+                       oninvalid="this.setCustomValidity('La fecha de la cuota es obligatoria')" 
+                       oninput="this.setCustomValidity('')">
+                <div class="invalid-feedback">
+                    Debe seleccionar una fecha para esta cuota
+                </div>
             </td>
             <td>
                 <div class="input-group input-group-sm">
@@ -775,12 +801,42 @@ document.addEventListener('DOMContentLoaded', function() {
         const montoInput = tr.querySelector('.monto-cuota');
         const btnEliminar = tr.querySelector('.eliminar-cuota');
         
+        // Forzar la validación visual desde el inicio
+        fechaInput.focus();
+        fechaInput.blur();
+        
         fechaInput.addEventListener('change', function() {
             const id = this.getAttribute('data-id');
             const cuota = cuotas.find(c => c.id == id);
             if (cuota) {
-                cuota.fecha = this.value;
+                // Validar que la fecha sea válida
+                if (this.value && this.value.trim() !== '') {
+                    cuota.fecha = this.value;
+                    // Quitar cualquier clase de error
+                    this.classList.remove('is-invalid');
+                } else {
+                    // Mantener la clase de error si está vacío
+                    this.classList.add('is-invalid');
+                    alert('La fecha de la cuota no puede estar vacía. Por favor seleccione una fecha.');
+                }
                 actualizarResumen();
+            }
+        });
+        
+        // También validar cuando el campo pierde el foco
+        fechaInput.addEventListener('blur', function() {
+            if (!this.value || this.value.trim() === '') {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+        
+        // Evitar que se pueda borrar la fecha
+        fechaInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                e.preventDefault();
+                alert('No se puede borrar la fecha de la cuota. Si desea cambiarla, seleccione otra fecha.');
             }
         });
         
@@ -817,14 +873,99 @@ document.addEventListener('DOMContentLoaded', function() {
         btnAgregarCuota.addEventListener('click', agregarCuota);
     }
     
+    // Forzar la validación de fechas en todas las cuotas existentes
+    function validarTodasLasFechas() {
+        const fechaInputs = document.querySelectorAll('.fecha-cuota');
+        const fechaActual = new Date().toISOString().split('T')[0];
+        let seCorrigieron = false;
+        
+        fechaInputs.forEach(input => {
+            const id = input.getAttribute('data-id');
+            const cuota = cuotas.find(c => c.id == id);
+            
+            if (!input.value || input.value.trim() === '') {
+                input.value = fechaActual;
+                if (cuota) cuota.fecha = fechaActual;
+                input.classList.add('is-invalid');
+                setTimeout(() => input.classList.remove('is-invalid'), 2000);
+                seCorrigieron = true;
+            }
+        });
+        
+        if (seCorrigieron) {
+            alert('Se han corregido fechas vacías con la fecha actual');
+            actualizarResumen();
+        }
+        
+        return !seCorrigieron;
+    }
+    
+    // Validar el formulario completo antes de enviarlo
+    document.getElementById('formulario_gestion').addEventListener('submit', function(e) {
+        // Verificar si hay cuotas y si todas tienen fecha válida
+        if (cuotas.length > 0) {
+            const fechasInvalidas = cuotas.filter(c => !c.fecha || c.fecha.trim() === '');
+            if (fechasInvalidas.length > 0) {
+                e.preventDefault(); // Detener el envío del formulario
+                alert('No se puede guardar el acuerdo. Hay cuotas sin fecha seleccionada.');
+                
+                // Marcar visualmente los campos inválidos
+                document.querySelectorAll('.fecha-cuota').forEach(input => {
+                    const id = input.getAttribute('data-id');
+                    const cuota = cuotas.find(c => c.id == id);
+                    if (cuota && (!cuota.fecha || cuota.fecha.trim() === '')) {
+                        input.classList.add('is-invalid');
+                    }
+                });
+                
+                return false;
+            }
+        }
+    });
+    
     // Event listener para el botón de registrar múltiples pagos
     if (btnMultiplePagos) {
         btnMultiplePagos.addEventListener('click', function() {
-            // Validar que todas las cuotas tengan fecha y monto
-            const cuotasIncompletas = cuotas.filter(c => !c.fecha || !c.monto);
-            if (cuotasIncompletas.length > 0) {
-                alert('Todas las cuotas deben tener fecha y monto');
+            // Forzar validación de fechas
+            validarTodasLasFechas();
+            // Verificar que haya al menos una cuota
+            if (cuotas.length === 0) {
+                alert('Debe agregar al menos una cuota al acuerdo de pago');
                 return;
+            }
+            
+            // Validar que todas las cuotas tengan fecha válida y monto
+            const cuotasIncompletas = cuotas.filter(c => !c.fecha || c.fecha.trim() === '' || !c.monto);
+            if (cuotasIncompletas.length > 0) {
+                alert('Todas las cuotas deben tener fecha y monto válidos');
+                return;
+            }
+            
+            // Verificar formato de fecha válido (YYYY-MM-DD)
+            const fechaInvalida = cuotas.some(c => !/^\d{4}-\d{2}-\d{2}$/.test(c.fecha));
+            if (fechaInvalida) {
+                alert('Algunas fechas tienen formato inválido. Asegúrate de seleccionar fechas del calendario');
+                return;
+            }
+            
+            // Corregir automáticamente cualquier fecha inválida
+            const fechaActual = new Date().toISOString().split('T')[0];
+            let seCorrigieronFechas = false;
+            
+            cuotas.forEach(cuota => {
+                if (!cuota.fecha || !/^\d{4}-\d{2}-\d{2}$/.test(cuota.fecha)) {
+                    cuota.fecha = fechaActual;
+                    seCorrigieronFechas = true;
+                    
+                    // También actualizar el input en el DOM
+                    const fechaInput = document.querySelector(`.fecha-cuota[data-id="${cuota.id}"]`);
+                    if (fechaInput) fechaInput.value = fechaActual;
+                }
+            });
+            
+            if (seCorrigieronFechas) {
+                alert('Se han corregido automáticamente algunas fechas inválidas');
+                actualizarResumen();
             }
             
             // Obtener el ID del acuerdo desde el formulario (si existe)

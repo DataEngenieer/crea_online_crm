@@ -26,7 +26,8 @@ GESTION_OPCIONES = {
             'TRAMITE_RECLAMO': {'label': 'Trámite de reclamo en curso'},
             'TERCERO_INFORMACION': {'label': 'Tercero brinda información'},
             'TERCERO_NO_INFORMACION': {'label': 'Tercero no brinda información'},
-            'SIN_RESPUESTA_WP': {'label': 'Sin respuesta en WhatsApp'}
+            'SIN_RESPUESTA_WP': {'label': 'Sin respuesta en WhatsApp'},
+            'SALDADO_LINERU': {'label': 'Saldado con LINERU'}
         }
     },  
     'contacto_no_efectivo': {
@@ -211,7 +212,8 @@ class Gestion(models.Model):
             ('reclamo', 'Trámite de reclamo en curso'),
             ('tercero_informacion', 'Tercero brinda información'),
             ('tercero_no_informacion', 'Tercero no brinda información'),
-            ('sin_respuesta_wp', 'Sin respuesta en WhatsApp') 
+            ('sin_respuesta_wp', 'Sin respuesta en WhatsApp'),
+            ('saldado_lineru', 'Saldado con LINERU')  
         ],
         CONTACTO_NO_EFECTIVO: [
             ('telefono_apagado', 'Teléfono apagado / fuera de servicio'),

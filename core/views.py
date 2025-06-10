@@ -158,7 +158,6 @@ def dashboard(request):
     
     # Clientes con acuerdo de pago activo (últimos 30 días o futuros)
     fecha_limite = hoy - timedelta(days=30)
-    print(f"\n[DEBUG] Buscando acuerdos desde: {fecha_limite}")
     
     # Consulta alternativa usando subconsulta para evitar problemas de relaciones
     from django.db.models import Exists, OuterRef
@@ -175,24 +174,8 @@ def dashboard(request):
         id__in=gestiones_recientes
     ).count()
     
-    # Depuración detallada
-    print(f"[DEBUG] Número de clientes con acuerdo (método alternativo): {clientes_con_acuerdo}")
-    
-    # Información adicional para depuración
-    gestiones_ejemplo = Gestion.objects.filter(
-        acuerdo_pago_realizado=True,
-        fecha_acuerdo__isnull=False
-    ).select_related('cliente').order_by('-fecha_acuerdo')[:5]
-    
-    print("\n[DEBUG] Ejemplo de gestiones con acuerdo:")
-    for g in gestiones_ejemplo:
-        cliente_info = f"{g.cliente.nombre_completo} (ID: {g.cliente_id})" if g.cliente else "Sin cliente"
-        print(f"  - Gestión ID: {g.id}, Fecha: {g.fecha_acuerdo}, Cliente: {cliente_info}")
-    
-    # Si no hay acuerdos recientes, mostrar un mensaje de advertencia
-    if clientes_con_acuerdo == 0:
-        print("\n[ADVERTENCIA] No se encontraron clientes con acuerdos recientes.")
-        print("[ADVERTENCIA] Verificar que existan gestiones con 'acuerdo_pago_realizado=True' y 'fecha_acuerdo' válida.")
+    # Verificar si hay acuerdos recientes
+    # (Ya no mostramos mensajes de advertencia en consola)
     clientes_activos = Cliente.objects.filter(estado='activo').values('documento').distinct().count()
     clientes_nuevos_este_mes = Cliente.objects.filter(
         fecha_registro__month=hoy.month, 
