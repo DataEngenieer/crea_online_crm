@@ -1,0 +1,257 @@
+<!-- Pestaña: Información Financiera Consolidada (Unificada con Lista de Productos) -->
+{% load humanize %}
+<div class="card card-body shadow-sm border-top-0 rounded-bottom p-3">
+    <!-- Encabezado del panel financiero -->
+    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-currency-dollar me-2 text-success"></i>Información Financiera y Productos
+        </h5>
+        <span class="badge bg-primary">Documento: {{ documento_cliente }} | Total: {{ referencias_cliente|length }} productos</span>
+    </div>
+    
+    <!-- Resumen financiero en tarjetas -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-light">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="rounded-circle bg-success p-2 me-2">
+                            <i class="bi bi-cash text-white"></i>
+                        </div>
+                        <h6 class="mb-0">Principal Total</h6>
+                    </div>
+                    <div class="display-6 text-success fw-bold">${{ saldo_capital_total|intcomma|default:'0' }}</div>
+                    <div class="small text-muted mt-2">
+                        <i class="bi bi-info-circle"></i> Capital inicial pendiente
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-light">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="rounded-circle bg-warning p-2 me-2">
+                            <i class="bi bi-bank text-white"></i>
+                        </div>
+                        <h6 class="mb-0">Valor Pagado</h6>
+                    </div>
+                    <div class="display-6 text-warning fw-bold">${{ valor_pagado_total|intcomma|default:'0' }}</div>
+                    <div class="small text-muted mt-2">
+                        <i class="bi bi-credit-card"></i> Total abonado a la deuda
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-light">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="rounded-circle bg-danger p-2 me-2">
+                            <i class="bi bi-calendar-x text-white"></i>
+                        </div>
+                        <h6 class="mb-0">Días de Mora</h6>
+                    </div>
+                    <div class="display-6 text-danger fw-bold">{{ dias_mora_promedio|floatformat:0 }}</div>
+                    <div class="small text-muted mt-2">
+                        <i class="bi bi-clock-history"></i> Calculado en tiempo real
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-light">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="rounded-circle bg-primary p-2 me-2">
+                            <i class="bi bi-calculator text-white"></i>
+                        </div>
+                        <h6 class="mb-0">Deuda Total Consolidada</h6>
+                    </div>
+                    <div class="display-6 text-primary fw-bold">${{ deuda_total_consolidada|intcomma|default:'0' }}</div>
+                    <div class="small text-muted mt-2">
+                        <i class="bi bi-graph-up-arrow"></i> Incluye capital + intereses + otros cargos
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pestañas internas: Tabla y Detalle -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light">
+            <ul class="nav nav-tabs card-header-tabs" id="productos-tab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="tabla-productos-tab" data-bs-toggle="tab" data-bs-target="#tabla-productos" type="button" role="tab" aria-controls="tabla-productos" aria-selected="true">
+                        <i class="bi bi-table me-1"></i>Tabla de Productos
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="detalle-productos-tab" data-bs-toggle="tab" data-bs-target="#detalle-productos" type="button" role="tab" aria-controls="detalle-productos" aria-selected="false">
+                        <i class="bi bi-card-list me-1"></i>Detalle por Producto
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body p-0">
+            <div class="tab-content" id="productos-tabContent">
+                <!-- Tabla de Productos -->
+                <div class="tab-pane fade show active p-3" id="tabla-productos" role="tabpanel" aria-labelledby="tabla-productos-tab">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover table-striped table-bordered" style="font-size: 0.85rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Ref.</th>
+                                    <th>Nombre Completo</th>
+                                    <th>F. Cesión</th>
+                                    <th>F. Registro</th>
+                                    <th>F. Act.</th>
+                                    <th>Estado</th>
+                                    <th class="text-end">Principal</th>
+                                    <th class="text-end">Deuda Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ref in referencias_cliente %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-tag-fill me-1"></i>{{ ref.referencia|default:'N/A' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ ref.nombre_completo|truncatechars:30|default:'N/A' }}</td>
+                                    <td>{{ ref.fecha_cesion|date:'d M Y'|default:'N/A' }}</td>
+                                    <td>{{ ref.fecha_registro|date:'d M Y'|default:'N/A' }}</td>
+                                    <td>{{ today|date:'d M Y' }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-{% if ref.estado == 'Activo' %}success{% elif ref.estado == 'Inactivo' %}danger{% else %}secondary{% endif %}">
+                                            <i class="bi bi-circle-fill me-1"></i>{{ ref.estado|default:'N/A' }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end fw-bold">${{ ref.principal|intcomma|default:'0' }}</td>
+                                    <td class="text-end fw-bold">${{ ref.deuda_total|intcomma|default:'0' }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-3">
+                                        <i class="bi bi-exclamation-circle me-2"></i>No hay referencias para este cliente.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Detalle por Producto -->
+                <div class="tab-pane fade p-3" id="detalle-productos" role="tabpanel" aria-labelledby="detalle-productos-tab">
+                    <div class="accordion accordion-flush" id="accordionProductos">
+                        {% if referencias_cliente %}
+                            {% for ref in referencias_cliente %}
+                            <div class="accordion-item border mb-2 rounded">
+                                <h2 class="accordion-header" id="heading-producto-{{ ref.id }}">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-producto-{{ ref.id }}" aria-expanded="false" aria-controls="collapse-producto-{{ ref.id }}">
+                                        <i class="bi bi-tag-fill me-2 text-primary"></i>
+                                        <strong>{{ ref.referencia|default:'N/A' }}</strong>
+                                        <span class="ms-2 badge bg-{% if ref.estado == 'Activo' %}success{% elif ref.estado == 'Inactivo' %}danger{% else %}secondary{% endif %}">
+                                            {{ ref.estado|default:'N/A' }}
+                                        </span>
+                                        <span class="ms-auto me-3 text-primary fw-bold">${{ ref.deuda_total|intcomma|default:'0' }}</span>
+                                    </button>
+                                </h2>
+                                <div id="collapse-producto-{{ ref.id }}" class="accordion-collapse collapse" aria-labelledby="heading-producto-{{ ref.id }}">
+                                    <div class="accordion-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="card h-100 border-0 shadow-sm">
+                                                    <div class="card-header bg-light d-flex align-items-center">
+                                                        <i class="bi bi-cash-coin me-2 text-success"></i>
+                                                        <h6 class="mb-0">Información Financiera</h6>
+                                                    </div>
+                                                    <div class="card-body p-3">
+                                                        <div class="row g-2">
+                                                            <div class="col-md-6 mb-2">
+                                                                <div class="d-flex align-items-center">
+                                                                    <span class="text-muted me-2" style="width: 100px; font-size: 0.85rem;">Principal:</span>
+                                                                    <span class="fw-bold">${{ ref.principal|intcomma|default:'0' }}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6 mb-2">
+                                                                <div class="d-flex align-items-center">
+                                                                    <span class="text-muted me-2" style="width: 100px; font-size: 0.85rem;">Deuda Total:</span>
+                                                                    <span class="fw-bold text-primary">${{ ref.deuda_total|intcomma|default:'0' }}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6 mb-2">
+                                                                <div class="d-flex align-items-center">
+                                                                    <span class="text-muted me-2" style="width: 100px; font-size: 0.85rem;">Días Mora:</span>
+                                                                    <span class="fw-bold text-danger">{{ ref.dias_mora_actual|floatformat:0 }}</span>
+                                                                    <span class="ms-1 small text-muted">(Actual)</span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6 mb-2">
+                                                                <div class="d-flex align-items-center">
+                                                                    <span class="text-muted me-2" style="width: 100px; font-size: 0.85rem;">Estado:</span>
+                                                                    <span class="badge bg-{% if ref.estado == 'Activo' %}success{% elif ref.estado == 'Inactivo' %}danger{% else %}secondary{% endif %}">
+                                                                        {{ ref.estado|default:'N/A' }}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="card h-100 border-0 shadow-sm">
+                                                    <div class="card-header bg-light d-flex align-items-center">
+                                                        <i class="bi bi-calendar-date me-2 text-info"></i>
+                                                        <h6 class="mb-0">Fechas y Datos Adicionales</h6>
+                                                    </div>
+                                                    <div class="card-body p-3">
+                                                        <div class="row g-2">
+                                                            <div class="col-md-6 mb-2">
+                                                                <div class="d-flex align-items-center">
+                                                                    <span class="text-muted me-2" style="width: 100px; font-size: 0.85rem;">F. Cesión:</span>
+                                                                    <span>{{ ref.fecha_cesion|date:'d M Y'|default:'N/A' }}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6 mb-2">
+                                                                <div class="d-flex align-items-center">
+                                                                    <span class="text-muted me-2" style="width: 100px; font-size: 0.85rem;">F. Registro:</span>
+                                                                    <span>{{ ref.fecha_registro|date:'d M Y'|default:'N/A' }}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6 mb-2">
+                                                                <div class="d-flex align-items-center">
+                                                                    <span class="text-muted me-2" style="width: 100px; font-size: 0.85rem;">F. Act.:</span>
+                                                                    <span>{{ today|date:'d M Y' }}</span>
+                                                                    <span class="ms-1 badge bg-info">Hoy</span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6 mb-2">
+                                                                <div class="d-flex align-items-center">
+                                                                    <span class="text-muted me-2" style="width: 100px; font-size: 0.85rem;">Cliente:</span>
+                                                                    <span>{{ ref.nombre_completo|truncatechars:25|default:'N/A' }}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-info" role="alert">
+                                <i class="bi bi-info-circle-fill me-2"></i>No hay referencias disponibles para mostrar detalles.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

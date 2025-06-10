@@ -1,0 +1,137 @@
+<!-- Pestaña: Información General (del cliente_representativo) y Contactos -->
+{% load humanize %}
+<div class="card card-body shadow-sm border-top-0 rounded-bottom p-2">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="card-title mb-0"><i class="bi bi-info-circle me-1"></i>Información Detallada y Contactos</h5>
+    </div>
+
+    <!-- Datos Generales - Formato compacto -->
+    <div class="mb-2 p-2 border rounded bg-light">
+        <div class="d-flex align-items-center mb-1">
+            <i class="bi bi-person-badge me-1"></i>
+            <h6 class="mb-0 fs-6">Datos Generales</h6>
+        </div>
+        <div class="row g-1">
+            <div class="col-md-4 mb-1">
+                <div class="d-flex align-items-center">
+                    <span class="text-muted me-1" style="width: 110px; font-size: 0.85rem;">Tipo Documento:</span>
+                    <span class="badge bg-secondary">{{ cliente_representativo.tipo_documento|default:'N/A' }}</span>
+                </div>
+            </div>
+            <div class="col-md-4 mb-1">
+                <div class="d-flex align-items-center">
+                    <span class="text-muted me-1" style="width: 110px; font-size: 0.85rem;">Nombre:</span>
+                    <span>{{ cliente_representativo.nombre_completo|default:'N/A' }}</span>
+                </div>
+            </div>
+            <div class="col-md-4 mb-1">
+                <div class="d-flex align-items-center">
+                    <span class="text-muted me-1" style="width: 110px; font-size: 0.85rem;">Ciudad:</span>
+                    <span>{{ cliente_representativo.ciudad|default:'N/A' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información de productos -->
+    <div class="accordion accordion-flush" id="accordionContactosProductos">
+        {% if referencias_cliente %}
+            {% for ref in referencias_cliente %}
+            <div class="accordion-item border mb-1 rounded">
+                <h2 class="accordion-header" id="heading-{{ ref.id }}">
+                    <button class="accordion-button collapsed p-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ ref.id }}" aria-expanded="false" aria-controls="collapse-{{ ref.id }}">
+                        <i class="bi bi-tag-fill me-1 text-primary"></i>
+                        <strong>{{ ref.referencia|default:'N/A' }}</strong>
+                        <span class="ms-2 text-muted small">{{ ref.nombre_completo|truncatechars:30|default:'Cliente' }}</span>
+                    </button>
+                </h2>
+                <div id="collapse-{{ ref.id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ ref.id }}">
+                    <div class="accordion-body p-2">
+                        <div class="row g-0">
+                            <!-- Contactos -->
+                            <div class="col-md-6 p-1">
+                                <div class="border-start border-primary ps-2 mb-1" style="border-left-width: 3px !important;">
+                                    <span class="fw-bold text-primary"><i class="bi bi-telephone-fill me-1"></i>Contactos</span>
+                                </div>
+                                <div class="row g-0">
+                                    <div class="col-lg-6 p-1">
+                                        <div class="d-flex align-items-center">
+                                            <span class="text-muted me-1" style="width: 70px; font-size: 0.8rem;">Celular 1:</span>
+                                            <a href="tel:{{ ref.celular_1 }}" class="ms-1 badge bg-warning text-dark">{{ ref.celular_1|default:'N/A' }}</a>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6 p-1">
+                                        <div class="d-flex align-items-center">
+                                            <span class="text-muted me-1" style="width: 70px; font-size: 0.8rem;">Celular 2:</span>
+                                            <span>{{ ref.celular_2|default:'N/A' }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6 p-1">
+                                        <div class="d-flex align-items-center">
+                                            <span class="text-muted me-1" style="width: 70px; font-size: 0.8rem;">Celular 3:</span>
+                                            <span>{{ ref.celular_3|default:'N/A' }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6 p-1">
+                                        <div class="d-flex align-items-center">
+                                            <span class="text-muted me-1" style="width: 70px; font-size: 0.8rem;">Teléfono:</span>
+                                            <span>{{ ref.telefono_1|default:'N/A' }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6 p-1">
+                                        <div class="d-flex align-items-center">
+                                            <span class="text-muted me-1" style="width: 70px; font-size: 0.8rem;">Teléfono 2:</span>
+                                            <span>{{ ref.telefono_2|default:'N/A' }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6 p-1">
+                                        <div class="d-flex align-items-center">
+                                            <span class="text-muted me-1" style="width: 70px; font-size: 0.8rem;">Email:</span>
+                                            <span>{{ ref.email|default:'N/A' }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Direcciones -->
+                            <div class="col-md-6 p-1">
+                                <div class="border-start border-success ps-2 mb-1" style="border-left-width: 3px !important;">
+                                    <span class="fw-bold text-success"><i class="bi bi-geo-alt-fill me-1"></i>Direcciones</span>
+                                </div>
+                                <div class="row g-0">
+                                    <div class="col-12 p-1">
+                                        <div class="d-flex">
+                                            <span class="text-muted me-1" style="min-width: 30px; font-size: 0.8rem;">1:</span>
+                                            <span style="font-size: 0.85rem;">{{ ref.direccion_1|default:'N/A' }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 p-1">
+                                        <div class="d-flex">
+                                            <span class="text-muted me-1" style="min-width: 30px; font-size: 0.8rem;">2:</span>
+                                            <span style="font-size: 0.85rem;">{{ ref.direccion_2|default:'N/A' }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 p-1">
+                                        <div class="d-flex">
+                                            <span class="text-muted me-1" style="min-width: 30px; font-size: 0.8rem;">3:</span>
+                                            <span style="font-size: 0.85rem;">{{ ref.direccion_3|default:'N/A' }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 p-1">
+                                        <div class="d-flex">
+                                            <span class="text-muted me-1" style="min-width: 30px; font-size: 0.8rem;">4:</span>
+                                            <span style="font-size: 0.85rem;">{{ ref.direccion_4|default:'N/A' }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted mt-2">No hay referencias para este cliente.</p>
+        {% endif %}
+    </div>
+</div>
