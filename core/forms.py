@@ -159,13 +159,12 @@ class GestionForm(forms.ModelForm):
         
         if cliente_instance:
             print("DOCUMENTO DEL CLIENTE EN FORM:", cliente_instance.documento)
-            doc = cliente_instance.documento
-            referencias = (
-                Cliente.objects
-                .filter(documento=doc)
-                .values_list('referencia', flat=True)
-                .distinct()
-            )
+            
+            referencias = Cliente.objects.filter(
+                documento=cliente_instance.documento
+            ).exclude(referencia__isnull=True).exclude(referencia='').values_list(
+                'referencia', flat=True
+            ).distinct()
             print("REFERENCIAS ENCONTRADAS EN BD:", list(referencias))
             self.fields['referencia_producto'].choices = [(ref, ref) for ref in referencias if ref]
         else:

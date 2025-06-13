@@ -238,6 +238,7 @@ class Gestion(models.Model):
 
     tipo_gestion_n1 = models.CharField(max_length=100, blank=True, null=True, verbose_name="Tipo de Gestión (Nivel 1)")
 
+    referencia_producto = models.CharField(max_length=100, blank=True, null=True, verbose_name="Referencia de Producto")
     acuerdo_pago_realizado = models.BooleanField(default=False, verbose_name="¿Se realizó acuerdo de pago?")
     fecha_acuerdo = models.DateField(blank=True, null=True, verbose_name="Fecha de Acuerdo")
     monto_acuerdo = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True, verbose_name="Monto del Acuerdo")
@@ -277,10 +278,12 @@ class Gestion(models.Model):
         
         # Crear acuerdo de pago si es necesario (solo para nuevas gestiones)
         if es_nuevo and self.acuerdo_pago_realizado and self.monto_acuerdo and self.fecha_acuerdo:
+            referencia = self.referencia_producto or (self.cliente.referencia if hasattr(self.cliente, 'referencia') else None)
             # Crear el acuerdo de pago
             acuerdo = AcuerdoPago.objects.create(
                 cliente=self.cliente,
                 gestion=self,
+                referencia_producto=referencia,
                 fecha_acuerdo=self.fecha_acuerdo,
                 monto_total=self.monto_acuerdo,
                 numero_cuotas=1,  # Por defecto una sola cuota

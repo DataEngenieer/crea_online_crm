@@ -1573,13 +1573,13 @@ def registrar_nueva_gestion(request):
                 clientes_con_documento = Cliente.objects.filter(documento=documento).order_by('-id')
                 
                 if clientes_con_documento.exists():
-                    cliente_para_sesion = clientes_con_documento.first() # Tomar el primero (más reciente por -id)
+                    cliente_para_sesion = clientes_con_documento.first()
                     request.session['cliente_encontrado_id'] = cliente_para_sesion.id
-                    messages.success(request, f"Cliente '{cliente_para_sesion.nombre_completo}' (ID: {cliente_para_sesion.id}) encontrado. Mostrando el registro más reciente.")
+                    messages.success(request, f"Cliente '{cliente_para_sesion.nombre_completo}' encontrado.")
+                    return redirect('core:registrar_nueva_gestion')
                 else:
-                    request.session.pop('cliente_encontrado_id', None)
                     messages.error(request, "Cliente no encontrado con el documento proporcionado.")
-                return redirect('registrar_nueva_gestion')
+                    return redirect('core:registrar_nueva_gestion')
 
         elif 'guardar_gestion' in request.POST:
             # Depurar datos del formulario en la consola del servidor
@@ -1599,44 +1599,62 @@ def registrar_nueva_gestion(request):
             cliente_id_sesion = request.session.get('cliente_encontrado_id')
             if not cliente_id_sesion:
                 messages.error(request, "No hay cliente seleccionado. Por favor, busque un cliente primero.")
-                return redirect('registrar_nueva_gestion')
+                return redirect('core:registrar_nueva_gestion')
 
             try:
-                # Usar el ID de la sesión que ya es único
                 cliente_para_gestion = Cliente.objects.get(id=cliente_id_sesion)
             except Cliente.DoesNotExist:
                 messages.error(request, "El cliente seleccionado ya no existe. Busque de nuevo.")
                 request.session.pop('cliente_encontrado_id', None)
-                return redirect('registrar_nueva_gestion')
-
-            gestion_form_data = GestionForm(request.POST)
-            if gestion_form_data.is_valid():
-                gestion = gestion_form_data.save(commit=False)
-                gestion.cliente = cliente_para_gestion
-                gestion.usuario_gestion = request.user
-                gestion.save()
-                messages.success(request, f"Gestión guardada para {cliente_para_gestion.nombre_completo}.")
-                request.session.pop('cliente_encontrado_id', None)
                 return redirect('core:registrar_nueva_gestion')
-            else:
-                # Si el form de gestión no es válido, necesitamos repopular el cliente_encontrado
-                # para que la plantilla muestre la sección de registrar gestión.
-                cliente_encontrado = cliente_para_gestion 
-                gestion_form = gestion_form_data # Pasar el form con errores para mostrar los errores
-                messages.error(request, "Error al guardar la gestión. Por favor, revise los campos del formulario.")
 
-    # Lógica para GET o si POST de guardar_gestion falla y necesitamos mostrar el form de nuevo
-    if not cliente_encontrado: # Solo si no venimos de un error al guardar gestion (donde ya se seteó)
-        cliente_id_sesion = request.session.get('cliente_encontrado_id')
-        if cliente_id_sesion:
-            try:
-                cliente_encontrado = Cliente.objects.get(id=cliente_id_sesion)
-                # Pre-llenar el campo cliente en el formulario de gestión
-                gestion_form = GestionForm(initial={'cliente': cliente_encontrado})
-            except Cliente.DoesNotExist:
-                # Limpiar la sesión si el cliente ya no existe
-                request.session.pop('cliente_encontrado_id', None)
-                cliente_encontrado = None # Asegurarse que no se muestra nada si no existe
+            gestion_form = GestionForm(
+                request.POST, 
+                request.FILES,
+                cliente_instance=cliente_para_gestion
+            )
+            
+            if gestion_form.is_valid():
+                try:
+                    with transaction.atomic():
+                        gestion = gestion_form.save(commit=False)
+                        gestion.cliente = cliente_para_gestion
+                        gestion.usuario_gestion = request.user
+                        # Asegurarse de que la referencia se guarde
+                        gestion.referencia_producto = gestion_form.cleaned_data.get('referencia_producto')
+                        gestion.save()
+                        
+                        messages.success(request, "Gestión registrada exitosamente.")
+                        return redirect('core:detalle_cliente', documento_cliente=cliente_para_gestion.documento)
+                except Exception as e:
+                    messages.error(request, f"Error al guardar la gestión: {str(e)}")
+                    # Agregar logging del error para depuración
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error al guardar gestión: {str(e)}")
+            else:
+                # Si hay errores en el formulario, mostrarlos
+                for field, errors in gestion_form.errors.items():
+                    for error in errors:
+                        messages.error(request, f"Error en {gestion_form.fields[field].label}: {error}")
+
+
+    # Código para manejar GET o cuando hay errores
+    cliente_id_sesion = request.session.get('cliente_encontrado_id')
+    if cliente_id_sesion:
+        try:
+            cliente_encontrado = Cliente.objects.get(id=cliente_id_sesion)
+            gestion_form = GestionForm(cliente_instance=cliente_encontrado)
+
+            # Si hay datos en POST (por ejemplo, si hubo un error), recargar el formulario con los datos
+            if request.method == 'POST' and 'guardar_gestion' in request.POST:
+                gestion_form = GestionForm(
+                    request.POST,
+                    request.FILES,
+                    cliente_instance=cliente_encontrado
+                )
+        except Cliente.DoesNotExist:
+            request.session.pop('cliente_encontrado_id', None)
 
     context = {
         'buscar_form': buscar_form,
@@ -1644,7 +1662,7 @@ def registrar_nueva_gestion(request):
         'cliente_encontrado': cliente_encontrado,
         'titulo_pagina': "Registrar Nueva Gestión"
     }
-    return render(request, 'core/detalle_cliente.html', context)
+    return render(request, 'core/registrar_nueva_gestion.html', context)
 
 @login_required
 @user_passes_test(es_admin)
