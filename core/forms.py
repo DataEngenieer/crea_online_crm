@@ -50,7 +50,12 @@ class ClienteForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        cliente_instance = kwargs.pop('cliente_instance', None) # Obtener la instancia del cliente
         super().__init__(*args, **kwargs)
+
+        if cliente_instance:
+            # Filtrar las referencias de producto por cliente
+            self.fields['referencia_producto'].queryset = Cliente.objects.filter(pk=cliente_instance.pk)
         
         # Campo referencia es obligatorio y con placeholder específico
         self.fields['referencia'].required = True
@@ -115,6 +120,12 @@ class GestionForm(forms.ModelForm):
     fecha_acuerdo = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}))
     monto_acuerdo = forms.DecimalField(required=False, widget=forms.NumberInput(attrs={'class': 'form-control'}))
     observaciones_acuerdo = forms.CharField(required=False, widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}))
+    referencia_producto = forms.ChoiceField(
+        choices=[],
+        required=True,
+        label="Referencia de Producto",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
     
     # Campos para pago efectivo
     comprobante_pago = forms.FileField(required=False, widget=forms.FileInput(attrs={'class': 'form-control'}))
@@ -130,7 +141,7 @@ class GestionForm(forms.ModelForm):
         fields = [
             'cliente', 'canal_contacto', 'estado_contacto',
             'tipo_gestion_n1', 'tipo_gestion_n2',
-            'acuerdo_pago_realizado', 'fecha_acuerdo', 'monto_acuerdo', 'observaciones_acuerdo',
+            'acuerdo_pago_realizado', 'fecha_acuerdo', 'monto_acuerdo', 'observaciones_acuerdo', 'referencia_producto',
             'seguimiento_requerido', 'fecha_proximo_seguimiento', 'hora_proximo_seguimiento',
             'observaciones_generales', 'observaciones', 'comprobante_pago', 'fecha_pago_efectivo',
         ]
@@ -143,7 +154,23 @@ class GestionForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        cliente_instance = kwargs.pop('cliente_instance', None) # Obtener la instancia del cliente
         super().__init__(*args, **kwargs)
+        
+        if cliente_instance:
+            print("DOCUMENTO DEL CLIENTE EN FORM:", cliente_instance.documento)
+            doc = cliente_instance.documento
+            referencias = (
+                Cliente.objects
+                .filter(documento=doc)
+                .values_list('referencia', flat=True)
+                .distinct()
+            )
+            print("REFERENCIAS ENCONTRADAS EN BD:", list(referencias))
+            self.fields['referencia_producto'].choices = [(ref, ref) for ref in referencias if ref]
+        else:
+            print("NO HAY cliente_instance PASADO AL FORMULARIO")
+            self.fields['referencia_producto'].choices = []
         
         self.fields['estado_contacto'].choices = ESTADO_CONTACTO_CHOICES
         self.fields['estado_contacto'].widget.attrs.update({'class': 'form-select'})

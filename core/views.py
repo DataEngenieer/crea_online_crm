@@ -1,42 +1,58 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
-from django.contrib.auth.decorators import login_required
+from django.http import (
+    HttpResponse,
+    HttpResponseRedirect,
+    JsonResponse,
+    HttpResponseForbidden,
+    FileResponse,
+    Http404,
+)
 from django.contrib import messages
 from django.urls import reverse
-from .utils import determinar_estado_cliente
 from django.core.paginator import Paginator
-from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django import forms
+import json
+from django.db import transaction
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth import (
+    update_session_auth_hash,
+    get_user_model,
+    authenticate,
+    login,
+    logout,
+)
+from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.contrib.auth.models import User, Group
-from django.db.models import Q, Count, Sum, Max, F, Value, functions, Subquery, OuterRef
-from django.db.models.functions import Concat
-from django.utils import timezone
-from django.http import HttpResponseForbidden, FileResponse, Http404
+from django.contrib.auth.views import LoginView, LogoutView
 from django.core.mail import EmailMessage
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash, get_user_model
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.core.paginator import Paginator
+from django.db.models import (
+    Q,
+    Count,
+    Sum,
+    Max,
+    F,
+    Value,
+    functions,
+    Subquery,
+    OuterRef,
+)
+from django.db.models.functions import Concat
+from django.db import IntegrityError
+from django.utils import timezone
 from functools import wraps
-import json
-from .models import Cliente, Gestion, AcuerdoPago, CuotaAcuerdo
+from decimal import Decimal
 from datetime import datetime, timedelta
+import json
 import os
 import re
-import json
 import pandas as pd
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
-from django.core.paginator import Paginator
-from django.contrib.auth import get_user_model
-from decimal import Decimal
-from django.db import IntegrityError
-from .models import Cliente, User, LoginUser, Gestion
+
+from .utils import determinar_estado_cliente
+from .models import Cliente, Gestion, AcuerdoPago, CuotaAcuerdo, LoginUser
 from .forms import EmailAuthenticationForm, ClienteForm, GestionForm
-from django.contrib.auth.views import LoginView, LogoutView
+
 
 class LoginAuditoriaView(LoginView):
     template_name = 'core/login.html'
@@ -130,7 +146,10 @@ def registro_usuario(request):
     if request.method == 'POST':
         form = RegistroUsuarioForm(request.POST)
         if form.is_valid():
-            user = form.save()
+            user = form.save(commit=False)
+            user.first_name = form.cleaned_data.get('first_name')
+            user.last_name = form.cleaned_data.get('last_name')
+            user.save()
             # Asignar al grupo 'asesor' automáticamente
             from django.contrib.auth.models import Group
             grupo, creado = Group.objects.get_or_create(name='asesor')
@@ -590,19 +609,20 @@ def crear_cliente_view(request):
 @login_required
 def agregar_gestion_cliente(request, documento_cliente):
     cliente = get_object_or_404(Cliente, documento=documento_cliente)
+    print(f"Cliente en vista (antes de formulario): {cliente}, Tipo: {type(cliente)}") # <--- AÑADA ESTA LÍNEA
     if request.method == 'POST':
-        form = GestionForm(request.POST)
+        form = GestionForm(request.POST or None, cliente_instance=cliente)
         if form.is_valid():
             gestion = form.save(commit=False)
             gestion.cliente = cliente
-            gestion.usuario_gestion = request.user # Asignar el usuario logueado
+            gestion.usuario_gestion = request.user
             gestion.save()
             messages.success(request, 'Gestión agregada exitosamente.')
             return redirect('detalle_cliente', documento_cliente=documento_cliente)
         else:
             messages.error(request, 'Por favor corrige los errores en el formulario.')
     else:
-        form = GestionForm(initial={'cliente': cliente})
+        form = GestionForm(initial={'cliente': cliente}, cliente_instance=cliente)
     
     context = {
         'form': form,
@@ -1281,7 +1301,6 @@ def carga_clientes(request):
     return render(request, 'core/carga_clientes.html', context)
 
 @login_required
-@user_passes_test(es_admin)
 def detalle_cliente(request, documento_cliente):
     clientes_mismo_documento = Cliente.objects.filter(documento=documento_cliente).order_by('-id')
     if not clientes_mismo_documento.exists():
@@ -1329,127 +1348,24 @@ def detalle_cliente(request, documento_cliente):
     gastos_cobranza_total = sum(0 for c in referencias_cliente_list) # Campo no existente, sumando 0 temporalmente
     otros_conceptos_total = sum(c.otros_cargos for c in referencias_cliente_list if c.otros_cargos is not None)
 
-    # Inicializar el formulario de gestión. El campo 'cliente' se pre-rellena con el cliente_representativo.
-    # Esto es útil si el campo 'cliente' es visible en el formulario.
-    # Si está oculto y se asigna solo en backend, `GestionForm()` sería suficiente para GET.
-    gestion_form = GestionForm(initial={'cliente': cliente_representativo})
-
-    if request.method == 'POST':
-        # Depurar datos del formulario en la consola del servidor
-        print("\n" + "=" * 80)
-        print("DEPURACIÓN DE FORMULARIO EN DETALLE_CLIENTE - DATOS RECIBIDOS")
-        print("=" * 80)
-        print(f"Método: {request.method}")
-        print(f"URL: {request.path}")
-        print(f"Vista: detalle_cliente (documento: {documento_cliente})")
-        print("\nCAMPOS RECIBIDOS:")
-        for key, value in request.POST.items():
-            print(f"- {key}: {value}")
-        print("\n¿'guardar_gestion' en request.POST?", 'guardar_gestion' in request.POST)
-        print("=" * 80 + "\n")
-        
-        # Verificar si el POST es para guardar una gestión
-        if 'guardar_gestion' in request.POST:
-            print("Procesando guardar_gestion...")
-            # Procesar el formulario de gestión
-            gestion_form_posted = GestionForm(request.POST)
-            if gestion_form_posted.is_valid():
-                print("Formulario es válido! Guardando...")
-                gestion = gestion_form_posted.save(commit=False)
-                # Asociar la gestión al cliente_representativo (el registro más reciente con ese documento)
-                gestion.cliente = cliente_representativo 
-                gestion.usuario_gestion = request.user
-                gestion.save()
-                
-                # Procesar datos de cuotas múltiples si existen
-                cuotas_json = request.POST.get('cuotas_json')
-                if cuotas_json and gestion.monto_acuerdo and gestion.monto_acuerdo > 0:
-                    try:
-                        # Importar modelos necesarios
-                        from .models import AcuerdoPago, CuotaAcuerdo
-                        
-                        # Validar que la suma de las cuotas coincida con el monto del acuerdo
-                        cuotas_data = json.loads(cuotas_json)
-                        if cuotas_data:  # Solo validar si hay cuotas
-                            suma_cuotas = sum(Decimal(cuota.get('monto', 0)) for cuota in cuotas_data)
-                            if abs(suma_cuotas - gestion.monto_acuerdo) > Decimal('0.01'):  # Permitir pequeña diferencia por redondeo
-                                messages.error(request, f'La suma de las cuotas (${suma_cuotas}) no coincide con el monto del acuerdo (${gestion.monto_acuerdo})')
-                                return redirect('core:detalle_cliente', documento_cliente=documento_cliente)
-                        
-                        # Crear acuerdo de pago
-                        acuerdo = AcuerdoPago(
-                            cliente=cliente_representativo,
-                            fecha_acuerdo=gestion.fecha_acuerdo,
-                            monto_total=gestion.monto_acuerdo,
-                            observaciones=gestion.observaciones_acuerdo if gestion.observaciones_acuerdo else '',
-                            usuario_creacion=request.user,
-                            gestion=gestion
-                        )
-                        acuerdo.save()
-                        
-                        # Procesar cuotas
-                        for i, cuota_data in enumerate(cuotas_data):
-                            # Crear cuota
-                            fecha_pago = datetime.strptime(cuota_data['fecha'], '%Y-%m-%d').date()
-                            monto = Decimal(cuota_data['monto'])
-                            
-                            cuota = CuotaAcuerdo(
-                                acuerdo=acuerdo,
-                                numero_cuota=i+1,
-                                fecha_vencimiento=fecha_pago,
-                                monto=monto,
-                                estado='PENDIENTE'
-                            )
-                            cuota.save()
-                        
-                        # Actualizar el campo acuerdo_id en la respuesta para el JavaScript
-                        response_data = {
-                            'acuerdo_id': acuerdo.id,
-                            'mensaje': f'Acuerdo de pago con {len(cuotas_data)} cuota(s) creado exitosamente.'
-                        }
-                        
-                        # Si es una solicitud AJAX, devolver JSON
-                        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                            return JsonResponse(response_data)
-                            
-                        messages.success(request, response_data['mensaje'])
-                    except Exception as e:
-                        print(f"Error al procesar cuotas: {e}")
-                        messages.error(request, f'Error al procesar las cuotas: {str(e)}')
-                
-                messages.success(request, f'Gestión para {cliente_representativo.nombre_completo} guardada exitosamente.')
-                # Redirigir a la misma página para ver la nueva gestión y limpiar el formulario (evita re-POST)
-                return redirect('core:detalle_cliente', documento_cliente=documento_cliente)
-            else:
-                print("Formulario NO es válido! Errores:", gestion_form_posted.errors.as_data())
-                messages.error(request, 'Error al guardar la gestión. Por favor revise el formulario.')
-                gestion_form = gestion_form_posted # Pasa el formulario con errores para mostrar en la plantilla
-    
-    # Gestiones para la pestaña de historial. Mostrar todas las gestiones asociadas a CUALQUIER cliente con ese documento.
-    # Ordenadas por fecha de gestión descendente, y luego por ID descendente como desempate.
+    # Inicializar datos para el contexto
+    gestion_form = GestionForm(initial={'cliente': cliente_representativo.pk}, cliente_instance=cliente_representativo)
     gestiones_del_cliente = Gestion.objects.filter(cliente__documento=documento_cliente).order_by('-fecha_hora_gestion', '-id')[:20]
-    
-    # Obtener todos los acuerdos de pago asociados a cualquier cliente con ese documento
-    from .models import AcuerdoPago, CuotaAcuerdo
     acuerdos_pago = AcuerdoPago.objects.filter(cliente__documento=documento_cliente).order_by('-fecha_acuerdo')
-    
-    # Para cada acuerdo, precargar sus cuotas para evitar múltiples consultas
     for acuerdo in acuerdos_pago:
         acuerdo.cuotas_list = acuerdo.cuotas.all().order_by('numero_cuota')
 
-    # La fecha actual ya fue definida anteriormente usando timezone.localdate()
-    
-    # Determinar el estado del cliente usando la función de utilidad
     estado_cliente = determinar_estado_cliente(
         cliente=cliente_representativo,
         gestiones=gestiones_del_cliente,
         today=today
     )
-    
+
+    # Definir el contexto aquí para que esté disponible en todos los flujos
     context = {
         'cliente_representativo': cliente_representativo,
         'referencias_cliente': referencias_cliente_list,
-        'estado_cliente': estado_cliente, 
+        'estado_cliente': estado_cliente,
         'documento_cliente': documento_cliente,
         'deuda_total_consolidada': deuda_total_consolidada,
         'productos_count': productos_count,
@@ -1462,21 +1378,69 @@ def detalle_cliente(request, documento_cliente):
         'intereses_mora_total': intereses_mora_total,
         'gastos_cobranza_total': gastos_cobranza_total,
         'otros_conceptos_total': otros_conceptos_total,
-        'gestion_form': gestion_form, # Para la pestaña de registrar gestión
-        'gestiones_cliente': gestiones_del_cliente, # Para la pestaña de historial de gestiones
+        'gestion_form': gestion_form,
+        'gestiones_cliente': gestiones_del_cliente,
         'titulo_pagina': f"Detalle Cliente: {cliente_representativo.nombre_completo}",
-        'today': today, # Fecha actual para comparaciones en la plantilla
-        # Estos campos existían en la plantilla original, asegurarse que se calculan o se obtienen si son necesarios.
-        # 'contactos_adicionales': cliente_representativo.contactos_adicionales.all() if hasattr(cliente_representativo, 'contactos_adicionales') else [],
-        # 'direcciones_adicionales': cliente_representativo.direcciones_adicionales.all() if hasattr(cliente_representativo, 'direcciones_adicionales') else [],
+        'today': today,
     }
+
+    if request.method == 'POST' and 'guardar_gestion' in request.POST:
+        gestion_form_posted = GestionForm(request.POST, cliente_instance=cliente_representativo)
+        if not gestion_form_posted.data.get('cliente'):
+            gestion_form_posted.data = gestion_form_posted.data.copy()
+            gestion_form_posted.data['cliente'] = cliente_representativo.pk
+
+        if gestion_form_posted.is_valid():
+            try:
+                with transaction.atomic():
+                    gestion = gestion_form_posted.save(commit=False)
+                    gestion.cliente = cliente_representativo
+                    gestion.usuario_gestion = request.user
+
+                    cuotas_json = request.POST.get('cuotas_json')
+                    cuotas_data = json.loads(cuotas_json) if cuotas_json else []
+
+                    if gestion.monto_acuerdo and gestion.monto_acuerdo > 0:
+                        if not cuotas_data:
+                            raise ValueError('Debe ingresar al menos una cuota si el acuerdo es mayor a 0.')
+                        suma_cuotas = sum(Decimal(c.get('monto', 0)) for c in cuotas_data)
+                        if abs(suma_cuotas - gestion.monto_acuerdo) > Decimal('0.01'):
+                            raise ValueError(f'La suma de cuotas (${suma_cuotas}) no coincide con el monto del acuerdo (${gestion.monto_acuerdo}).')
+
+                    gestion.save()
+
+                    if gestion.monto_acuerdo and gestion.monto_acuerdo > 0:
+                        acuerdo = AcuerdoPago.objects.create(
+                            cliente=cliente_representativo,
+                            fecha_acuerdo=gestion.fecha_acuerdo,
+                            monto_total=gestion.monto_acuerdo,
+                            observaciones=gestion.observaciones_acuerdo or '',
+                            usuario_creacion=request.user,
+                            gestion=gestion
+                        )
+                        for i, cuota_info in enumerate(cuotas_data):
+                            CuotaAcuerdo.objects.create(
+                                acuerdo=acuerdo,
+                                numero_cuota=i + 1,
+                                fecha_vencimiento=datetime.strptime(cuota_info['fecha'], '%Y-%m-%d').date(),
+                                monto=Decimal(cuota_info['monto']),
+                                estado='PENDIENTE'
+                            )
+                        messages.success(request, f'Acuerdo con {len(cuotas_data)} cuota(s) creado.')
+
+            except (ValueError, Exception) as e:
+                messages.error(request, f'Error al procesar: {str(e)}')
+                context['gestion_form'] = gestion_form_posted
+                return render(request, 'core/detalle_cliente.html', context)
+
+            messages.success(request, f'Gestión para {cliente_representativo.nombre_completo} guardada.')
+            return redirect('core:detalle_cliente', documento_cliente=documento_cliente)
+        else:
+            messages.error(request, 'Error al guardar la gestión. Por favor revise el formulario.')
+            context['gestion_form'] = gestion_form_posted
+
     return render(request, 'core/detalle_cliente.html', context)
 
-
-# La vista agregar_gestion_cliente (líneas 521-544 de la versión anterior) ya no es necesaria
-# y será eliminada en un paso posterior.
-# def agregar_gestion_cliente(request, documento_cliente):
-#    ...
 
 @login_required
 def solo_admin(view_func):

@@ -102,6 +102,8 @@ def estilo_tipificacion(tipificacion):
         'NC - Negociación en curso / pendiente de validación': {'clase': 'bg-primary', 'icono': 'bi-chat-text'},
         'Solicita más información': {'clase': 'bg-primary', 'icono': 'bi-info-circle'},
         'Solicita llamada posterior': {'clase': 'bg-primary', 'icono': 'bi-telephone-forward'},
+        'Sin respuesta en WhatsApp': {'clase': 'bg-primary', 'icono': 'bi-whatsapp'},
+        'Saldado con LINERU': {'clase': 'bg-primary', 'icono': 'bi-cash-coin'},
         
         # Contacto efectivo - Problemas (naranja)
         'rn': {'clase': 'bg-warning text-dark', 'icono': 'bi-x-circle'},
@@ -114,6 +116,8 @@ def estilo_tipificacion(tipificacion):
         'Remite a abogado': {'clase': 'bg-warning text-dark', 'icono': 'bi-briefcase'},
         'No tiene capacidad de pago': {'clase': 'bg-warning text-dark', 'icono': 'bi-wallet'},
         'Trámite de reclamo en curso': {'clase': 'bg-warning text-dark', 'icono': 'bi-exclamation-triangle'},
+        
+        
         
         # Contacto no efectivo (gris azulado)
         'telefono_apagado': {'clase': 'bg-info text-dark', 'icono': 'bi-phone-vibrate'},

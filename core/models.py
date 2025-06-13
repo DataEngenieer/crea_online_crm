@@ -61,6 +61,7 @@ class LoginUser(models.Model):
     class Meta:
         db_table = 'login_user'
 
+
 class Empleado(models.Model):
     id_empleado = models.AutoField(primary_key=True)
     nombre_empleado = models.CharField(max_length=50, null=True, blank=True)
@@ -76,6 +77,7 @@ class Empleado(models.Model):
 
     class Meta:
         db_table = 'tbl_empleados'
+
 
 class Cliente(models.Model):
     CEDULA_CIUDADANIA = 'CC'
@@ -328,6 +330,7 @@ class AcuerdoPago(models.Model):
     
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='acuerdos_pago')
     gestion = models.ForeignKey(Gestion, on_delete=models.CASCADE, related_name='acuerdos')
+    referencia_producto = models.CharField(max_length=100, blank=True, null=True, verbose_name="Referencia de Producto")
     fecha_acuerdo = models.DateField(verbose_name="Fecha de creación del acuerdo")
     monto_total = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Monto total del acuerdo")
     numero_cuotas = models.PositiveIntegerField(default=1, verbose_name="Número de cuotas")

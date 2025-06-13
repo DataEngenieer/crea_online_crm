@@ -167,7 +167,6 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(html => {
             document.getElementById('tablaAcuerdos').innerHTML = html;
             agregarListenersPaginacion(); 
-            agregarListenersDetalleAcuerdo();
         })
         .catch(error => {
             console.error('Error al cargar acuerdos:', error);
@@ -453,7 +452,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     agregarListenersPaginacion();
-    agregarListenersDetalleAcuerdo();
 
     const btnLimpiar = document.querySelector('a[href="{% url "core:acuerdos_pago" %}"]');
     if (btnLimpiar) {

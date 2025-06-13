@@ -8,7 +8,7 @@
     
     <form method="post" class="needs-validation" id="formulario_gestion" novalidate>
         {% csrf_token %}
-        {{ gestion_form.cliente }} {# Campo oculto #}
+        <input type="hidden" name="cliente" value="{{ cliente_representativo.pk }}">
         <input type="hidden" name="guardar_gestion" value="1">
         <input type="hidden" name="acuerdo_id" id="acuerdo_id" value="">
         
@@ -115,6 +115,16 @@
                                 {% if gestion_form.observaciones_acuerdo.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.observaciones_acuerdo.errors|join:", " }}</div>{% endif %}
                             </div>
                             
+                            <!-- Referencia de Producto -->
+                            <div class="mb-3">
+                                <label for="{{ gestion_form.referencia_producto.id_for_label }}" class="form-label d-flex align-items-center">
+                                    <i class="bi bi-tag me-1 text-success"></i>
+                                    <span>{{ gestion_form.referencia_producto.label }}</span>
+                                </label>
+                                {{ gestion_form.referencia_producto }}
+                                {% if gestion_form.referencia_producto.errors %}<div class="invalid-feedback d-block text-danger fw-bold">{{ gestion_form.referencia_producto.errors|join:", " }}</div>{% endif %}
+                            </div>
+
                             <!-- Múltiples fechas y montos de pago -->
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between align-items-center mb-2">

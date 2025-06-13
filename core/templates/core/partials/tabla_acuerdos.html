@@ -6,6 +6,7 @@
             <tr>
                 <th>Cliente</th>
                 <th>Documento</th>
+                <th>Referencia</th>
                 <th>Fecha Acuerdo</th>
                 <th>Monto Total</th>
                 <th>Cuotas</th>
@@ -24,6 +25,7 @@
                     </a>
                 </td>
                 <td>{{ acuerdo.cliente.documento }}</td>
+                <td>{{ acuerdo.referencia_producto }}</td>
                 <td>{{ acuerdo.fecha_acuerdo|date:"d/m/Y" }}</td>
                 <td class="text-end">${{ acuerdo.monto_total|floatformat:0|intcomma|default:"0" }}</td>
                 <td class="text-center">{{ acuerdo.cuotas.count }} / {{ acuerdo.numero_cuotas }}</td>
@@ -66,7 +68,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="8" class="text-center py-4">
+                <td colspan="9" class="text-center py-4">
                     <div class="alert alert-info mb-0">
                         <i class="bi bi-info-circle-fill me-2"></i>No se encontraron acuerdos de pago con los filtros aplicados.
                     </div>
