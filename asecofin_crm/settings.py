@@ -188,9 +188,9 @@ LOGGING = {
 }
 
 # Configuración de login/logout
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'inicio'
-LOGOUT_REDIRECT_URL = 'login'
+LOGIN_URL = 'core:login'
+LOGIN_REDIRECT_URL = 'core:inicio'
+LOGOUT_REDIRECT_URL = 'core:login'
 
 # Configuraciones para django-crispy-forms
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"

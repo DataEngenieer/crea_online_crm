@@ -66,6 +66,8 @@ class LoginAuditoriaView(LoginView):
         return response
 
 class LogoutAuditoriaView(LogoutView):
+    next_page = 'core:login'  # Especifica el nombre de la URL de login
+    
     def dispatch(self, request, *args, **kwargs):
         user = request.user
         if user.is_authenticated:
@@ -155,7 +157,7 @@ def registro_usuario(request):
             grupo, creado = Group.objects.get_or_create(name='asesor')
             user.groups.add(grupo)
             messages.success(request, 'Registro exitoso. Ahora puedes iniciar sesión.')
-            return redirect('login')
+            return redirect('core:login')
     else:
         form = RegistroUsuarioForm()
     return render(request, 'core/registro.html', {'form': form})
@@ -573,7 +575,7 @@ def crear_cliente_view(request):
             try:
                 form.save()
                 messages.success(request, '¡Cliente creado exitosamente!')
-                return redirect('clientes') # Redirige a la lista de clientes
+                return redirect('core:clientes') # Redirige a la lista de clientes
             except IntegrityError: # Captura el error si la combinación documento-referencia ya existe
                 # Esto es importante debido al unique_together = (('documento', 'referencia'),)
                 # Si 'referencia' es opcional y se guarda como None o '', necesitas asegurar que la lógica de unicidad lo maneje bien.
@@ -604,7 +606,7 @@ def crear_cliente_view(request):
     # El manejo de errores POST para un modal se abordará mejor con JavaScript/AJAX en el frontend.
     # Si no se usa AJAX, y hay un error, la página 'clientes' se recargaría y el modal no se mostraría con errores
     # a menos que la vista 'clientes' se modifique para manejar esto.
-    return redirect('clientes') # Redirección temporal en caso de GET o error POST no manejado por AJAX
+    return redirect('core:clientes') # Redirección temporal en caso de GET o error POST no manejado por AJAX
 
 @login_required
 def agregar_gestion_cliente(request, documento_cliente):
@@ -618,7 +620,7 @@ def agregar_gestion_cliente(request, documento_cliente):
             gestion.usuario_gestion = request.user
             gestion.save()
             messages.success(request, 'Gestión agregada exitosamente.')
-            return redirect('detalle_cliente', documento_cliente=documento_cliente)
+            return redirect('core:detalle_cliente', documento_cliente=documento_cliente)
         else:
             messages.error(request, 'Por favor corrige los errores en el formulario.')
     else:
@@ -1447,7 +1449,7 @@ def solo_admin(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated or not request.user.groups.filter(name="Administrador").exists():
-            return redirect('inicio')
+            return redirect('core:inicio')
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 
@@ -1475,7 +1477,7 @@ def perfil_usuario(request):
                 messages.success(request, 'Datos y contraseña actualizados correctamente.')
             else:
                 messages.success(request, 'Datos actualizados correctamente.')
-            return redirect('perfil')
+            return redirect('core:perfil')
         else:
             for err in errores:
                 messages.error(request, err)
@@ -1542,7 +1544,7 @@ def detalle_usuario(request, user_id):
         user = User.objects.get(id=user_id)
     except User.DoesNotExist:
         messages.error(request, 'El usuario solicitado no existe.')
-        return redirect('admin_usuarios')
+        return redirect('core:admin_usuarios')
 
     if request.method == 'POST':
         accion = request.POST.get('accion')
@@ -1551,7 +1553,7 @@ def detalle_usuario(request, user_id):
             user.save()
             estado = 'activado' if user.is_active else 'desactivado'
             messages.success(request, f'Usuario {user.username} {estado} correctamente.')
-            return redirect('admin_usuarios')
+            return redirect('core:admin_usuarios')
 
     return render(request, 'core/detalle_usuario.html', {
         'usuario': user,
@@ -1681,7 +1683,7 @@ def enviar_email_prueba(request, documento_cliente):
     
     if not cliente_representativo.email:
         messages.error(request, f'No se puede enviar correo porque el cliente {cliente_representativo.nombre_completo} no tiene una dirección de email registrada.')
-        return redirect('detalle_cliente', documento_cliente=documento_cliente)
+        return redirect('core:detalle_cliente', documento_cliente=documento_cliente)
     
     # Enviar el correo de prueba
     resultado = enviar_correo_prueba(cliente_representativo.email, cliente_representativo.nombre_completo)
@@ -1691,7 +1693,7 @@ def enviar_email_prueba(request, documento_cliente):
     else:
         messages.error(request, f'Error al enviar el correo de prueba a {cliente_representativo.email}. Verifique la configuración SMTP.')
     
-    return redirect('detalle_cliente', documento_cliente=documento_cliente)
+    return redirect('core:detalle_cliente', documento_cliente=documento_cliente)
 
 @login_required
 def marcar_seguimiento_completado(request, seguimiento_id):
@@ -1727,7 +1729,7 @@ def marcar_seguimiento_completado(request, seguimiento_id):
     referer = request.META.get('HTTP_REFERER')
     if referer:
         return redirect(referer)
-    return redirect('seguimientos')
+    return redirect('core:seguimientos')
 
 
 # REPORTES

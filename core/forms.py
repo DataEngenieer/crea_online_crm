@@ -19,6 +19,11 @@ class EmailAuthenticationForm(AuthenticationForm):
         UserModel = get_user_model()
         try:
             user = UserModel.objects.get(email__iexact=email)
+            # Verificar si el usuario está activo
+            if not user.is_active:
+                raise forms.ValidationError(
+                    "Esta cuenta está inactiva. Por favor contacte al administrador."
+                )
             self.cleaned_data['username'] = user.username
         except UserModel.DoesNotExist:
             pass  # El AuthenticationForm se encargará del error
