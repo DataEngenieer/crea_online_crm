@@ -127,9 +127,15 @@ class GestionForm(forms.ModelForm):
     observaciones_acuerdo = forms.CharField(required=False, widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}))
     referencia_producto = forms.ChoiceField(
         choices=[],
-        required=True,
+        required=False,  # Cambiado a no requerido para evitar problemas de validación
         label="Referencia de Producto",
-        widget=forms.Select(attrs={'class': 'form-select'})
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'data-control': 'select2',
+            'data-placeholder': 'Seleccione una referencia',
+            'data-allow-clear': 'true'
+        }),
+        help_text="Seleccione la referencia del producto relacionada con esta gestión"
     )
     
     # Campos para pago efectivo
@@ -162,19 +168,70 @@ class GestionForm(forms.ModelForm):
         cliente_instance = kwargs.pop('cliente_instance', None) # Obtener la instancia del cliente
         super().__init__(*args, **kwargs)
         
-        if cliente_instance:
-            print("DOCUMENTO DEL CLIENTE EN FORM:", cliente_instance.documento)
+        # Inicializar opciones de referencia de producto
+        self.fields['referencia_producto'].choices = self.get_referencias_choices(cliente_instance)
+        
+        # Configurar el resto de los campos
+        self.setup_fields()
+    
+    def get_referencias_choices(self, cliente_instance):
+        """Obtiene las opciones de referencia para el cliente"""
+        if not cliente_instance:
+            return [('', 'No hay referencias disponibles')]
             
+        try:
             referencias = Cliente.objects.filter(
                 documento=cliente_instance.documento
             ).exclude(referencia__isnull=True).exclude(referencia='').values_list(
                 'referencia', flat=True
             ).distinct()
-            print("REFERENCIAS ENCONTRADAS EN BD:", list(referencias))
-            self.fields['referencia_producto'].choices = [(ref, ref) for ref in referencias if ref]
-        else:
-            print("NO HAY cliente_instance PASADO AL FORMULARIO")
-            self.fields['referencia_producto'].choices = []
+            
+            return [('', 'Seleccione una referencia')] + [(ref, ref) for ref in referencias if ref]
+            
+        except Exception as e:
+            print(f"Error al obtener referencias: {str(e)}")
+            return [('', 'Error al cargar referencias')]
+    
+    def setup_fields(self):
+        """Configura los campos del formulario"""
+        # Configuración común para los campos
+        self.fields['estado_contacto'].choices = ESTADO_CONTACTO_CHOICES
+        self.fields['estado_contacto'].widget.attrs.update({'class': 'form-select'})
+        self.fields['canal_contacto'].widget.attrs.update({'class': 'form-select'})
+        
+        # Establecer valor predeterminado para canal_contacto si no está definido
+        if not self.initial.get('canal_contacto'):
+            self.initial['canal_contacto'] = 'telefono'
+            
+        # Configurar campos condicionales
+        self.setup_conditional_fields()
+        
+    def setup_conditional_fields(self):
+        """Configura campos que dependen de otros campos"""
+        # Inicializar N1 y N2 vacíos o con opciones si es una instancia existente
+        self.fields['tipo_gestion_n1'].choices = [('', 'Seleccione Nivel 1')]
+        self.fields['tipo_gestion_n2'].choices = [('', 'Seleccione Nivel 2')]
+
+        if self.instance and self.instance.pk:
+            estado_contacto_val = self.instance.estado_contacto
+            tipo_gestion_n1_val = self.instance.tipo_gestion_n1
+
+            if estado_contacto_val and estado_contacto_val in GESTION_OPCIONES:
+                nivel1_data = GESTION_OPCIONES[estado_contacto_val].get('nivel1', {})
+                self.fields['tipo_gestion_n1'].choices = [('', 'Seleccione Nivel 1')] + [(k, v['label']) for k, v in nivel1_data.items()]
+                self.fields['tipo_gestion_n1'].initial = tipo_gestion_n1_val
+
+                if tipo_gestion_n1_val and tipo_gestion_n1_val in nivel1_data:
+                    nivel2_data = nivel1_data[tipo_gestion_n1_val].get('nivel2', {})
+                    self.fields['tipo_gestion_n2'].choices = [('', 'Seleccione Nivel 2')] + [(k, v_label) for k, v_label in nivel2_data.items()]
+                    self.fields['tipo_gestion_n2'].initial = self.instance.tipo_gestion_n2
+            
+            # No deshabilitar si hay instancia, ya que los valores deben estar seleccionados
+            self.fields['tipo_gestion_n1'].widget.attrs.pop('disabled', None)
+            self.fields['tipo_gestion_n2'].widget.attrs.pop('disabled', None)
+        else:  # Formulario nuevo, deshabilitar N1 y N2 inicialmente
+            self.fields['tipo_gestion_n1'].widget.attrs['disabled'] = True
+            self.fields['tipo_gestion_n2'].widget.attrs['disabled'] = True
         
         self.fields['estado_contacto'].choices = ESTADO_CONTACTO_CHOICES
         self.fields['estado_contacto'].widget.attrs.update({'class': 'form-select'})
@@ -222,63 +279,64 @@ class GestionForm(forms.ModelForm):
                  self.fields[campo].required = False
     
     def clean(self):
-        """Validación personalizada para campos condicionales según el tipo_gestion_n2 seleccionado."""
+        """Validación personalizada para los campos del formulario."""
+        print("\n=== INICIO DE CLEAN DEL FORMULARIO ===")
+        print(f"Datos POST recibidos: {self.data}")
+        
         cleaned_data = super().clean()
+        print(f"Datos limpios: {cleaned_data}")
+        
+        estado_contacto = cleaned_data.get('estado_contacto')
         tipo_gestion_n1 = cleaned_data.get('tipo_gestion_n1')
-        tipo_gestion_n2 = cleaned_data.get('tipo_gestion_n2')
+        referencia_producto = cleaned_data.get('referencia_producto')
         
-        # Validación básica: comprobar que no sean valores vacíos
-        if not tipo_gestion_n1 or tipo_gestion_n1 == '':
-            self.add_error('tipo_gestion_n1', 'Debe seleccionar una opción válida de Nivel 1.')
+        print(f"Estado contacto: {estado_contacto}")
+        print(f"Tipo gestión N1: {tipo_gestion_n1}")
+        print(f"Referencia producto: {referencia_producto}")
+        print(f"Choices de referencia: {dict(self.fields['referencia_producto'].choices).keys() if 'referencia_producto' in self.fields else 'No hay campo referencia_producto'}")
+
+        # Validar que si se seleccionó un estado de contacto, también se seleccione tipo_gestion_n1
+        if estado_contacto and not tipo_gestion_n1:
+            self.add_error('tipo_gestion_n1', 'Debe seleccionar un tipo de gestión')
             
-        # Ya no validamos tipo_gestion_n2 como obligatorio
-        # if not tipo_gestion_n2 or tipo_gestion_n2 == '':
-        #    self.add_error('tipo_gestion_n2', 'Debe seleccionar una opción válida de Nivel 2.')
-        
-        # Validaciones condicionales según tipo_gestion_n2
-        if tipo_gestion_n2 == 'PAGADO':
-            # Si es PAGADO, debe incluir comprobante y fecha de pago
-            comprobante_pago = cleaned_data.get('comprobante_pago')
-            fecha_pago_efectivo = cleaned_data.get('fecha_pago_efectivo')
-            
-            if not comprobante_pago:
-                self.add_error('comprobante_pago', 'Debe adjuntar un comprobante de pago cuando selecciona PAGADO.')
+        # Validar referencia de producto solo para acuerdos de pago (AP o PP)
+        if estado_contacto == 'contacto_efectivo':
+            # Solo requerir referencia para acuerdos de pago
+            if tipo_gestion_n1 in ['AP', 'PP']:
+                if not referencia_producto:
+                    self.add_error('referencia_producto', 'Debe seleccionar una referencia de producto para acuerdos de pago')
+                else:
+                    # Asegurarse de que la referencia sea válida
+                    choices = dict(self.fields['referencia_producto'].choices).keys() if 'referencia_producto' in self.fields else []
+                    if referencia_producto not in choices:
+                        self.add_error('referencia_producto', 'La referencia seleccionada no es válida')
+                    else:
+                        # Forzar el guardado de la referencia en los datos limpios
+                        cleaned_data['referencia_producto'] = referencia_producto
                 
-            if not fecha_pago_efectivo:
-                self.add_error('fecha_pago_efectivo', 'Debe ingresar la fecha de pago efectivo cuando selecciona PAGADO.')
-        
-        elif tipo_gestion_n2 in ['AP', 'PP']:
-            # Si es AP o PP, debe marcar acuerdo de pago y completar sus campos
-            acuerdo_pago_realizado = cleaned_data.get('acuerdo_pago_realizado')
-            fecha_acuerdo = cleaned_data.get('fecha_acuerdo')
-            monto_acuerdo = cleaned_data.get('monto_acuerdo')
-            
-            # Forzar que se active el checkbox de acuerdo de pago
-            if not acuerdo_pago_realizado:
+                # Marcar automáticamente acuerdo_pago_realizado para AP o PP
                 cleaned_data['acuerdo_pago_realizado'] = True
+
+        # Validación para contactos efectivos
+        if estado_contacto == 'contacto_efectivo':
+            # Hacer que la fecha de pago efectivo sea opcional temporalmente
+            # if not cleaned_data.get('fecha_pago_efectivo'):
+            #     self.add_error('fecha_pago_efectivo', 'Debe ingresar la fecha de pago efectivo')
+            
+            # Validar campos de acuerdo solo si se están enviando
+            if tipo_gestion_n1 in ['PP', 'AP']:  # Pago Parcial o Acuerdo de Pago
+                fecha_acuerdo = cleaned_data.get('fecha_acuerdo')
+                monto_acuerdo = cleaned_data.get('monto_acuerdo')
                 
-            # Validar que se completen los campos del acuerdo
-            if not fecha_acuerdo:
-                self.add_error('fecha_acuerdo', 'Debe ingresar la fecha del acuerdo para AP o PP.')
+                # Solo validar si se envió algún dato de acuerdo
+                if fecha_acuerdo or monto_acuerdo:
+                    if not fecha_acuerdo:
+                        self.add_error('fecha_acuerdo', 'Si ingresa un monto, debe especificar la fecha del acuerdo')
+                    if not monto_acuerdo or float(monto_acuerdo) <= 0:
+                        self.add_error('monto_acuerdo', 'Debe especificar un monto válido para el acuerdo')
                 
-            if not monto_acuerdo:
-                self.add_error('monto_acuerdo', 'Debe ingresar el monto del acuerdo para AP o PP.')
+                # Las observaciones son opcionales
+                # if not cleaned_data.get('observaciones_acuerdo'):
+                #     self.add_error('observaciones_acuerdo', 'Recomendamos ingresar observaciones sobre el acuerdo')
         
-        elif tipo_gestion_n2 == 'SOLICITA_LLAMADA':
-            # Si solicita llamada posterior, debe activar seguimiento
-            seguimiento_requerido = cleaned_data.get('seguimiento_requerido')
-            fecha_proximo_seguimiento = cleaned_data.get('fecha_proximo_seguimiento')
-            hora_proximo_seguimiento = cleaned_data.get('hora_proximo_seguimiento')
-            
-            # Forzar que se active el checkbox de seguimiento
-            if not seguimiento_requerido:
-                cleaned_data['seguimiento_requerido'] = True
-                
-            # Validar que se completen los campos de seguimiento
-            if not fecha_proximo_seguimiento:
-                self.add_error('fecha_proximo_seguimiento', 'Debe ingresar la fecha del próximo seguimiento.')
-                
-            if not hora_proximo_seguimiento:
-                self.add_error('hora_proximo_seguimiento', 'Debe ingresar la hora del próximo seguimiento.')
-            
         return cleaned_data

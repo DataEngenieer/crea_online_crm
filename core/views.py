@@ -1412,14 +1412,23 @@ def detalle_cliente(request, documento_cliente):
                     gestion.save()
 
                     if gestion.monto_acuerdo and gestion.monto_acuerdo > 0:
+                        # Asegurarse de que tenemos la referencia del producto
+                        referencia = gestion.referencia_producto
+                        print(f"\n=== CREANDO ACUERDO DE PAGO ===")
+                        print(f"Referencia del producto para el acuerdo: {referencia}")
+                        
+                        # Crear el acuerdo de pago con la referencia
                         acuerdo = AcuerdoPago.objects.create(
                             cliente=cliente_representativo,
+                            gestion=gestion,
+                            referencia_producto=referencia,
                             fecha_acuerdo=gestion.fecha_acuerdo,
                             monto_total=gestion.monto_acuerdo,
                             observaciones=gestion.observaciones_acuerdo or '',
                             usuario_creacion=request.user,
-                            gestion=gestion
+                            tipo_acuerdo=AcuerdoPago.PAGO_TOTAL  # Asegurar que el tipo de acuerdo esté definido
                         )
+                        print(f"Acuerdo de pago creado con referencia: {acuerdo.referencia_producto}")
                         for i, cuota_info in enumerate(cuotas_data):
                             CuotaAcuerdo.objects.create(
                                 acuerdo=acuerdo,
@@ -1610,11 +1619,22 @@ def registrar_nueva_gestion(request):
                 request.session.pop('cliente_encontrado_id', None)
                 return redirect('core:registrar_nueva_gestion')
 
+            # Imprimir datos recibidos para depuración
+            print("\n=== DATOS DEL FORMULARIO RECIBIDOS ===")
+            print(f"Datos POST: {request.POST}")
+            print(f"Archivos: {request.FILES}")
+            
             gestion_form = GestionForm(
                 request.POST, 
                 request.FILES,
                 cliente_instance=cliente_para_gestion
             )
+            
+            # Imprimir datos del formulario antes de validar
+            print("\n=== FORMULARIO ANTES DE VALIDAR ===")
+            print(f"Formulario válido: {gestion_form.is_valid()}")
+            print(f"Errores: {gestion_form.errors if gestion_form.errors else 'Sin errores'}")
+            print(f"Datos limpios: {gestion_form.cleaned_data if hasattr(gestion_form, 'cleaned_data') else 'No hay datos limpios'}")
             
             if gestion_form.is_valid():
                 try:
@@ -1655,9 +1675,69 @@ def registrar_nueva_gestion(request):
                     request.FILES,
                     cliente_instance=cliente_encontrado
                 )
+                
+                if gestion_form.is_valid():
+                    try:
+                        with transaction.atomic():
+                            gestion = gestion_form.save(commit=False)
+                            gestion.cliente = cliente_encontrado
+                            gestion.usuario_gestion = request.user
+                            
+                            # Asegurarse de que la referencia se guarde correctamente
+                            referencia = gestion_form.cleaned_data.get('referencia_producto')
+                            print(f"\n=== GUARDANDO REFERENCIA ===")
+                            print(f"Referencia a guardar: {referencia}")
+                            print(f"Tipo de referencia: {type(referencia)}")
+                            
+                            # 1. Asignar la referencia a la gestión
+                            gestion.referencia_producto = referencia
+                            print(f"\n=== ASIGNANDO REFERENCIA A GESTIÓN ===")
+                            print(f"Referencia asignada a gestión: {gestion.referencia_producto}")
+                            
+                            # 2. Guardar la gestión (esto creará automáticamente el acuerdo de pago si es necesario)
+                            # con la referencia ya asignada
+                            gestion.save()
+                            print("Gestión guardada exitosamente")
+                            
+                            # Verificar que el acuerdo de pago se creó correctamente
+                            if hasattr(gestion, 'acuerdopago'):
+                                print(f"\n=== ACUERDO DE PAGO CREADO ===")
+                                print(f"ID del acuerdo: {gestion.acuerdopago.id}")
+                                print(f"Referencia en el acuerdo: {gestion.acuerdopago.referencia_producto}")
+                            else:
+                                print("\n=== INFORMACIÓN: No se creó un acuerdo de pago ===")
+                                print(f"Razón posible: El tipo de gestión no requiere acuerdo o faltan datos")
+                                print(f"Tipo de gestión: {gestion.tipo_gestion_n1}")
+                                print(f"Acuerdo pago realizado: {gestion.acuerdo_pago_realizado}")
+                                print(f"Monto acuerdo: {gestion.monto_acuerdo}")
+                                print(f"Fecha acuerdo: {gestion.fecha_acuerdo}")
+                            
+                            messages.success(request, "Gestión registrada exitosamente.")
+                            return redirect('core:detalle_cliente', documento_cliente=cliente_encontrado.documento)
+                            
+                    except Exception as e:
+                        messages.error(request, f"Error al guardar la gestión: {str(e)}")
+                        # Agregar logging del error para depuración
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.error(f"Error al guardar gestión: {str(e)}")
+                else:
+                    # Si hay errores en el formulario, mostrarlos
+                    for field, errors in gestion_form.errors.items():
+                        for error in errors:
+                            field_label = gestion_form.fields[field].label if field in gestion_form.fields else field
+                            messages.error(request, f"Error en {field_label}: {error}")
         except Cliente.DoesNotExist:
             request.session.pop('cliente_encontrado_id', None)
 
+    # Inicializar el formulario de búsqueda si no está definido
+    if 'buscar_form' not in locals():
+        buscar_form = BuscarClienteForm()
+        
+    # Inicializar el formulario de gestión si no está definido
+    if 'gestion_form' not in locals():
+        gestion_form = GestionForm(cliente_instance=cliente_encontrado) if cliente_encontrado else None
+    
     context = {
         'buscar_form': buscar_form,
         'gestion_form': gestion_form,

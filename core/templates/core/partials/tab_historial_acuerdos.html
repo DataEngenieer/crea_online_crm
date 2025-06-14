@@ -5,7 +5,7 @@
         <h5 class="card-title mb-0">
             <i class="bi bi-cash-coin me-2 text-success"></i>Historial de Acuerdos de Pago
         </h5>
-        <span class="badge bg-primary">Cliente: {{ cliente_representativo.nombre_completo }} | Total: {{ acuerdos_pago|length }} acuerdos</span>
+        <span class="badge bg-primary">Total Acuerdos: {{ acuerdos_pago|length }}</span>
     </div>
     
     {% if acuerdos_pago %}
@@ -26,7 +26,7 @@
                         </div>
                         <div class="card-body">
                             <div class="row mb-3">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="d-flex align-items-center mb-2">
                                         <div class="rounded-circle bg-primary p-1 me-2">
                                             <i class="bi bi-cash text-white small"></i>
@@ -35,7 +35,7 @@
                                     </div>
                                     <h5 class="text-primary">${{ acuerdo.monto_total|floatformat:2|intcomma }}</h5>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="d-flex align-items-center mb-2">
                                         <div class="rounded-circle bg-info p-1 me-2">
                                             <i class="bi bi-list-ol text-white small"></i>
@@ -43,6 +43,15 @@
                                         <span class="text-muted">Cuotas:</span>
                                     </div>
                                     <h5>{{ acuerdo.cuotas_list|length }} <small class="text-muted">cuota{{ acuerdo.cuotas_list|length|pluralize }}</small></h5>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="rounded-circle bg-info p-1 me-2">
+                                            <i class="bi bi-upc-scan text-white small"></i>
+                                        </div>
+                                        <span class="text-muted">Referencia:</span>
+                                    </div>
+                                    <h5>{{ acuerdo.referencia_producto }}</h5>
                                 </div>
                             </div>
                             

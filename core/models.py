@@ -262,9 +262,6 @@ class Gestion(models.Model):
         ordering = ['-fecha_hora_gestion']
 
     def save(self, *args, **kwargs):
-        # Verificar si es una creación nueva o una actualización
-        es_nuevo = self.pk is None
-        
         # Si el tipo de gestión es AP o PP, marcar automáticamente como acuerdo de pago
         if self.tipo_gestion_n1 in ['ap', 'pp']:
             self.acuerdo_pago_realizado = True
@@ -276,31 +273,8 @@ class Gestion(models.Model):
         # Continuar con el guardado normal
         super(Gestion, self).save(*args, **kwargs)
         
-        # Crear acuerdo de pago si es necesario (solo para nuevas gestiones)
-        if es_nuevo and self.acuerdo_pago_realizado and self.monto_acuerdo and self.fecha_acuerdo:
-            referencia = self.referencia_producto or (self.cliente.referencia if hasattr(self.cliente, 'referencia') else None)
-            # Crear el acuerdo de pago
-            acuerdo = AcuerdoPago.objects.create(
-                cliente=self.cliente,
-                gestion=self,
-                referencia_producto=referencia,
-                fecha_acuerdo=self.fecha_acuerdo,
-                monto_total=self.monto_acuerdo,
-                numero_cuotas=1,  # Por defecto una sola cuota
-                tipo_acuerdo=AcuerdoPago.PAGO_TOTAL,
-                observaciones=self.observaciones_acuerdo,
-                usuario_creacion=self.usuario_gestion
-            )
-            
-            # Crear la cuota única (por defecto)
-            CuotaAcuerdo.objects.create(
-                acuerdo=acuerdo,
-                numero_cuota=1,
-                monto=self.monto_acuerdo,
-                fecha_vencimiento=self.fecha_acuerdo,
-                estado=CuotaAcuerdo.PENDIENTE,
-                observaciones="Cuota única creada automáticamente"
-            )
+        # NOTA: La creación del acuerdo de pago ahora se maneja en la vista detalle_cliente
+        # para evitar duplicación de lógica y tener un mejor control sobre el proceso
     
     def __str__(self):
         return f"Gestión para {self.cliente.nombre_completo} el {self.fecha_hora_gestion.strftime('%Y-%m-%d %H:%M')}"
