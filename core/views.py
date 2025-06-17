@@ -455,8 +455,12 @@ def clientes(request):
             clientes_qs = clientes_qs.filter(nombre_completo__icontains=filtro_nombre)
         if filtro_telefono:
             clientes_qs = clientes_qs.filter(
-                Q(telefono_principal__icontains=filtro_telefono) | 
-                Q(telefono_alternativo__icontains=filtro_telefono)
+                Q(celular_1__icontains=filtro_telefono) | 
+                Q(celular_2__icontains=filtro_telefono) |
+                Q(celular_3__icontains=filtro_telefono) |
+                Q(telefono_1__icontains=filtro_telefono) |
+                Q(telefono_2__icontains=filtro_telefono) |
+                Q(telefono_celular__icontains=filtro_telefono)
             )
         if filtro_referencia:
             clientes_qs = clientes_qs.filter(referencia__icontains=filtro_referencia)
