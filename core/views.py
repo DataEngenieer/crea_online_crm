@@ -511,8 +511,9 @@ def clientes(request):
             
             # Si el documento ya existe en el diccionario, actualizamos los datos
             if documento in clientes_agrupados:
-                # Sumar la deuda total
+                # Sumar las deudas
                 clientes_agrupados[documento]['deuda_total'] += cliente.deuda_total
+                clientes_agrupados[documento]['deuda_principal_k'] += (cliente.deuda_principal_k or Decimal('0.00'))
                 # Incrementar el contador de referencias
                 clientes_agrupados[documento]['num_referencias'] += 1
                 # Actualizar el total de días mora si es mayor
@@ -538,6 +539,7 @@ def clientes(request):
                     'nombre_completo': cliente.nombre_completo,
                     'email': cliente.email,
                     'deuda_total': cliente.deuda_total,
+                    'deuda_principal_k': cliente.deuda_principal_k or Decimal('0.00'),
                     'total_dias_mora': cliente.total_dias_mora,
                     'fecha_cesion': cliente.fecha_cesion,  # Mantenemos como respaldo
                     'referencia': cliente.referencia,  # Agregamos el campo referencia
