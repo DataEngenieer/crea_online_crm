@@ -20,10 +20,10 @@
                 <td>{{ grupo_cliente.nombre_completo|default:'-' }}</td>
                 <td class="text-end">${{ grupo_cliente.deuda_principal_k|formato_numero|default:'0,00' }}</td>
                 <td class="text-center">{{ grupo_cliente.total_dias_mora|floatformat:0|default:'-' }}</td>
-                <td class="text-center">{{ grupo_cliente.fecha_ultima_gestion|date:"d/m/Y H:i"|default:'Sin gestión' }}</td>
+                <td class="text-center">{{ grupo_cliente.fecha_ultima_gestion|date:"d/m/Y"|default:'Sin gestión' }}</td>
                 <td class="text-center">
                     {% with estilo=grupo_cliente.ultima_tipificacion|estilo_tipificacion %}
-                        <span class="badge {{ estilo.clase }}" style="font-size: 0.8rem;" title="{{ grupo_cliente.ultima_tipificacion }} - {{ grupo_cliente.fecha_ultima_gestion|date:'d/m/Y H:i'|default:'Sin gestión' }}">
+                        <span class="badge {{ estilo.clase }}" style="font-size: 0.8rem;" title="{{ grupo_cliente.ultima_tipificacion }} - {{ grupo_cliente.fecha_ultima_gestion|date:'d/m/Y'|default:'Sin gestión' }}">
                             <i class="bi {{ estilo.icono }} me-1"></i>{{ grupo_cliente.ultima_tipificacion|truncatechars:20 }}
                         </span>
                     {% endwith %}
