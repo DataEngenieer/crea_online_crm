@@ -19,33 +19,66 @@
         <div class="card-body py-3">
             <form method="get" id="filtroClientesForm" class="mb-0">
                 <div class="row g-3 mb-3">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label for="documento" class="form-label">Documento</label>
-                        <input type="text" name="documento" id="documento" class="form-control filtro-input" value="{{ request.GET.documento }}" placeholder="Buscar por Documento">
+                        <input type="text" name="documento" id="documento" class="form-control filtro-input" value="{{ filtro_documento }}" placeholder="Buscar por Documento">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label for="nombre" class="form-label">Nombre Cliente</label>
-                        <input type="text" name="nombre" id="nombre" class="form-control filtro-input" value="{{ request.GET.nombre }}" placeholder="Buscar por Nombre">
+                        <input type="text" name="nombre" id="nombre" class="form-control filtro-input" value="{{ filtro_nombre }}" placeholder="Buscar por Nombre">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label for="telefono" class="form-label">Teléfono</label>
-                        <input type="text" name="telefono" id="telefono" class="form-control filtro-input" value="{{ request.GET.telefono }}" placeholder="Buscar por Teléfono">
+                        <input type="text" name="telefono" id="telefono" class="form-control filtro-input" value="{{ filtro_telefono }}" placeholder="Buscar por Teléfono">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label for="referencia" class="form-label">Referencia</label>
-                        <input type="text" name="referencia" id="referencia" class="form-control filtro-input" value="{{ request.GET.referencia }}" placeholder="Buscar por Referencia">
+                        <input type="text" name="referencia" id="referencia" class="form-control filtro-input" value="{{ filtro_referencia }}" placeholder="Buscar por Referencia">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="gestion" class="form-label">Estado de Gestión</label>
+                        <select name="gestion" id="gestion" class="form-select filtro-select">
+                            <option value="todos" {% if filtro_gestion == 'todos' %}selected{% endif %}>Todos los clientes</option>
+                            <option value="gestionados" {% if filtro_gestion == 'gestionados' %}selected{% endif %}>Solo gestionados</option>
+                            <option value="no_gestionados" {% if filtro_gestion == 'no_gestionados' %}selected{% endif %}>No gestionados</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="orden" class="form-label">Ordenar por</label>
+                        <select name="orden" id="orden" class="form-select filtro-select">
+                            <option value="fecha_desc" {% if orden_actual == 'fecha_desc' %}selected{% endif %}>Fecha (más reciente)</option>
+                            <option value="fecha_asc" {% if orden_actual == 'fecha_asc' %}selected{% endif %}>Fecha (más antigua)</option>
+                            <option value="nombre_asc" {% if orden_actual == 'nombre_asc' %}selected{% endif %}>Nombre (A-Z)</option>
+                            <option value="nombre_desc" {% if orden_actual == 'nombre_desc' %}selected{% endif %}>Nombre (Z-A)</option>
+                            <option value="deuda_desc" {% if orden_actual == 'deuda_desc' %}selected{% endif %}>Deuda (mayor a menor)</option>
+                            <option value="deuda_asc" {% if orden_actual == 'deuda_asc' %}selected{% endif %}>Deuda (menor a mayor)</option>
+                            <option value="dias_mora_desc" {% if orden_actual == 'dias_mora_desc' %}selected{% endif %}>Días mora (mayor a menor)</option>
+                            <option value="dias_mora_asc" {% if orden_actual == 'dias_mora_asc' %}selected{% endif %}>Días mora (menor a mayor)</option>
+                        </select>
                     </div>
                 </div>
                 <div class="row g-3">
-                    <div class="col-md-12 d-flex justify-content-start">
-                        <button type="submit" class="btn btn-primary me-2">
-                            <i class="bi bi-search"></i> Buscar
-                        </button>
-                        <a href="{% url 'core:clientes' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-counterclockwise"></i> Limpiar
-                        </a>
+                    <div class="col-md-12 d-flex justify-content-between align-items-center">
+                        <div>
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="bi bi-funnel-fill"></i> Aplicar Filtros
+                            </button>
+                            <a href="{% url 'core:clientes' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                            </a>
+                        </div>
+                        <div class="text-muted">
+                            <i class="bi bi-info-circle"></i> Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }} clientes
+                        </div>
                     </div>
                 </div>
+                {% if params %}
+                    {% for key, value in request.GET.items %}
+                        {% if key != 'page' %}
+                            <input type="hidden" name="{{ key }}" value="{{ value }}">
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
             </form>
         </div>
     </div>
@@ -172,77 +205,97 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const filtroForm = document.getElementById('filtroClientesForm');
-    const inputsFiltro = filtroForm.querySelectorAll('.filtro-input');
-    const tablaWrapper = document.getElementById('tabla-clientes-wrapper');
-    const baseUrl = "{% url 'core:clientes' %}";
+    var filtroForm = document.getElementById('filtroClientesForm');
+    var inputsFiltro = filtroForm.querySelectorAll('.filtro-input');
+    var tablaWrapper = document.getElementById('tabla-clientes-wrapper');
+    var baseUrl = "{% url 'core:clientes' %}";
 
-    async function buscarClientes(urlConParams) {
-        try {
-            const response = await fetch(urlConParams, {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+    // Usar XMLHttpRequest en lugar de fetch para mejor compatibilidad
+    function buscarClientes(urlConParams) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', urlConParams, true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        
+        xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                tablaWrapper.innerHTML = xhr.responseText;
+                agregarListenersPaginacion();
+            } else {
+                console.error('Error en la búsqueda AJAX. Estado:', xhr.status);
             }
-            const html = await response.text();
-            tablaWrapper.innerHTML = html;
-            // history.pushState(null, '', urlConParams); // <-- LÍNEA ELIMINADA/COMENTADA
-            agregarListenersPaginacion(); 
-        } catch (error) {
-            console.error('Error en la búsqueda AJAX:', error);
-        }
+        };
+        
+        xhr.onerror = function() {
+            console.error('Error de conexión en la búsqueda AJAX');
+        };
+        
+        xhr.send();
     }
 
     function obtenerUrlConFiltrosActuales() {
-        const formData = new FormData(filtroForm);
-        const params = new URLSearchParams();
-        for (const [key, value] of formData.entries()) {
-            if (value) { 
-                params.append(key, value);
+        var form = document.getElementById('filtroClientesForm');
+        var inputs = form.getElementsByTagName('input');
+        var selects = form.getElementsByTagName('select');
+        var params = [];
+        
+        // Procesar inputs
+        for (var i = 0; i < inputs.length; i++) {
+            var input = inputs[i];
+            if (input.name && input.value) {
+                params.push(encodeURIComponent(input.name) + '=' + encodeURIComponent(input.value));
             }
         }
-        const queryString = params.toString();
-        return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+        
+        // Procesar selects
+        for (var j = 0; j < selects.length; j++) {
+            var select = selects[j];
+            if (select.name && select.value) {
+                params.push(encodeURIComponent(select.name) + '=' + encodeURIComponent(select.value));
+            }
+        }
+        
+        var queryString = params.join('&');
+        return queryString ? baseUrl + (baseUrl.indexOf('?') === -1 ? '?' : '&') + queryString : baseUrl;
     }
 
-    inputsFiltro.forEach(input => {
-        input.addEventListener('input', function() {
-            const url = obtenerUrlConFiltrosActuales();
+    // Agregar event listeners a los inputs de filtro
+    for (var i = 0; i < inputsFiltro.length; i++) {
+        inputsFiltro[i].addEventListener('input', function() {
+            var url = obtenerUrlConFiltrosActuales();
             buscarClientes(url);
         });
-    });
+    }
 
+    // Manejar el envío del formulario de filtros
     filtroForm.addEventListener('submit', function(event) {
         event.preventDefault();
-        const url = obtenerUrlConFiltrosActuales();
+        var url = obtenerUrlConFiltrosActuales();
         buscarClientes(url);
     });
 
     function agregarListenersPaginacion() {
-        const enlacesPaginacion = tablaWrapper.querySelectorAll('.ajax-link');
-        enlacesPaginacion.forEach(enlace => {
-            enlace.addEventListener('click', function(event) {
+        var enlacesPaginacion = tablaWrapper.querySelectorAll('.ajax-link');
+        // Usar bucle for para mejor compatibilidad
+        for (var j = 0; j < enlacesPaginacion.length; j++) {
+            enlacesPaginacion[j].addEventListener('click', function(event) {
                 event.preventDefault();
                 buscarClientes(this.href);
             });
-        });
+        }
     }
 
+    // Llamar a la función para agregar listeners de paginación inicialmente
     agregarListenersPaginacion();
 
-    const btnLimpiar = document.querySelector('a[href="{% url 'core:clientes' %}"]');
+    // Configurar el botón de limpiar
+    var btnLimpiar = document.querySelector('a[href="{% url 'core:clientes' %}"]');
     if (btnLimpiar) {
-        btnLimpiar.addEventListener('click', (event) => {
+        btnLimpiar.addEventListener('click', function(event) {
             event.preventDefault();
             filtroForm.reset();
             buscarClientes(baseUrl);
         });
     }
-
 });
 </script>
 {% endblock extra_js %}

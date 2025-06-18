@@ -23,7 +23,10 @@ html, body, button, input, optgroup, select, textarea, .btn, .form-control, .car
     --color-secundario-5: #7490bc;
     /* Otros */
     --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-orange: #f97316;
     --color-danger: #ef4444;
+    --color-info: #3b82f6;
     --color-bg: #2d2d2d;
     --color-text: #f8f9fa;
     /* Definición de la fuente */
@@ -33,6 +36,51 @@ html, body, button, input, optgroup, select, textarea, .btn, .form-control, .car
 body {
     background-color: #f6f8fb;
     color: #222;
+}
+
+/* Estilos para badges */
+.badge {
+    font-weight: 500;
+    padding: 0.4em 0.65em;
+    font-size: 0.8em;
+    letter-spacing: 0.5px;
+    border-radius: 0.25rem;
+}
+
+/* Colores personalizados para badges */
+.bg-orange {
+    background-color: var(--color-orange) !important;
+    color: white !important;
+}
+
+.bg-purple {
+    background-color: #8b5cf6 !important;
+    color: white !important;
+}
+
+.bg-info {
+    background-color: var(--color-info) !important;
+    color: white !important;
+}
+
+.bg-warning {
+    background-color: var(--color-warning) !important;
+    color: #1f2937 !important; /* Texto oscuro para mejor contraste */
+}
+
+.bg-success {
+    background-color: var(--color-success) !important;
+    color: white !important;
+}
+
+.bg-danger {
+    background-color: var(--color-danger) !important;
+    color: white !important;
+}
+
+.bg-secondary {
+    background-color: #6b7280 !important;
+    color: white !important;
 }
 #wrapper.toggled #sidebar-wrapper {
     margin-left: -220px;
@@ -301,6 +349,245 @@ body {
 .page-title-header h2 {
     color: inherit; /* Hereda el color blanco del padre */
     margin-bottom: 0; /* Eliminar margen inferior del h2 si está dentro */
+}
+
+/* ======================
+   ESTILOS PARA TABLA DE CLIENTES Y FILTROS
+   ====================== */
+
+/* Estilos para los badges de estado */
+.badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border-radius: 0.25rem;
+    box-shadow: 0 0.15rem 0.5rem rgba(0, 0, 0, 0.05);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.badge i {
+    font-size: 0.9em;
+}
+
+/* Colores para los estados */
+.badge.bg-success {
+    background-color: #1cc88a !important;
+}
+
+.badge.bg-primary {
+    background-color: var(--color-principal-1) !important;
+}
+
+.badge.bg-info {
+    background-color: #36b9cc !important;
+}
+
+.badge.bg-warning {
+    background-color: #f6c23e !important;
+    color: #1f2d3d !important;
+}
+
+.badge.bg-orange {
+    background-color: #f39c12 !important;
+    color: white !important;
+}
+
+.badge.bg-danger {
+    background-color: #e74a3b !important;
+}
+
+.badge.bg-purple {
+    background-color: #6f42c1 !important;
+}
+
+.badge.bg-secondary {
+    background-color: #858796 !important;
+}
+
+/* Estilos para los filtros */
+.filtro-select {
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    border-radius: 0.35rem;
+    border: 1px solid #d1d3e2;
+}
+
+.filtro-select:focus {
+    border-color: var(--color-principal-1);
+    box-shadow: 0 0 0 0.2rem rgba(187, 43, 163, 0.25);
+}
+
+/* Estilos para la tabla */
+.table-responsive {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.table thead th {
+    background-color: #f8f9fc;
+    border-bottom: 2px solid #e3e6f0;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+    color: var(--color-principal-1);
+    padding: 1rem;
+}
+
+.table tbody td {
+    vertical-align: middle;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid #e3e6f0;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fc;
+}
+
+/* Estilos para la paginación */
+.pagination {
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.page-item.active .page-link {
+    background-color: var(--color-principal-1);
+    border-color: var(--color-principal-1);
+}
+
+.page-link {
+    color: var(--color-principal-1);
+    border: 1px solid #d1d3e2;
+    margin: 0 0.15rem;
+    border-radius: 0.35rem !important;
+    min-width: 2.5rem;
+    text-align: center;
+    transition: all 0.2s ease-in-out;
+}
+
+.page-link:hover {
+    background-color: #eaecf4;
+    color: var(--color-principal-1);
+}
+
+/* Estilos para los botones de acción */
+.btn-action {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    padding: 0;
+    margin: 0 2px;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.15rem 0.5rem rgba(0, 0, 0, 0.05);
+}
+
+/* Estilos para las tarjetas de filtros */
+.card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background-color: #f8f9fc;
+    border-bottom: 1px solid #e3e6f0;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    color: #5a5c69;
+}
+
+/* Estilos para los inputs de búsqueda */
+.filtro-input {
+    border-radius: 0.35rem;
+    border: 1px solid #d1d3e2;
+    transition: all 0.2s ease-in-out;
+}
+
+.filtro-input:focus {
+    border-color: var(--color-principal-1);
+    box-shadow: 0 0 0 0.2rem rgba(187, 43, 163, 0.25);
+}
+
+/* Estilos para el contador de resultados */
+.results-count {
+    font-size: 0.85rem;
+    color: #858796;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.results-count i {
+    color: var(--color-principal-1);
+}
+
+/* Estilos para el botón de toggle de gestión */
+.btn-toggle-gestion {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 2rem;
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+    border: 1px solid transparent;
+}
+
+.btn-toggle-gestion.active {
+    background-color: var(--color-principal-1);
+    color: white;
+}
+
+.btn-toggle-gestion:not(.active) {
+    background-color: #f8f9fc;
+    border-color: #d1d3e2;
+    color: #5a5c69;
+}
+
+.btn-toggle-gestion:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Estilos para el select de ordenamiento */
+.select-ordenamiento {
+    min-width: 200px;
+}
+
+/* Ajustes responsivos */
+@media (max-width: 768px) {
+    .table-responsive {
+        border-radius: 0;
+    }
+    
+    .table thead th {
+        font-size: 0.65rem;
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .table tbody td {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+    }
+    
+    .badge {
+        font-size: 0.7em;
+        padding: 0.25em 0.5em;
+    }
 }
 
 /* Ajuste de botones dentro del nuevo encabezado azul */

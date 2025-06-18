@@ -88,60 +88,64 @@ def estilo_tipificacion(tipificacion):
     # Mapeo de tipificaciones a estilos
     estilos = {
         # Contacto efectivo - Acuerdos y pagos (verde)
-        'ap': {'clase': 'bg-success', 'icono': 'bi-check-circle-fill'},
-        'pp': {'clase': 'bg-success', 'icono': 'bi-calendar-check'},
-        'pagado': {'clase': 'bg-success', 'icono': 'bi-cash-coin'},
-        'AP - Acuerdo de pago formalizado': {'clase': 'bg-success', 'icono': 'bi-check-circle-fill'},
-        'PP - Promesa de pago': {'clase': 'bg-success', 'icono': 'bi-calendar-check'},
-        'PAGADO': {'clase': 'bg-success', 'icono': 'bi-cash-coin'},
+        'AP': {'clase': 'bg-success text-white', 'icono': 'bi-check-circle-fill'},
+        'PP': {'clase': 'bg-success text-white', 'icono': 'bi-calendar-check'},
+        'PAGADO': {'clase': 'bg-success text-white', 'icono': 'bi-cash-coin'},
+        'PAGADO - Pago formalizado': {'clase': 'bg-success text-white', 'icono': 'bi-cash-coin'},
+        'AP - Acuerdo de pago formalizado': {'clase': 'bg-success text-white', 'icono': 'bi-check-circle-fill'},
+        'PP - Promesa de pago': {'clase': 'bg-success text-white', 'icono': 'bi-calendar-check'},
+        'SALDADO_LINERU': {'clase': 'bg-success text-white', 'icono': 'bi-check-circle'},
+        'Saldado con LINERU': {'clase': 'bg-success text-white', 'icono': 'bi-check-circle'},
         
         # Contacto efectivo - Negociación (azul)
-        'nc': {'clase': 'bg-primary', 'icono': 'bi-chat-text'},
-        'solicita_info': {'clase': 'bg-primary', 'icono': 'bi-info-circle'},
-        'solicita_llamada': {'clase': 'bg-primary', 'icono': 'bi-telephone-forward'},
-        'NC - Negociación en curso / pendiente de validación': {'clase': 'bg-primary', 'icono': 'bi-chat-text'},
-        'Solicita más información': {'clase': 'bg-primary', 'icono': 'bi-info-circle'},
-        'Solicita llamada posterior': {'clase': 'bg-primary', 'icono': 'bi-telephone-forward'},
-        'Sin respuesta en WhatsApp': {'clase': 'bg-primary', 'icono': 'bi-whatsapp'},
-        'Saldado con LINERU': {'clase': 'bg-primary', 'icono': 'bi-cash-coin'},
+        'NC': {'clase': 'bg-primary text-white', 'icono': 'bi-chat-text'},
+        'SOLICITA_INFO': {'clase': 'bg-primary text-white', 'icono': 'bi-info-circle'},
+        'SOLICITA_LLAMADA': {'clase': 'bg-primary text-white', 'icono': 'bi-telephone-forward'},
+        'NC - Negociación en curso / pendiente de validación': {'clase': 'bg-primary text-white', 'icono': 'bi-chat-text'},
+        'SOLICITA_MAS_INFORMACION': {'clase': 'bg-primary text-white', 'icono': 'bi-info-circle'},
+        'SOLICITA_LLAMADA_POSTERIOR': {'clase': 'bg-primary text-white', 'icono': 'bi-telephone-forward'},
+        'SIN_RESPUESTA_WP': {'clase': 'bg-primary text-white', 'icono': 'bi-whatsapp'},
+        'Sin respuesta en WhatsApp': {'clase': 'bg-primary text-white', 'icono': 'bi-whatsapp'},
         
-        # Contacto efectivo - Problemas (naranja)
-        'rn': {'clase': 'bg-warning text-dark', 'icono': 'bi-x-circle'},
-        'nd': {'clase': 'bg-warning text-dark', 'icono': 'bi-question-circle'},
-        'abogado': {'clase': 'bg-warning text-dark', 'icono': 'bi-briefcase'},
-        'no_capacidad': {'clase': 'bg-warning text-dark', 'icono': 'bi-wallet'},
-        'reclamo': {'clase': 'bg-warning text-dark', 'icono': 'bi-exclamation-triangle'},
+        # Contacto efectivo - Problemas (naranja/ámbar)
+        'RN': {'clase': 'bg-warning text-dark', 'icono': 'bi-x-circle'},
+        'ND': {'clase': 'bg-warning text-dark', 'icono': 'bi-question-circle'},
+        'ABOGADO': {'clase': 'bg-warning text-dark', 'icono': 'bi-briefcase'},
+        'NO_CAPACIDAD_PAGO': {'clase': 'bg-warning text-dark', 'icono': 'bi-wallet'},
+        'RECLAMO': {'clase': 'bg-warning text-dark', 'icono': 'bi-exclamation-triangle'},
         'RN - Rechaza negociación': {'clase': 'bg-warning text-dark', 'icono': 'bi-x-circle'},
         'ND - Niega deuda': {'clase': 'bg-warning text-dark', 'icono': 'bi-question-circle'},
-        'Remite a abogado': {'clase': 'bg-warning text-dark', 'icono': 'bi-briefcase'},
-        'No tiene capacidad de pago': {'clase': 'bg-warning text-dark', 'icono': 'bi-wallet'},
-        'Trámite de reclamo en curso': {'clase': 'bg-warning text-dark', 'icono': 'bi-exclamation-triangle'},
-        
-        
+        'REMITE_ABOGADO': {'clase': 'bg-warning text-dark', 'icono': 'bi-briefcase'},
+        'TRAMITE_RECLAMO': {'clase': 'bg-warning text-dark', 'icono': 'bi-exclamation-triangle'},
         
         # Contacto no efectivo (gris azulado)
-        'telefono_apagado': {'clase': 'bg-info text-dark', 'icono': 'bi-phone-vibrate'},
-        'no_contesta': {'clase': 'bg-info text-dark', 'icono': 'bi-telephone-x'},
-        'buzon_voz': {'clase': 'bg-info text-dark', 'icono': 'bi-voicemail'},
-        'Teléfono apagado / fuera de servicio': {'clase': 'bg-info text-dark', 'icono': 'bi-phone-vibrate'},
-        'No contesta': {'clase': 'bg-info text-dark', 'icono': 'bi-telephone-x'},
-        'Buzón de voz': {'clase': 'bg-info text-dark', 'icono': 'bi-voicemail'},
+        'TELEFONO_APAGADO': {'clase': 'bg-info text-white', 'icono': 'bi-phone-vibrate'},
+        'NO_CONTESTA': {'clase': 'bg-info text-white', 'icono': 'bi-telephone-x'},
+        'BUZON_VOZ': {'clase': 'bg-info text-white', 'icono': 'bi-voicemail'},
+        'Teléfono apagado / fuera de servicio': {'clase': 'bg-info text-white', 'icono': 'bi-phone-vibrate'},
+        'NO_CONTESTA': {'clase': 'bg-info text-white', 'icono': 'bi-telephone-x'},
+        'No contesta': {'clase': 'bg-info text-white', 'icono': 'bi-telephone-x'},
+        'BUZON_VOZ': {'clase': 'bg-info text-white', 'icono': 'bi-voicemail'},
+        'Buzón de voz': {'clase': 'bg-info text-white', 'icono': 'bi-voicemail'},
+        'SIN_RESPUESTA_WP': {'clase': 'bg-info text-white', 'icono': 'bi-whatsapp'},
+        
         
         # Contacto fallido (rojo)
-        'numero_equivocado': {'clase': 'bg-danger', 'icono': 'bi-x-octagon'},
-        'numero_inexistente': {'clase': 'bg-danger', 'icono': 'bi-slash-circle'},
-        'Número equivocado': {'clase': 'bg-danger', 'icono': 'bi-x-octagon'},
-        'Número inexistente': {'clase': 'bg-danger', 'icono': 'bi-slash-circle'},
+        'NUMERO_EQUIVOCADO': {'clase': 'bg-danger text-white', 'icono': 'bi-x-octagon'},
+        'NUMERO_INEXISTENTE': {'clase': 'bg-danger text-white', 'icono': 'bi-slash-circle'},
+        'Número equivocado': {'clase': 'bg-danger text-white', 'icono': 'bi-x-octagon'},
+        'Número inexistente': {'clase': 'bg-danger text-white', 'icono': 'bi-slash-circle'},
         
         # Terceros (morado)
-        'tercero_informacion': {'clase': 'bg-purple', 'icono': 'bi-people'},
-        'tercero_no_informacion': {'clase': 'bg-purple', 'icono': 'bi-people-slash'},
-        'Tercero brinda información': {'clase': 'bg-purple', 'icono': 'bi-people'},
-        'Tercero no brinda información': {'clase': 'bg-purple', 'icono': 'bi-people-slash'},
+        'TERCERO_INFORMACION': {'clase': 'bg-purple text-white', 'icono': 'bi-people'},
+        'TERCERO_NO_INFORMACION': {'clase': 'bg-purple text-white', 'icono': 'bi-people-slash'},
+        'Tercero brinda información': {'clase': 'bg-purple text-white', 'icono': 'bi-people'},
+        'Tercero no brinda información': {'clase': 'bg-purple text-white', 'icono': 'bi-people-slash'},
         
         # Sin gestiones (gris)
-        'Sin gestiones': {'clase': 'bg-secondary', 'icono': 'bi-dash-circle'},
-        'Sin tipificación': {'clase': 'bg-secondary', 'icono': 'bi-question-diamond'},
+        'Sin gestiones': {'clase': 'bg-secondary text-white', 'icono': 'bi-dash-circle'},
+        'Sin tipificación': {'clase': 'bg-secondary text-white', 'icono': 'bi-question-diamond'},
+        '': {'clase': 'bg-light text-dark', 'icono': 'bi-question-diamond'},  # Estado vacío
     }
     
     # Valor por defecto si no se encuentra la tipificación

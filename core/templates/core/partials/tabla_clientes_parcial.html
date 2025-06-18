@@ -1,14 +1,14 @@
 {% load core_extras %}
 <div class="table-responsive rounded shadow-sm" id="tabla-clientes-container">
-    <table class="table table-bordered table-hover table-striped align-middle mb-0">
+    <table class="table table-sm table-bordered table-hover table-striped align-middle mb-0" style="font-size: 0.85rem;">
         <thead class="table-header-crea sticky-top shadow-sm">
             <tr>
                 <th>Documento</th>
                 <th>Nombre Cliente</th>
                 <th class="text-end">Deuda</th>
                 <th class="text-center">Días Mora</th>
-                <th class="text-center">F. Cesión</th>
-                <th class="text-center">Estado</th>
+                <th class="text-center" style="width: 15%;">Últ. Gestión</th>
+                <th class="text-center">Ult. Tipificación</th>
                 <th class="text-center">Nº Productos</th>
                 <th class="text-center">Acciones</th>
             </tr>
@@ -18,13 +18,13 @@
             <tr>
                 <td>{{ grupo_cliente.documento }}</td>
                 <td>{{ grupo_cliente.nombre_completo|default:'-' }}</td>
-                <td class="text-end">${{ grupo_cliente.deuda_total|formato_numero|default:'0,00' }}</td>
+                <td class="text-end">${{ grupo_cliente.deuda_principal_k|formato_numero|default:'0,00' }}</td>
                 <td class="text-center">{{ grupo_cliente.total_dias_mora|floatformat:0|default:'-' }}</td>
-                <td class="text-center">{{ grupo_cliente.fecha_cesion|date:"d/m/Y"|default:'-' }}</td>
+                <td class="text-center">{{ grupo_cliente.fecha_ultima_gestion|date:"d/m/Y H:i"|default:'Sin gestión' }}</td>
                 <td class="text-center">
                     {% with estilo=grupo_cliente.ultima_tipificacion|estilo_tipificacion %}
-                        <span class="badge {{ estilo.clase }}" title="Última gestión: {{ grupo_cliente.fecha_ultima_gestion|date:'d/m/Y H:i'|default:'-' }}">
-                            <i class="bi {{ estilo.icono }} me-1"></i>{{ grupo_cliente.ultima_tipificacion }}
+                        <span class="badge {{ estilo.clase }}" style="font-size: 0.8rem;" title="{{ grupo_cliente.ultima_tipificacion }} - {{ grupo_cliente.fecha_ultima_gestion|date:'d/m/Y H:i'|default:'Sin gestión' }}">
+                            <i class="bi {{ estilo.icono }} me-1"></i>{{ grupo_cliente.ultima_tipificacion|truncatechars:20 }}
                         </span>
                     {% endwith %}
                 </td>

@@ -444,6 +444,10 @@ def clientes(request):
         filtro_nombre = request.GET.get('nombre', '').strip()
         filtro_telefono = request.GET.get('telefono', '').strip()
         filtro_referencia = request.GET.get('referencia', '').strip()
+        filtro_gestion = request.GET.get('gestion', 'todos')  # 'gestionados', 'no_gestionados', 'todos'
+        
+        # Parámetros de ordenamiento
+        orden = request.GET.get('orden', 'fecha_desc')  # Por defecto ordenar por fecha descendente
         
         # Consulta inicial - todos los clientes
         clientes_qs = Cliente.objects.all().order_by('-fecha_registro')
@@ -469,8 +473,17 @@ def clientes(request):
         limite_clientes = 100
         clientes_qs = clientes_qs[:limite_clientes]
         
+        # Lista de estados que se consideran gestionados
+        ESTADOS_GESTIONADOS = ['AP', 'PP', 'PAGADO', 'NC', 'RN', 'ND', 'ABOGADO', 'NO_CAPACIDAD', 'RECLAMO', 
+                             'REMITE_ABOGADO', 'TRAMITE_RECLAMO', 'TELEFONO_APAGADO', 'NO_CONTESTA', 'BUZON_VOZ',
+                             'SIN_RESPUESTA_WP', 'NUMERO_EQUIVOCADO', 'NUMERO_INEXISTENTE', 'TERCERO_INFORMACION',
+                             'TERCERO_NO_INFORMACION']
+        
         # Diccionario para agrupar clientes por documento
         clientes_agrupados = {}
+        
+        # Diccionario para almacenar si un cliente tiene gestiones
+        tiene_gestiones = {}
         
         # Obtenemos la última tipificación para cada cliente
         ultima_tipificacion_por_cliente = {}
@@ -483,6 +496,9 @@ def clientes(request):
                     'tipificacion': tipificacion,
                     'fecha': ultima_gestion.fecha_hora_gestion
                 }
+                tiene_gestiones[cliente.documento] = True
+            else:
+                tiene_gestiones[cliente.documento] = False
         
         # Agrupar clientes por documento y sumar deudas
         for cliente in clientes_qs:
@@ -502,7 +518,11 @@ def clientes(request):
                 # Actualizar el total de días mora si es mayor
                 if cliente.total_dias_mora > clientes_agrupados[documento]['total_dias_mora']:
                     clientes_agrupados[documento]['total_dias_mora'] = cliente.total_dias_mora
-                # Actualizar la fecha de cesión si es más reciente
+                # Actualizar la referencia si es necesario (tomamos la primera no vacía)
+                if cliente.referencia and not clientes_agrupados[documento].get('referencia'):
+                    clientes_agrupados[documento]['referencia'] = cliente.referencia
+                
+                # Actualizar la fecha de cesión si es más reciente (como respaldo)
                 if cliente.fecha_cesion and (not clientes_agrupados[documento]['fecha_cesion'] or 
                                            cliente.fecha_cesion > clientes_agrupados[documento]['fecha_cesion']):
                     clientes_agrupados[documento]['fecha_cesion'] = cliente.fecha_cesion
@@ -514,14 +534,23 @@ def clientes(request):
                     'email': cliente.email,
                     'deuda_total': cliente.deuda_total,
                     'total_dias_mora': cliente.total_dias_mora,
-                    'fecha_cesion': cliente.fecha_cesion,
+                    'fecha_cesion': cliente.fecha_cesion,  # Mantenemos como respaldo
+                    'referencia': cliente.referencia,  # Agregamos el campo referencia
                     'num_referencias': 1,
                     'ultima_tipificacion': ultima_tip['tipificacion'],
-                    'fecha_ultima_gestion': ultima_tip['fecha']
+                    'fecha_ultima_gestion': ultima_tip['fecha'] or cliente.fecha_cesion  # Usamos fecha_cesion como respaldo
                 }
         
-        # Convertir el diccionario a lista
-        clientes_lista = list(clientes_agrupados.values())
+        # Convertir el diccionario a lista y aplicar filtro de gestión
+        clientes_lista = []
+        for doc, cliente in clientes_agrupados.items():
+            # Aplicar filtro de gestión si es necesario
+            if filtro_gestion == 'gestionados' and not tiene_gestiones.get(doc, False):
+                continue
+            if filtro_gestion == 'no_gestionados' and tiene_gestiones.get(doc, False):
+                continue
+                
+            clientes_lista.append(cliente)
         
         # Función para manejar fechas con o sin timezone de forma segura
         def fecha_segura(fecha):
@@ -532,12 +561,30 @@ def clientes(request):
             if hasattr(fecha, 'tzinfo') and fecha.tzinfo is not None:
                 return fecha.replace(tzinfo=None)
             return fecha
-            
-        # Ordenar la lista por fecha de última gestión (más recientes primero)
+        
+        # Definir la función de ordenamiento según el parámetro
+        def get_orden_key(cliente):
+            if orden == 'nombre_asc':
+                return (cliente['nombre_completo'] or '').lower()
+            elif orden == 'nombre_desc':
+                return (-1, (cliente['nombre_completo'] or '').lower())
+            elif orden == 'deuda_asc':
+                return (cliente['deuda_total'] or 0, cliente['nombre_completo'] or '')
+            elif orden == 'deuda_desc':
+                return (-(cliente['deuda_total'] or 0), cliente['nombre_completo'] or '')
+            elif orden == 'dias_mora_asc':
+                return (cliente['total_dias_mora'] or 0, cliente['nombre_completo'] or '')
+            elif orden == 'dias_mora_desc':
+                return (-(cliente['total_dias_mora'] or 0), cliente['nombre_completo'] or '')
+            else:  # fecha_desc por defecto
+                return (fecha_segura(cliente['fecha_ultima_gestion']), cliente['nombre_completo'] or '')
+        
+        # Ordenar la lista según el parámetro
+        reverse_sort = orden in ['fecha_desc', 'nombre_desc', 'deuda_desc', 'dias_mora_desc']
         clientes_lista = sorted(
-            clientes_lista, 
-            key=lambda x: fecha_segura(x['fecha_ultima_gestion']),
-            reverse=True
+            clientes_lista,
+            key=get_orden_key,
+            reverse=reverse_sort
         )
         
         # Configurar paginación
@@ -548,6 +595,11 @@ def clientes(request):
         # Formulario para nuevo cliente
         form_nuevo_cliente = ClienteForm()
         
+        # Obtener los parámetros de búsqueda actuales para mantenerlos en la paginación
+        params = request.GET.copy()
+        if 'page' in params:
+            del params['page']
+        
         context = {
             'page_obj': page_obj,
             'total_clientes': len(clientes_lista),
@@ -555,6 +607,9 @@ def clientes(request):
             'filtro_nombre': filtro_nombre,
             'filtro_telefono': filtro_telefono,
             'filtro_referencia': filtro_referencia,
+            'filtro_gestion': filtro_gestion,
+            'orden_actual': orden,
+            'params': params.urlencode(),
             'today': timezone.now().date(),
             'form_nuevo_cliente': form_nuevo_cliente,
         }
