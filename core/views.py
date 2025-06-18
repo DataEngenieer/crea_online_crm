@@ -565,19 +565,28 @@ def clientes(request):
             if fecha is None:
                 # Usar la fecha más antigua posible como valor predeterminado
                 return datetime(1900, 1, 1)
-            # Convertir date a datetime para consistencia
+                
+            # Si es un objeto date, convertirlo a datetime
             if hasattr(fecha, 'date') and not hasattr(fecha, 'time'):
                 return datetime.combine(fecha, datetime.min.time())
-            # Si es datetime con timezone, convertirlo a naive
+                
+            # Si es un objeto datetime con timezone, convertirlo a naive
             if hasattr(fecha, 'tzinfo') and fecha.tzinfo is not None:
                 fecha = fecha.replace(tzinfo=None)
-            # Asegurarse de que es un objeto datetime
-            if not hasattr(fecha, 'timestamp'):
+                
+            # Si es un objeto datetime, asegurarse de que sea naive
+            if hasattr(fecha, 'time'):
+                return fecha.replace(tzinfo=None)
+                
+            # Si es un string, intentar convertirlo a datetime
+            if isinstance(fecha, str):
                 try:
-                    return datetime.combine(fecha, datetime.min.time())
+                    return datetime.strptime(fecha, '%Y-%m-%d')
                 except (TypeError, ValueError):
-                    return datetime(1900, 1, 1)
-            return fecha
+                    pass
+                    
+            # Si no se pudo convertir, devolver fecha por defecto
+            return datetime(1900, 1, 1)
         
         # Definir la función de ordenamiento según el parámetro
         def get_orden_key(cliente):
