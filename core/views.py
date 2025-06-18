@@ -528,6 +528,11 @@ def clientes(request):
                     clientes_agrupados[documento]['fecha_cesion'] = cliente.fecha_cesion
             else:
                 # Si es la primera vez que vemos este documento, creamos una nueva entrada
+                # Asegurarse de que la fecha de gestión sea consistente
+                fecha_gestion = ultima_tip['fecha'] or cliente.fecha_cesion
+                if fecha_gestion and hasattr(fecha_gestion, 'date') and not hasattr(fecha_gestion, 'time'):
+                    fecha_gestion = datetime.combine(fecha_gestion, datetime.min.time())
+                
                 clientes_agrupados[documento] = {
                     'documento': documento,
                     'nombre_completo': cliente.nombre_completo,
@@ -538,7 +543,7 @@ def clientes(request):
                     'referencia': cliente.referencia,  # Agregamos el campo referencia
                     'num_referencias': 1,
                     'ultima_tipificacion': ultima_tip['tipificacion'],
-                    'fecha_ultima_gestion': ultima_tip['fecha'] or cliente.fecha_cesion  # Usamos fecha_cesion como respaldo
+                    'fecha_ultima_gestion': fecha_gestion  # Fecha ya normalizada
                 }
         
         # Convertir el diccionario a lista y aplicar filtro de gestión
@@ -560,9 +565,15 @@ def clientes(request):
             # Convertir date a datetime para consistencia
             if hasattr(fecha, 'date') and not hasattr(fecha, 'time'):
                 return datetime.combine(fecha, datetime.min.time())
-            # Asegurarse de que todas las fechas sean "naive"
+            # Si es datetime con timezone, convertirlo a naive
             if hasattr(fecha, 'tzinfo') and fecha.tzinfo is not None:
-                return fecha.replace(tzinfo=None)
+                fecha = fecha.replace(tzinfo=None)
+            # Asegurarse de que es un objeto datetime
+            if not hasattr(fecha, 'timestamp'):
+                try:
+                    return datetime.combine(fecha, datetime.min.time())
+                except (TypeError, ValueError):
+                    return datetime(1900, 1, 1)
             return fecha
         
         # Definir la función de ordenamiento según el parámetro
