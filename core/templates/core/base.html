@@ -36,6 +36,9 @@
             <a href="{% url 'core:dashboard' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/dashboard/' %}active{% endif %}">
                 <i class="bi bi-speedometer2 me-2"></i> Dashboard
             </a>
+            <a href="{% url 'core:reportes' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'core:reportes' %}active{% endif %}">
+                <i class="bi bi-file-earmark-bar-graph me-2"></i> Reportes
+            </a>
             <a href="{% url 'core:admin_usuarios' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'core:admin_usuarios' %}active{% endif %}">
                 <i class="bi bi-people me-2"></i> Usuarios
             </a>
@@ -51,7 +54,6 @@
             <a href="{% url 'core:seguimientos' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'core:seguimientos' %}active{% endif %}">
                 <i class="bi bi-calendar-check me-2"></i> Seguimientos
             </a>
-            
             {% elif request.user.groups.all.0.name == "asesor"%}
             <a href="{% url 'core:clientes' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/clientes/' %}active{% endif %}">
                 <i class="bi bi-person-vcard me-2"></i> Clientes
@@ -64,6 +66,9 @@
             </a>
             <a href="{% url 'core:seguimientos' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'core:seguimientos' %}active{% endif %}">
                 <i class="bi bi-calendar-check me-2"></i> Mis Seguimientos
+            </a>
+            <a href="{% url 'core:reportes' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'core:reportes' %}active{% endif %}">
+                <i class="bi bi-file-earmark-bar-graph me-2"></i> Mis Reportes
             </a>
             {% endif %}
         </div>

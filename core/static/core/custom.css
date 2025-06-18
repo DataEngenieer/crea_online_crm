@@ -355,6 +355,52 @@ body {
    ESTILOS PARA TABLA DE CLIENTES Y FILTROS
    ====================== */
 
+/* Estilos para la tabla de clientes */
+.table-sm td, .table-sm th {
+    padding: 0.1rem 0.3rem;  /* Reducir el padding general */
+    line-height: 1.1;  /* Reducir aún más el alto de línea */
+    height: 27px;  /* Altura fija para las celdas */
+}
+
+/* Ajustar la posición vertical del texto en las celdas */
+.table-sm td {
+    vertical-align: middle;
+}
+
+/* Reducir el tamaño de fuente de la tabla */
+.table {
+    font-size: 0.8rem;
+}
+
+/* Asegurar que el texto de los badges no se desplace */
+.badge {
+    position: relative;
+    top: -1px;  /* Subir el texto 1px */
+    padding: 0.25em 0.4em;  /* Reducir padding de los badges */
+    font-size: 0.75em;  /* Reducir tamaño de fuente de los badges */
+}
+
+/* Reducir el ancho de las líneas de la tabla */
+.table-bordered {
+    border-width: 0.5px;
+}
+
+.table-bordered th,
+.table-bordered td {
+    border-width: 0.5px;
+}
+
+/* Ajustar el alto de las filas */
+.table > :not(caption) > * > * {
+    padding: 0.1rem 0.3rem;
+}
+
+/* Ajustar el padding de las celdas del encabezado */
+.table thead th {
+    padding: 0.3rem 0.5rem;
+    vertical-align: middle;
+}
+
 /* Estilos para los badges de estado */
 .badge {
     font-weight: 500;

@@ -1,0 +1,243 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Reportes - CRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-file-earmark-bar-graph me-2"></i>Reportes
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Formulario para el tipo de reporte (GET) -->
+                    <form method="get" id="tipoReporteForm" class="mb-3">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Tipo de Reporte</label>
+                                <select name="tipo_reporte" class="form-select" id="select-tipo-reporte">
+                                    <option value="clientes" {% if tipo_reporte == 'clientes' %}selected{% endif %}>Clientes</option>
+                                    <option value="gestiones" {% if tipo_reporte == 'gestiones' %}selected{% endif %}>Gestiones</option>
+                                    <option value="acuerdos" {% if tipo_reporte == 'acuerdos' %}selected{% endif %}>Acuerdos de Pago</option>
+                                    <option value="pagos" {% if tipo_reporte == 'pagos' %}selected{% endif %}>Pagos</option>
+                                    <option value="usuario" {% if tipo_reporte == 'usuario' %}selected{% endif %}>Usuarios</option>
+                                    <option value="cartera" {% if tipo_reporte == 'cartera' %}selected{% endif %}>Cartera</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Formulario principal (POST) -->
+                    <form method="post" id="filtroForm" class="mb-4">
+                        {% csrf_token %}
+                        <input type="hidden" name="tipo_reporte" value="{{ tipo_reporte }}">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Fecha Inicio</label>
+                                <input type="date" name="fecha_inicio" class="form-control" value="{{ fecha_inicio|default:'' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Fecha Fin</label>
+                                <input type="date" name="fecha_fin" class="form-control" value="{{ fecha_fin|default:'' }}">
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="submit" name="accion" value="filtrar" class="btn btn-primary me-2">
+                                    <i class="bi bi-funnel me-1"></i> Filtrar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Sección de selección de campos -->
+                        <div class="mt-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0">Seleccione los campos a exportar:</h5>
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="seleccionar-todos">
+                                        <i class="bi bi-check-all me-1"></i> Seleccionar todos
+                                    </button>
+                                    <button type="submit" name="accion" value="aplicar" class="btn btn-sm btn-primary me-2">
+                                        <i class="bi bi-funnel me-1"></i> Aplicar Filtros
+                                    </button>
+                                    <button type="submit" name="accion" value="exportar" formaction="{% url 'core:reportes_exportar' %}" class="btn btn-sm btn-success">
+                                        <i class="bi bi-file-earmark-excel me-1"></i> Exportar a Excel
+                                    </button>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-list-check me-2"></i>Seleccione los campos a exportar
+                                </h5>
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="seleccionar-todos">
+                                        <i class="bi bi-check2-square me-1"></i> Seleccionar todos
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="deseleccionar-todos">
+                                        <i class="bi bi-square me-1"></i> Deseleccionar todos
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for campo, etiqueta in CAMPOS_DISPONIBLES %}
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input campo-exportar" type="checkbox" 
+                                                   name="campos" value="{{ campo }}" 
+                                                   id="campo-{{ forloop.counter }}" 
+                                                   {% if campo in campos_seleccionados or not campos_seleccionados %}checked{% endif %}>
+                                            <label class="form-check-label" for="campo-{{ forloop.counter }}">
+                                                {{ etiqueta }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="card-footer bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span id="contador-campos">0</span> campos seleccionados
+                                    </div>
+                                    <div>
+                                        <button type="submit" class="btn btn-primary" name="accion" value="aplicar">
+                                            <i class="bi bi-funnel me-1"></i> Aplicar Cambios
+                                        </button>
+                                        <button type="submit" formaction="{% url 'core:reportes_exportar' %}" class="btn btn-success">
+                                            <i class="bi bi-file-earmark-excel me-1"></i> Exportar a Excel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Información de resultados -->
+                    <div class="alert alert-secondary">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <div>
+                                <strong>{{ total_registros }}</strong> registros encontrados con los filtros actuales.
+                                <span class="d-block small mt-1">
+                                    {% if campos_seleccionados %}
+                                        Exportando {{ campos_seleccionados|length }} de {{ CAMPOS_DISPONIBLES|length }} campos disponibles.
+                                    {% else %}
+                                        Todos los campos estarán incluidos en la exportación.
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Script para manejar la exportación -->
+                    <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Función para actualizar el contador de campos seleccionados
+                        function actualizarContador() {
+                            const checkboxes = document.querySelectorAll('.campo-exportar:checked');
+                            document.getElementById('contador-campos').textContent = checkboxes.length;
+                            
+                            // Actualizar el botón de seleccionar todos
+                            const totalCheckboxes = document.querySelectorAll('.campo-exportar').length;
+                            const btnSeleccionarTodos = document.getElementById('seleccionar-todos');
+                            if (btnSeleccionarTodos) {
+                                const texto = checkboxes.length === totalCheckboxes ? 
+                                    '<i class="bi bi-x-circle me-1"></i> Deseleccionar todos' : 
+                                    '<i class="bi bi-check-all me-1"></i> Seleccionar todos';
+                                btnSeleccionarTodos.innerHTML = texto;
+                            }
+                        }
+                        
+                        // Manejar cambio en el tipo de reporte
+                        const selectTipoReporte = document.getElementById('select-tipo-reporte');
+                        if (selectTipoReporte) {
+                            selectTipoReporte.addEventListener('change', function() {
+                                document.getElementById('tipoReporteForm').submit();
+                            });
+                        }
+                        
+                        // Manejar clic en los checkboxes
+                        document.querySelectorAll('.campo-exportar').forEach(checkbox => {
+                            checkbox.addEventListener('change', actualizarContador);
+                        });
+                        
+                        // Botón para seleccionar/deseleccionar todos los campos
+                        const btnSeleccionarTodos = document.getElementById('seleccionar-todos');
+                        if (btnSeleccionarTodos) {
+                            btnSeleccionarTodos.addEventListener('click', function() {
+                                const checkboxes = document.querySelectorAll('.campo-exportar');
+                                const todosSeleccionados = Array.from(checkboxes).every(cb => cb.checked);
+                                
+                                checkboxes.forEach(checkbox => {
+                                    checkbox.checked = !todosSeleccionados;
+                                });
+                                
+                                actualizarContador();
+                                
+                                // Actualizar texto del botón
+                                btnSeleccionarTodos.innerHTML = todosSeleccionados ? 
+                                    '<i class="bi bi-check-all me-1"></i> Seleccionar todos' : 
+                                    '<i class="bi bi-x-circle me-1"></i> Deseleccionar todos';
+                            });
+                        }
+                        
+                        // Inicializar contador
+                        actualizarContador();
+                    });
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Inicializar componentes de Bootstrap
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Manejar exportación a Excel
+        document.querySelector('.btn-export').addEventListener('click', function(e) {
+            e.preventDefault();
+            var form = document.createElement('form');
+            form.method = 'GET';
+            form.action = '{% url "core:reportes_exportar" %}';
+            
+            // Agregar parámetros actuales
+            var params = new URLSearchParams(window.location.search);
+            params.forEach(function(value, key) {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            });
+            
+            // Agregar tipo de reporte
+            var tipoReporte = document.querySelector('select[name="tipo_reporte"]').value;
+            var inputTipo = document.createElement('input');
+            inputTipo.type = 'hidden';
+            inputTipo.name = 'tipo_reporte';
+            inputTipo.value = tipoReporte;
+            form.appendChild(inputTipo);
+            
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        });
+    });
+</script>
+{% endblock %}

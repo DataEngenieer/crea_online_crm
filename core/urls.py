@@ -3,6 +3,7 @@ from django.urls import path
 app_name = 'core'  # Necesario para definir el namespace de la aplicación
 from . import views
 from . import views_acuerdos
+from . import views_reportes
 from django.contrib.auth.views import (
     LoginView, LogoutView, PasswordResetView, PasswordResetDoneView, PasswordResetConfirmView, PasswordResetCompleteView
 )
@@ -45,6 +46,10 @@ urlpatterns = [
     path('acuerdos/<int:acuerdo_id>/registrar-multiple-pagos/', views_acuerdos.registrar_multiple_pagos, name='registrar_multiple_pagos'),
     path('api/acuerdos/<int:acuerdo_id>/cuotas/', views_acuerdos.obtener_cuotas_acuerdo, name='api_obtener_cuotas_acuerdo'),
     path('api/acuerdos/detalle/', views.detalle_acuerdo_ajax, name='detalle_acuerdo_ajax'),
+    
+    # Reportes
+    path('reportes/', views_reportes.reportes, name='reportes'),
+    path('reportes/exportar/', views_reportes.exportar_excel, name='reportes_exportar'),
 ]
 
 if settings.DEBUG:

@@ -449,8 +449,9 @@ def clientes(request):
         # Parámetros de ordenamiento
         orden = request.GET.get('orden', 'fecha_desc')  # Por defecto ordenar por fecha descendente
         
-        # Consulta inicial - todos los clientes
-        clientes_qs = Cliente.objects.all().order_by('-fecha_registro')
+        # Consulta inicial - todos los clientes ordenados por fecha de registro
+        # La ordenación final se hará después de obtener las fechas de última gestión
+        clientes_qs = Cliente.objects.all()
         
         # Aplicamos todos los filtros
         if filtro_documento:
@@ -596,12 +597,23 @@ def clientes(request):
                 return (fecha_segura(cliente['fecha_ultima_gestion']), cliente['nombre_completo'] or '')
         
         # Ordenar la lista según el parámetro
+        # Por defecto, ordenar por fecha de última gestión (más reciente primero)
         reverse_sort = orden in ['fecha_desc', 'nombre_desc', 'deuda_desc', 'dias_mora_desc']
-        clientes_lista = sorted(
-            clientes_lista,
-            key=get_orden_key,
-            reverse=reverse_sort
-        )
+        
+        # Si es orden por defecto (fecha_desc), ordenar por fecha_ultima_gestion
+        if orden == 'fecha_desc':
+            clientes_lista = sorted(
+                clientes_lista,
+                key=lambda x: (x['fecha_ultima_gestion'] or datetime.min.replace(tzinfo=timezone.get_current_timezone())),
+                reverse=True
+            )
+        else:
+            # Para otros tipos de orden, usar la lógica existente
+            clientes_lista = sorted(
+                clientes_lista,
+                key=get_orden_key,
+                reverse=reverse_sort
+            )
         
         # Configurar paginación
         paginator = Paginator(clientes_lista, 10)
