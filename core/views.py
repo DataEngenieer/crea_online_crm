@@ -609,20 +609,12 @@ def clientes(request):
         # Por defecto, ordenar por fecha de última gestión (más reciente primero)
         reverse_sort = orden in ['fecha_desc', 'nombre_desc', 'deuda_desc', 'dias_mora_desc']
         
-        # Si es orden por defecto (fecha_desc), ordenar por fecha_ultima_gestion
-        if orden == 'fecha_desc':
-            clientes_lista = sorted(
-                clientes_lista,
-                key=lambda x: (x['fecha_ultima_gestion'] or datetime.min.replace(tzinfo=timezone.get_current_timezone())),
-                reverse=True
-            )
-        else:
-            # Para otros tipos de orden, usar la lógica existente
-            clientes_lista = sorted(
-                clientes_lista,
-                key=get_orden_key,
-                reverse=reverse_sort
-            )
+        # Usar siempre la función get_orden_key que ya maneja correctamente las fechas
+        clientes_lista = sorted(
+            clientes_lista,
+            key=get_orden_key,
+            reverse=reverse_sort
+        )
         
         # Configurar paginación
         paginator = Paginator(clientes_lista, 10)
