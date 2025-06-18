@@ -557,6 +557,9 @@ def clientes(request):
             if fecha is None:
                 # Usar la fecha más antigua posible como valor predeterminado
                 return datetime(1900, 1, 1)
+            # Convertir date a datetime para consistencia
+            if hasattr(fecha, 'date') and not hasattr(fecha, 'time'):
+                return datetime.combine(fecha, datetime.min.time())
             # Asegurarse de que todas las fechas sean "naive"
             if hasattr(fecha, 'tzinfo') and fecha.tzinfo is not None:
                 return fecha.replace(tzinfo=None)
