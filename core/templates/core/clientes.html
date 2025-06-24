@@ -125,7 +125,7 @@
                         </div>
                     </div>
 
-                    <!-- Fila 2: Deuda Principal, Deuda Total, Fecha Cesión -->
+                    <!-- Fila 2: Deuda Principal, Deuda Principal K, Fecha Cesión -->
                     <div class="row mb-3">
                         <div class="col-md-4">
                             <label for="{{ form_nuevo_cliente.principal.id_for_label }}" class="form-label">{{ form_nuevo_cliente.principal.label }}{% if not form_nuevo_cliente.principal.field.required %} (Opcional){% endif %}</label>
@@ -133,9 +133,9 @@
                             {% if form_nuevo_cliente.principal.errors %}<div class="invalid-feedback d-block">{{ form_nuevo_cliente.principal.errors|join:", " }}</div>{% endif %}
                         </div>
                         <div class="col-md-4">
-                            <label for="{{ form_nuevo_cliente.deuda_total.id_for_label }}" class="form-label">{{ form_nuevo_cliente.deuda_total.label }}{% if not form_nuevo_cliente.deuda_total.field.required %} (Opcional){% endif %}</label>
-                            {% render_field form_nuevo_cliente.deuda_total %}
-                            {% if form_nuevo_cliente.deuda_total.errors %}<div class="invalid-feedback d-block">{{ form_nuevo_cliente.deuda_total.errors|join:", " }}</div>{% endif %}
+                            <label for="{{ form_nuevo_cliente.deuda_principal_k.id_for_label }}" class="form-label">Deuda Principal K{% if not form_nuevo_cliente.deuda_principal_k.field.required %} (Opcional){% endif %}</label>
+                            {% render_field form_nuevo_cliente.deuda_principal_k %}
+                            {% if form_nuevo_cliente.deuda_principal_k.errors %}<div class="invalid-feedback d-block">{{ form_nuevo_cliente.deuda_principal_k.errors|join:", " }}</div>{% endif %}
                         </div>
                         <div class="col-md-4">
                             <label for="{{ form_nuevo_cliente.fecha_cesion.id_for_label }}" class="form-label">{{ form_nuevo_cliente.fecha_cesion.label }}{% if not form_nuevo_cliente.fecha_cesion.field.required %} (Opcional){% endif %}</label>

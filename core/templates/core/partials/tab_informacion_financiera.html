@@ -108,7 +108,7 @@
                                     <th>F. Act.</th>
                                     <th>Estado</th>
                                     <th class="text-end">Principal</th>
-                                    <th class="text-end">Deuda Total</th>
+                                    <th class="text-end">Deuda Principal K</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -129,7 +129,7 @@
                                         </span>
                                     </td>
                                     <td class="text-end fw-bold">${{ ref.principal|intcomma|default:'0' }}</td>
-                                    <td class="text-end fw-bold">${{ ref.deuda_total|intcomma|default:'0' }}</td>
+                                    <td class="text-end fw-bold">${{ ref.deuda_principal_k|intcomma|default:'0' }}</td>
                                 </tr>
                                 {% empty %}
                                 <tr>
@@ -156,7 +156,7 @@
                                         <span class="ms-2 badge bg-{% if ref.estado == 'Activo' %}success{% elif ref.estado == 'Inactivo' %}danger{% else %}secondary{% endif %}">
                                             {{ ref.estado|default:'N/A' }}
                                         </span>
-                                        <span class="ms-auto me-3 text-primary fw-bold">${{ ref.deuda_total|intcomma|default:'0' }}</span>
+                                        <span class="ms-auto me-3 text-primary fw-bold">${{ ref.deuda_principal_k|intcomma|default:'0' }}</span>
                                     </button>
                                 </h2>
                                 <div id="collapse-producto-{{ ref.id }}" class="accordion-collapse collapse" aria-labelledby="heading-producto-{{ ref.id }}">
@@ -179,7 +179,7 @@
                                                             <div class="col-md-6 mb-2">
                                                                 <div class="d-flex align-items-center">
                                                                     <span class="text-muted me-2" style="width: 100px; font-size: 0.85rem;">Deuda Total:</span>
-                                                                    <span class="fw-bold text-primary">${{ ref.deuda_total|intcomma|default:'0' }}</span>
+                                                                    <span class="fw-bold text-primary">${{ ref.deuda_principal_k|intcomma|default:'0' }}</span>
                                                                 </div>
                                                             </div>
                                                             <div class="col-md-6 mb-2">
