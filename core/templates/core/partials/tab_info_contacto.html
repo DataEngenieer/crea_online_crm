@@ -56,31 +56,33 @@
                                 <div class="row g-0">
                                     <div class="col-lg-6 p-1">
                                         <div class="d-flex align-items-center">
-                                            <span class="text-muted me-1" style="width: 70px; font-size: 0.8rem;">Celular 1:</span>
-                                            <a href="tel:{{ ref.celular_1 }}" class="ms-1 badge bg-warning text-dark">{{ ref.celular_1|default:'N/A' }}</a>
+                                            <span class="text-muted me-1" style="width: 70px; font-size: 0.8rem;">Principal:</span>
+                                            <a href="tel:{{ ref.telefono_celular|default:ref.celular_1 }}" class="ms-1 badge bg-warning text-dark">
+                                                {{ ref.telefono_celular|default:ref.celular_1|default:'N/A' }}
+                                            </a>
                                         </div>
                                     </div>
                                     <div class="col-lg-6 p-1">
                                         <div class="d-flex align-items-center">
-                                            <span class="text-muted me-1" style="width: 70px; font-size: 0.8rem;">Celular 2:</span>
+                                            <span class="text-muted me-1" style="width: 70px; font-size: 0.8rem;">Alterno 1:</span>
                                             <span>{{ ref.celular_2|default:'N/A' }}</span>
                                         </div>
                                     </div>
                                     <div class="col-lg-6 p-1">
                                         <div class="d-flex align-items-center">
-                                            <span class="text-muted me-1" style="width: 70px; font-size: 0.8rem;">Celular 3:</span>
+                                            <span class="text-muted me-1" style="width: 70px; font-size: 0.8rem;">Alterno 2:</span>
                                             <span>{{ ref.celular_3|default:'N/A' }}</span>
                                         </div>
                                     </div>
                                     <div class="col-lg-6 p-1">
                                         <div class="d-flex align-items-center">
-                                            <span class="text-muted me-1" style="width: 70px; font-size: 0.8rem;">Teléfono:</span>
+                                            <span class="text-muted me-1" style="width: 70px; font-size: 0.8rem;">Fijo 1:</span>
                                             <span>{{ ref.telefono_1|default:'N/A' }}</span>
                                         </div>
                                     </div>
                                     <div class="col-lg-6 p-1">
                                         <div class="d-flex align-items-center">
-                                            <span class="text-muted me-1" style="width: 70px; font-size: 0.8rem;">Teléfono 2:</span>
+                                            <span class="text-muted me-1" style="width: 70px; font-size: 0.8rem;">Fijo 2:</span>
                                             <span>{{ ref.telefono_2|default:'N/A' }}</span>
                                         </div>
                                     </div>

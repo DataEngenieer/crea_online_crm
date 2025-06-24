@@ -105,6 +105,38 @@
                 </a>
             </div>
         </div>
+
+        <!-- Tarjeta del Dashboard -->
+        <div class="col-md-4 col-lg-3 mb-4">
+            <div class="card h-100 text-center p-4 shadow-sm border-0 hover-shadow">
+                <div class="mb-3">
+                    <span class="d-inline-block rounded-circle" style="background:#27AE60;width:56px;height:56px;line-height:56px;">
+                        <i class="bi bi-speedometer2 text-white" style="font-size:2rem;"></i>
+                    </span>
+                </div>
+                <h5 class="fw-bold">Dashboard</h5>
+                <p>Visualiza métricas y estadísticas clave de la gestión de cobranza.</p>
+                <a href="{% url 'core:dashboard' %}" class="btn btn-primary w-75 card-btn-effect mx-auto mt-auto">
+                    <i class="bi bi-speedometer2"></i> Ver Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Tarjeta de Descargar Informes -->
+        <div class="col-md-4 col-lg-3 mb-4">
+            <div class="card h-100 text-center p-4 shadow-sm border-0 hover-shadow">
+                <div class="mb-3">
+                    <span class="d-inline-block rounded-circle" style="background:#2C3E50;width:56px;height:56px;line-height:56px;">
+                        <i class="bi bi-file-earmark-bar-graph text-white" style="font-size:2rem;"></i>
+                    </span>
+                </div>
+                <h5 class="fw-bold">Descargar Informes</h5>
+                <p>Genera y descarga reportes detallados de gestión, pagos y más.</p>
+                <a href="{% url 'core:reportes' %}" class="btn btn-primary w-75 card-btn-effect mx-auto mt-auto">
+                    <i class="bi bi-file-earmark-bar-graph"></i> Generar Informes
+                </a>
+            </div>
+        </div>
         {% endif %}
     </div>
 </div>

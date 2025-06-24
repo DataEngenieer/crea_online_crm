@@ -109,6 +109,7 @@ class Cliente(models.Model):
         blank=True, 
         null=True
     ) 
+    
     nombre_completo = models.CharField(max_length=150)
     ciudad = models.CharField(max_length=100, blank=True, null=True)
     dias_mora_originador = models.FloatField(default=0, null=True, blank=True) 
