@@ -1,0 +1,762 @@
+{% load static %}
+
+<div class="modal-dialog modal-lg modal-dialog-centered" style="max-width: 900px;">
+    <div class="modal-content">
+        <div class="modal-header bg-primary text-white py-2">
+            <h5 class="modal-title mb-0">
+                <i class="fas fa-plus-circle me-2"></i>
+                Nuevo Ticket de Soporte
+            </h5>
+            <button type="button" class="btn-close btn-close-white m-0" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        
+        <form method="post" action="{% url 'tickets:ticket_list' %}" id="createTicketForm" enctype="multipart/form-data" class="needs-validation" novalidate>
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger alert-dismissible fade show m-3" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    {% for error in form.non_field_errors %}
+                        {{ error }}
+                    {% endfor %}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                </div>
+            {% endif %}
+            
+            <div class="modal-body p-4">
+                <div class="row g-3">
+                    <!-- Columna Izquierda -->
+                    <div class="col-lg-8">
+                        <!-- Información Básica -->
+                        <div class="card mb-4">
+                    <div class="card-header bg-light py-2">
+                        <h6 class="mb-0"><i class="fas fa-heading me-2"></i>Información Básica</h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="mb-3">
+                            <label for="{{ form.titulo.id_for_label }}" class="form-label fw-bold required-field">
+                                {{ form.titulo.label }}
+                            </label>
+                            <div class="input-group mb-3">
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-heading"></i>
+                                </span>
+                                <input type="text" name="titulo" class="form-control" required id="id_titulo" 
+                                       placeholder="Ingrese el asunto">
+                            </div>
+                            {% if form.titulo.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.titulo.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.descripcion.id_for_label }}" class="form-label fw-bold required-field">
+                                {{ form.descripcion.label }}
+                            </label>
+                            <div class="input-group mb-3">
+                                <span class="input-group-text bg-light align-items-start">
+                                    <i class="fas fa-align-left mt-1"></i>
+                                </span>
+                                <textarea name="descripcion" class="form-control" required id="id_descripcion" 
+                                          rows="5" placeholder="Describa el problema o requerimiento con el mayor detalle posible"></textarea>
+                            </div>
+                            <div class="form-text">
+                                <i class="fas fa-lightbulb text-warning me-1"></i>Describe el problema o requerimiento con el mayor detalle posible.
+                            </div>
+                            {% if form.descripcion.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.descripcion.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Archivos adjuntos -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light py-2">
+                        <h6 class="mb-0"><i class="fas fa-paperclip me-2"></i>Archivos Adjuntos</h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <div id="drop-area" class="file-upload-area p-4 text-center rounded-3 border border-2 border-dashed mb-3">
+                            <div class="drop-zone-content">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                                <h5 class="mb-2">Arrastra y suelta archivos aquí</h5>
+                                <p class="text-muted mb-3">o</p>
+                                <button type="button" class="btn btn-outline-primary">
+                                    <i class="fas fa-folder-open me-2"></i>Seleccionar archivos
+                                </button>
+                                <p class="small text-muted mt-3 mb-0">Formatos soportados: .jpg, .jpeg, .png, .pdf, .doc, .docx, .xls, .xlsx</p>
+                                <p class="small text-muted">Tamaño máximo por archivo: 10MB</p>
+                            </div>
+                            <input type="file" name="archivos" id="id_archivos" multiple 
+                                   class="d-none" 
+                                   accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx">
+                        </div>
+                        
+                        <div id="file-list" class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">Archivos seleccionados</h6>
+                                <span id="file-count" class="badge bg-secondary">0 archivos</span>
+                            </div>
+                            <div id="file-items" class="list-group">
+                                <!-- Los archivos se agregarán aquí dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                    </div>
+                    
+                    <!-- Columna Derecha -->
+                    <div class="col-lg-4">
+                <!-- Detalles del ticket -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light py-2">
+                        <h6 class="mb-0"><i class="fas fa-cog me-2"></i>Detalles</h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="mb-3">
+                            <label for="{{ form.tipo.id_for_label }}" class="form-label fw-bold required-field">
+                                {{ form.tipo.label }}
+                            </label>
+                            <div class="input-group mb-3">
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-tag"></i>
+                                </span>
+                                <select name="tipo" class="form-select" required id="id_tipo">
+                                    <option value="" selected>Seleccione un tipo</option>
+                                    <option value="soporte">Soporte Técnico</option>
+                                    <option value="facturacion">Facturación</option>
+                                    <option value="ventas">Ventas</option>
+                                    <option value="otro">Otro</option>
+                                </select>
+                            </div>
+                            {% if form.tipo.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.tipo.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.prioridad.id_for_label }}" class="form-label fw-bold required-field">
+                                {{ form.prioridad.label }}
+                            </label>
+                            <div class="input-group mb-3">
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-flag"></i>
+                                </span>
+                                <select name="prioridad" class="form-select" required id="id_prioridad">
+                                    <option value="" selected>Seleccione una prioridad</option>
+                                    <option value="baja">Baja</option>
+                                    <option value="media">Media</option>
+                                    <option value="alta">Alta</option>
+                                    <option value="urgente">Urgente</option>
+                                </select>
+                            </div>
+                            {% if form.prioridad.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.prioridad.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.asignado_a.id_for_label }}" class="form-label fw-bold">
+                                {{ form.asignado_a.label }}
+                            </label>
+                            <div class="input-group mb-3">
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-user-tie"></i>
+                                </span>
+                                <select name="asignado_a" class="form-select" id="id_asignado_a">
+                                    <option value="" selected>Seleccione un usuario (opcional)</option>
+                                    {% for usuario in form.asignado_a.field.queryset %}
+                                        <option value="{{ usuario.id }}">{{ usuario.get_full_name|default:usuario.username }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle text-info me-1"></i>Deja en blanco para asignación automática
+                            </div>
+                            {% if form.asignado_a.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.asignado_a.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer bg-light p-3 border-top">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i> Cancelar
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-2"></i> Enviar Solicitud
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Estilos para campos de formulario */
+    .modal-content {
+        border: none;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    
+    .modal-header {
+        padding: 0.75rem 1.5rem;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .modal-footer {
+        padding: 1rem 1.5rem;
+    }
+    
+    .card {
+        border: 1px solid #e0e0e0;
+        border-radius: 0.5rem;
+        margin-bottom: 1.25rem;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #e0e0e0;
+        padding: 0.75rem 1.25rem;
+    }
+    
+    .card-body {
+        padding: 1.25rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #495057;
+    }
+    
+    .form-text {
+        font-size: 0.8125rem;
+        margin-top: 0.25rem;
+        color: #6c757d;
+    }
+    
+    .input-group-text {
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        padding: 0.5rem 1rem;
+    }
+    
+    .btn {
+        padding: 0.5rem 1.25rem;
+        font-weight: 500;
+        border-radius: 0.375rem;
+    }
+    
+    .btn-primary {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    
+    .btn-outline-secondary {
+        color: #6c757d;
+        border-color: #dee2e6;
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa;
+        color: #6c757d;
+    }
+    
+    .required-field:after {
+        content: " *";
+        color: #dc3545;
+    }
+    
+    /* Estilos para los campos de formulario */
+    .form-control, .form-select, textarea, input[type="text"], input[type="email"], input[type="password"], select {
+        display: block;
+        width: 100%;
+        padding: 0.5rem 1rem;
+        font-size: 0.9375rem;
+        line-height: 1.5;
+        color: #212529;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    
+    .form-control:focus, .form-select:focus, textarea:focus, input[type="text"]:focus, 
+    input[type="email"]:focus, input[type="password"]:focus, select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        outline: 0;
+    }
+    
+    textarea.form-control {
+        min-height: 120px;
+        resize: vertical;
+    }
+    
+    .input-group .form-control, .input-group .form-select {
+        position: relative;
+        flex: 1 1 auto;
+        width: 1%;
+        min-width: 0;
+        margin-bottom: 0;
+    }
+    
+    .input-group:not(.has-validation) > :not(:last-child):not(.dropdown-toggle):not(.dropdown-menu) {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    
+    .input-group > :not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+        margin-left: -1px;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+    
+    /* Estilos para el área de carga de archivos */
+    .file-upload-area {
+        background-color: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 0.5rem;
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .file-upload-area:hover, .file-upload-area.highlight {
+        border-color: #0d6efd;
+        background-color: #f1f8ff;
+    }
+    
+    .file-upload-area .drop-zone-content {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .file-upload-area i {
+        transition: transform 0.3s ease;
+    }
+    
+    .file-upload-area:hover i {
+        transform: translateY(-3px);
+    }
+    
+    .file-upload-area h5 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #343a40;
+        margin-bottom: 0.5rem;
+    }
+    
+    .file-upload-area p {
+        margin-bottom: 0.25rem;
+    }
+    
+    .file-upload-area .btn-outline-primary {
+        padding: 0.5rem 1.25rem;
+        border-radius: 2rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .file-upload-area .btn-outline-primary:hover {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    
+    /* Estilos para la lista de archivos */
+    #file-list {
+        display: none;
+    }
+    
+    #file-list.show {
+        display: block;
+    }
+    
+    .file-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background-color: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 0.375rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s ease;
+    }
+    
+    .file-item:hover {
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+    }
+    
+    .file-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #e9ecef;
+        border-radius: 4px;
+        margin-right: 1rem;
+        color: #6c757d;
+    }
+    
+    .file-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .file-name {
+        font-weight: 500;
+        color: #212529;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 0.1rem;
+    }
+    
+    .file-size {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+    
+    .file-remove {
+        color: #dc3545;
+        background: none;
+        border: none;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .file-remove:hover {
+        background-color: #f8d7da;
+    }
+    
+    /* Estilos para los selects */
+    select.form-select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 16px 12px;
+        padding-right: 2.25rem;
+    }
+    
+    /* Estilos para los textareas */
+    textarea.form-control {
+        min-height: 120px;
+        resize: vertical;
+    }
+    
+    /* Estilos para las etiquetas */
+    .form-label {
+        display: inline-block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    /* Estilos para las tarjetas */
+    .card {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border-radius: 0.5rem;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        padding: 0.75rem 1.25rem;
+    }
+    
+    .card-body {
+        padding: 1.25rem;
+    }
+    
+    /* Mejora de los botones */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.5rem;
+        padding: 0.6rem 1.2rem;
+        font-weight: 500;
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .btn i {
+        margin-right: 0.5rem;
+    }
+    
+    /* Ajustes responsivos */
+    @media (max-width: 991.98px) {
+        .col-lg-8, .col-lg-4 {
+            width: 100%;
+        }
+        
+        .card {
+            margin-bottom: 1rem;
+        }
+    }
+    
+    /* Estilos para los campos requeridos */
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+    }
+    
+    /* Estilos para los mensajes de error */
+    .invalid-feedback {
+        display: block;
+        width: 100%;
+        margin-top: 0.25rem;
+        font-size: 0.875em;
+        color: #dc3545;
+    }
+</style>
+
+<script>
+// Función para formatear el tamaño del archivo
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Función para obtener el ícono según la extensión del archivo
+function getFileIcon(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const icons = {
+        // Documentos
+        'pdf': 'file-pdf',
+        'doc': 'file-word',
+        'docx': 'file-word',
+        'txt': 'file-alt',
+        'rtf': 'file-alt',
+        // Hojas de cálculo
+        'xls': 'file-excel',
+        'xlsx': 'file-excel',
+        'csv': 'file-csv',
+        // Presentaciones
+        'ppt': 'file-powerpoint',
+        'pptx': 'file-powerpoint',
+        // Imágenes
+        'jpg': 'file-image',
+        'jpeg': 'file-image',
+        'png': 'file-image',
+        'gif': 'file-image',
+        'bmp': 'file-image',
+        'svg': 'file-image',
+        // Archivos comprimidos
+        'zip': 'file-archive',
+        'rar': 'file-archive',
+        '7z': 'file-archive',
+        // Otros
+        'mp3': 'file-audio',
+        'wav': 'file-audio',
+        'mp4': 'file-video',
+        'avi': 'file-video',
+        'mov': 'file-video'
+    };
+    return icons[ext] || 'file';
+}
+
+// Función para actualizar el contador de archivos
+function updateFileCount(files) {
+    const count = files.length;
+    const fileCount = document.getElementById('file-count');
+    const fileList = document.getElementById('file-list');
+    
+    fileCount.textContent = count + (count === 1 ? ' archivo' : ' archivos');
+    
+    if (count > 0) {
+        fileList.classList.add('show');
+    } else {
+        fileList.classList.remove('show');
+    }
+}
+
+// Función para mostrar los archivos seleccionados
+function displaySelectedFiles(files) {
+    const fileItems = document.getElementById('file-items');
+    fileItems.innerHTML = ''; // Limpiar lista existente
+    
+    if (files.length === 0) {
+        return;
+    }
+    
+    Array.from(files).forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.dataset.index = index;
+        
+        const fileIcon = document.createElement('div');
+        fileIcon.className = 'file-icon';
+        const icon = document.createElement('i');
+        icon.className = `fas fa-${getFileIcon(file.name)}`;
+        fileIcon.appendChild(icon);
+        
+        const fileInfo = document.createElement('div');
+        fileInfo.className = 'file-info';
+        
+        const fileName = document.createElement('div');
+        fileName.className = 'file-name';
+        fileName.textContent = file.name;
+        fileName.title = file.name;
+        
+        const fileSize = document.createElement('div');
+        fileSize.className = 'file-size';
+        fileSize.textContent = formatFileSize(file.size);
+        
+        const fileRemove = document.createElement('button');
+        fileRemove.className = 'file-remove';
+        fileRemove.type = 'button';
+        fileRemove.title = 'Eliminar archivo';
+        fileRemove.innerHTML = '<i class="fas fa-times"></i>';
+        fileRemove.onclick = function() {
+            const dataTransfer = new DataTransfer();
+            const input = document.getElementById('id_archivos');
+            const files = Array.from(input.files);
+            files.splice(index, 1);
+            
+            files.forEach(file => {
+                dataTransfer.items.add(file);
+            });
+            
+            input.files = dataTransfer.files;
+            displaySelectedFiles(input.files);
+            updateFileCount(input.files);
+        };
+        
+        fileInfo.appendChild(fileName);
+        fileInfo.appendChild(fileSize);
+        
+        fileItem.appendChild(fileIcon);
+        fileItem.appendChild(fileInfo);
+        fileItem.appendChild(fileRemove);
+        
+        fileItems.appendChild(fileItem);
+    });
+    
+    updateFileCount(files);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Elementos del DOM
+    const form = document.getElementById('createTicketForm');
+    const dropArea = document.getElementById('drop-area');
+    const fileInput = document.getElementById('id_archivos');
+    const selectFilesBtn = dropArea.querySelector('.btn-outline-primary');
+    
+    // Evento para abrir el selector de archivos al hacer clic en el botón
+    selectFilesBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        fileInput.click();
+    });
+    
+    // Evento para manejar la selección de archivos
+    fileInput.addEventListener('change', function(e) {
+        if (this.files.length > 0) {
+            displaySelectedFiles(this.files);
+        }
+    });
+    
+    // Prevenir comportamientos por defecto para el arrastrar
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    // Resaltar el área de soltado
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+    });
+    
+    // Quitar resaltado al salir del área
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+    });
+    
+    // Manejar archivos soltados
+    dropArea.addEventListener('drop', handleDrop, false);
+    
+    // Funciones auxiliares
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    function highlight() {
+        dropArea.classList.add('highlight');
+    }
+    
+    function unhighlight() {
+        dropArea.classList.remove('highlight');
+    }
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            // Actualizar el input de archivos
+            fileInput.files = files;
+            displaySelectedFiles(files);
+        }
+    }
+    
+    // Validar al enviar
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    }, false);
+    
+    // Validación en tiempo real para campos requeridos
+    const requiredFields = form.querySelectorAll('[required]');
+    requiredFields.forEach(function(field) {
+        field.addEventListener('input', function() {
+            if (field.value.trim() !== '') {
+                field.classList.remove('is-invalid');
+                field.classList.add('is-valid');
+            } else {
+                field.classList.remove('is-valid');
+                field.classList.add('is-invalid');
+            }
+        });
+    });
+    
+    // Manejo de la carga de archivos (usando la funcionalidad ya implementada)
+    // El manejo de archivos ya está implementado en las funciones superiores
+});
+</script>

@@ -1,0 +1,100 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Tickets de Soporte{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Tickets de Soporte</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{% url 'core:inicio' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Tickets de Soporte</li>
+    </ol>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-table me-1"></i>
+            Listado de Tickets
+            <button type="button" class="btn btn-primary btn-sm float-end" data-bs-toggle="modal" data-bs-target="#createTicketModal">
+                <i class="fas fa-plus me-1"></i> Crear Nuevo Ticket
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="datatablesSimple">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Título</th>
+                            <th>Estado</th>
+                            <th>Prioridad</th>
+                            <th>Solicitante</th>
+                            <th>Asignado a</th>
+                            <th>Última Actualización</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets %}
+                        <tr>
+                            <td>#{{ ticket.id }}</td>
+                            <td>{{ ticket.titulo }}</td>
+                            <td><span class="badge bg-secondary">{{ ticket.get_estado_display }}</span></td>
+                            <td><span class="badge bg-info">{{ ticket.get_prioridad_display }}</span></td>
+                            <td>{{ ticket.solicitante.username }}</td>
+                            <td>{{ ticket.asignado_a.username|default:"Sin asignar" }}</td>
+                            <td>{{ ticket.fecha_actualizacion|naturaltime }}</td>
+                            <td>
+                                <a href="{% url 'tickets:ticket_detail' ticket.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> Ver
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">No hay tickets para mostrar.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear Ticket -->
+<div class="modal fade" id="createTicketModal" tabindex="-1" aria-labelledby="createTicketModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-ticket-alt me-2"></i>
+                    Nuevo Ticket de Soporte
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            {% include 'tickets/ticket_form.html' %}
+        </div>
+    </div>
+</div>
+
+<!-- Estilos adicionales para la tabla -->
+<style>
+    #datatablesSimple {
+        font-size: 0.9rem;
+    }
+    #datatablesSimple th {
+        font-weight: 600;
+        background-color: #f8f9fa;
+    }
+    .badge {
+        font-weight: 500;
+        padding: 0.4em 0.6em;
+    }
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+</style>
+{% endblock %}
