@@ -1400,8 +1400,9 @@ def detalle_cliente(request, documento_cliente):
     # Convertir a lista para evitar múltiples consultas a la base de datos si se itera varias veces
     referencias_cliente_list = list(clientes_mismo_documento)
 
-    # Lógica de consolidación de datos financieros (usando deuda_principal_k)
-    deuda_total_consolidada = sum(c.deuda_principal_k for c in referencias_cliente_list if c.deuda_principal_k is not None)
+    # Lógica de consolidación de datos financieros
+    deuda_principal_total = sum(c.deuda_principal_k for c in referencias_cliente_list if c.deuda_principal_k is not None)
+    deuda_total_consolidada = sum(c.deuda_total for c in referencias_cliente_list if c.deuda_total is not None)
     productos_count = len(referencias_cliente_list)
     
     # Calcular los días de mora actuales para cada cliente
@@ -1457,6 +1458,7 @@ def detalle_cliente(request, documento_cliente):
         'referencias_cliente': referencias_cliente_list,
         'estado_cliente': estado_cliente,
         'documento_cliente': documento_cliente,
+        'deuda_principal_total': deuda_principal_total,
         'deuda_total_consolidada': deuda_total_consolidada,
         'productos_count': productos_count,
         'edad_cartera_promedio': edad_cartera_promedio,

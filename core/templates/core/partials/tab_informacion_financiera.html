@@ -6,7 +6,7 @@
         <h5 class="card-title mb-0">
             <i class="bi bi-currency-dollar me-2 text-success"></i>Información Financiera y Productos
         </h5>
-        <span class="badge bg-primary">Documento: {{ documento_cliente }} | Total: {{ referencias_cliente|length }} productos</span>
+        <span class="badge bg-primary">Documento: {{ documento_cliente }} | {{ productos_count }} producto{{ productos_count|pluralize }} | Deuda Total: ${{ deuda_total_consolidada|intcomma|default:'0' }}</span>
     </div>
     
     <!-- Resumen financiero en tarjetas -->
@@ -20,9 +20,9 @@
                         </div>
                         <h6 class="mb-0">Principal Total</h6>
                     </div>
-                    <div class="display-6 text-success fw-bold">${{ cliente_representativo.deuda_principal_k|intcomma|default:'0' }}</div>
+                    <div class="display-6 text-success fw-bold">${{ deuda_principal_total|intcomma|default:'0' }}</div>
                     <div class="small text-muted mt-2">
-                        <i class="bi bi-info-circle"></i> Capital inicial pendiente
+                        <i class="bi bi-info-circle"></i> Suma del capital inicial de {{ productos_count }} producto{{ productos_count|pluralize }}
                     </div>
                 </div>
             </div>
@@ -68,9 +68,9 @@
                         </div>
                         <h6 class="mb-0">Deuda Total Consolidada</h6>
                     </div>
-                    <div class="display-6 text-primary fw-bold">${{ cliente_representativo.deuda_total|intcomma|default:'0' }}</div>
+                    <div class="display-6 text-primary fw-bold">${{ deuda_total_consolidada|intcomma|default:'0' }}</div>
                     <div class="small text-muted mt-2">
-                        <i class="bi bi-graph-up-arrow"></i> Incluye capital + intereses + otros cargos
+                        <i class="bi bi-graph-up-arrow"></i> Suma consolidada de {{ productos_count }} producto{{ productos_count|pluralize }}
                     </div>
                 </div>
             </div>

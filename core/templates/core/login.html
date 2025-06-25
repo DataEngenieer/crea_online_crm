@@ -1,41 +1,409 @@
 {% extends 'core/base_login.html' %}
 {% load static %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --primary-blue: #4a69e2;
+    --secondary-teal: #41c7c7;
+    --light-bg: #f8f9fe;
+    --form-bg: #ffffff;
+    --text-dark: #333;
+    --text-light: #555;
+    --border-color: #e6e6e6;
+    --input-bg: #f0f4ff;
+  }
+  
+  body {
+    background-color: var(--light-bg);
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+  }
+  
+  .auth-container {
+    display: flex;
+    width: 100%;
+    max-width: 1100px;
+    background: var(--form-bg);
+    border-radius: 16px;
+    border: 1px solid #e0e7ff;
+    box-shadow: 0 8px 32px rgba(74, 105, 226, 0.2);
+    overflow: hidden;
+  }
+  
+  .auth-left, .auth-right {
+    padding: 3rem;
+  }
+  
+  /* Panel Izquierdo */
+  .auth-left {
+    flex-basis: 45%;
+    background-color: #fdfdff;
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .auth-left-header {
+    margin-bottom: 2rem;
+  }
+  
+  .auth-left-header img {
+    max-width: 180px;
+  }
+  
+  .auth-left h2 {
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+  }
+  
+  .auth-left > p {
+    color: var(--text-light);
+    margin-bottom: 2rem;
+  }
+  
+  .portal-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 280px;
+    padding: 0.9rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+  }
+  
+  .portal-btn i {
+    margin-right: 0.75rem;
+  }
+  
+  .portal-btn-primary {
+    background-color: var(--primary-blue);
+    color: white;
+  }
+  .portal-btn-primary:hover {
+    background-color: #3b55b5;
+  }
+  
+  .portal-btn-secondary {
+    background-color: var(--secondary-teal);
+    color: white;
+  }
+  .portal-btn-secondary:hover {
+    background-color: #329a9a;
+  }
+  
+  .register-section {
+    margin-top: auto;
+    padding-top: 2rem;
+  }
+  
+  .register-section p {
+    color: var(--text-light);
+    margin-bottom: 0.5rem;
+  }
+  
+  .register-btn {
+    display: inline-flex;
+    padding: 0.6rem 1.2rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--primary-blue);
+    font-weight: 500;
+    text-decoration: none;
+  }
+  
+  /* Panel Derecho */
+  .auth-right {
+    flex-basis: 55%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .auth-right h3 {
+    font-weight: 600;
+    font-size: 1.5rem;
+    color: var(--text-dark);
+    /* margin-bottom will be handled by decorator */
+  }
+
+  .title-decorator {
+    width: 40px;
+    height: 4px;
+    background-color: var(--primary-blue);
+    border-radius: 2px;
+    margin-top: 0.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .auth-left .title-decorator {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .auth-right .title-decorator {
+    margin-left: 0;
+  }
+  
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-group label {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 0.5rem;
+  }
+  
+  .input-wrapper {
+    position: relative;
+  }
+  
+  .input-wrapper i {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-light);
+  }
+  
+  .password-toggle {
+    background: none;
+    border: none;
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: var(--text-light);
+    padding: 0;
+  }
+  
+  .form-control {
+    width: 100%;
+    padding: 0.9rem 2.5rem 0.9rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--input-bg);
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(74, 105, 226, 0.2);
+  }
+  
+  .form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+  }
+  
+  .checkbox-group label {
+    color: var(--text-light);
+    cursor: pointer;
+  }
+  
+  .checkbox-group input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    margin-right: 0.5rem;
+    cursor: pointer;
+    position: relative;
+    top: 2px;
+    transition: all 0.2s ease;
+  }
+
+  .checkbox-group input[type="checkbox"]:checked {
+    background-color: var(--primary-blue);
+    border-color: var(--primary-blue);
+  }
+
+  .checkbox-group input[type="checkbox"]:checked::after {
+    content: '\2713'; /* Checkmark character */
+    font-size: 14px;
+    color: white;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: bold;
+  }
+  
+  .form-options a {
+    color: var(--primary-blue);
+    text-decoration: none;
+  }
+  
+  .btn-submit {
+    width: 100%;
+    padding: 1rem;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #6a82ff, #4a69e2);
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 2rem;
+  }
+
+  .btn-submit:hover {
+    filter: brightness(1.1);
+  }
+  
+  .support-section {
+    text-align: center;
+    font-size: 0.9rem;
+  }
+  
+  .support-section p {
+    margin-bottom: 0.5rem;
+  }
+  
+  .support-section a {
+    color: var(--primary-blue);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  @media (max-width: 992px) {
+    .auth-container {
+      flex-direction: column;
+      margin: 2rem 1rem;
+      max-width: 500px;
+    }
+    .auth-left {
+      border-right: none;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .auth-left, .auth-right {
+      padding: 2rem;
+      flex-basis: auto;
+    }
+  }
+
+  @media (max-width: 576px) {
+    body {
+      padding: 0;
+    }
+    .auth-container {
+      margin: 0;
+      border-radius: 0;
+      min-height: 100vh;
+      box-shadow: none;
+      border: none;
+    }
+    .auth-left, .auth-right {
+      padding: 2rem 1.5rem;
+    }
+    .auth-right h3 {
+      font-size: 1.3rem;
+    }
+  }
+  
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-center align-items-center" style="min-height:100vh;background:#f6f8fb;">
-  <div class="card p-5 shadow" style="width: 400px;max-width:90vw;">
-    <div class="text-center mb-4">
-      <img src="{% static 'core/img/logo_letra_azul.png' %}" alt="Logo Corporativo" height="150">
+<div class="auth-container">
+  <div class="auth-left">
+    <div class="auth-left-header">
+      <img src="{% static 'core/img/logo_letra_azul.png' %}" alt="Logo CREA ONLINE">
     </div>
-    <form method="POST" autocomplete="off">
+    <h2>Bienvenido al sistema</h2>
+    <div class="title-decorator"></div>
+    <!-- <p>Selecciona tu portal de acceso</p> 
+    <a href="#" class="portal-btn portal-btn-primary">
+      <i class="bi bi-person-workspace"></i> Portal Talento Humano
+    </a>
+    <a href="#" class="portal-btn portal-btn-secondary">
+      <i class="bi bi-patch-check"></i> Portal Operaciones
+    </a>
+    -->
+    <div class="register-section">
+      <p>¿No tienes una cuenta?</p>
+      <a href="{% url 'core:registro' %}" class="register-btn">
+        <i class="bi bi-person-plus"></i> Regístrate aquí
+      </a>
+    </div>
+  </div>
+  
+  <div class="auth-right">
+    <h3>Iniciar sesión</h3>
+    <div class="title-decorator"></div>
+    <form method="POST" id="loginForm" autocomplete="off">
+      {% csrf_token %}
+      
       {% if form.errors %}
-        <div class="alert alert-danger text-center">
+        <div class="alert alert-danger mb-2" role="alert">
           Usuario o contraseña incorrectos.
         </div>
       {% endif %}
-      {% csrf_token %}
-      <div class="mb-3 text-start">
-        <label for="id_username" class="form-label fw-bold">E-MAIL</label>
-        <input type="email" class="form-control" id="id_username" name="username" required autofocus>
-      </div>
-      <div class="mb-2 text-start">
-        <label for="id_password" class="form-label fw-bold">CLAVE</label>
-        <a href="{% url 'core:password_reset' %}" class="float-end small text-primary">¿Olvidaste tu Clave?</a>
-        <div class="input-group">
-          <input type="password" class="form-control" id="id_password" name="password" required>
-          <button type="button" class="btn btn-outline-secondary" tabindex="-1" onclick="togglePassword()"><i class="bi bi-eye"></i></button>
+      
+      <div class="form-group">
+        <label for="id_username">Correo electrónico</label>
+        <div class="input-wrapper">
+          <input type="email" id="id_username" name="username" class="form-control" required autofocus>
+          <i class="bi bi-envelope"></i>
         </div>
       </div>
-      <button type="submit" class="btn btn-primary w-100 mt-3"><i class="bi bi-box-arrow-in-right me-2"></i>Ingresar</button>
+      
+      <div class="form-group">
+        <label for="id_password">Contraseña</label>
+        <div class="input-wrapper">
+          <input type="password" id="id_password" name="password" class="form-control" required>
+          <button type="button" class="password-toggle" onclick="togglePassword()">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="form-options">
+        <div class="checkbox-group">
+          <input type="checkbox" id="remember_me" name="remember_me">
+          <label for="remember_me">Recordar sesión</label>
+        </div>
+        <a href="{% url 'core:password_reset' %}">¿Olvidaste tu contraseña?</a>
+      </div>
+      
+      <button type="submit" class="btn-submit" id="loginButton">
+        <i class="bi bi-box-arrow-in-right"></i> Ingresar al sistema
+      </button>
+      
+      <div class="support-section">
+        <p>¿Problemas para iniciar sesión?</p>
+        <a href="#"><i class="bi bi-headset"></i> Contactar soporte</a>
+      </div>
     </form>
-    <div class="text-center mt-3">
-      <a href="{% url 'core:registro' %}" class="btn btn-outline-secondary w-100">¿No tienes cuenta? Regístrate</a>
-    </div>
   </div>
 </div>
-<script>
-function togglePassword() {
-  var pwd = document.getElementById('id_password');
-  pwd.type = pwd.type === 'password' ? 'text' : 'password';
-}
-</script>
 {% endblock %}
