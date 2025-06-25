@@ -20,7 +20,7 @@
                         </div>
                         <h6 class="mb-0">Principal Total</h6>
                     </div>
-                    <div class="display-6 text-success fw-bold">${{ saldo_capital_total|intcomma|default:'0' }}</div>
+                    <div class="display-6 text-success fw-bold">${{ cliente_representativo.deuda_principal_k|intcomma|default:'0' }}</div>
                     <div class="small text-muted mt-2">
                         <i class="bi bi-info-circle"></i> Capital inicial pendiente
                     </div>
@@ -68,7 +68,7 @@
                         </div>
                         <h6 class="mb-0">Deuda Total Consolidada</h6>
                     </div>
-                    <div class="display-6 text-primary fw-bold">${{ deuda_total_consolidada|intcomma|default:'0' }}</div>
+                    <div class="display-6 text-primary fw-bold">${{ cliente_representativo.deuda_total|intcomma|default:'0' }}</div>
                     <div class="small text-muted mt-2">
                         <i class="bi bi-graph-up-arrow"></i> Incluye capital + intereses + otros cargos
                     </div>
