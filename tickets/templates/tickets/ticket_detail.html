@@ -248,8 +248,8 @@
                                 <span><i class="fas fa-stopwatch me-2 text-muted"></i>Tiempo de resolución</span>
                                 <span class="fw-medium">
                                     {{ ticket.tiempo_resolucion.days }}d 
-                                    {{ ticket.tiempo_resolucion.seconds|div:86400|floatformat:0|add:0|stringformat:"02d" }}h
-                                    {{ ticket.tiempo_resolucion.seconds|div:60|floatformat:0|add:0|div:60|stringformat:"02d" }}m
+                                    {{ horas_resolucion|stringformat:"02d" }}h
+                                    {{ minutos_resolucion|stringformat:"02d" }}m
                                 </span>
                             </li>
                         {% endif %}
