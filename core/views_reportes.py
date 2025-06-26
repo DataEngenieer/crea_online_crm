@@ -45,13 +45,20 @@ CAMPOS_DISPONIBLES = {
         ('fecha_vencimiento', 'Fecha de Vencimiento'),
     ],
     'pagos': [
-        ('id', 'ID Cuota'),
-        ('acuerdo__cliente__nombre_completo', 'Cliente'),
-        ('monto', 'Monto'),
+        ('acuerdo__cliente__documento', 'Documento Cliente'),
+        ('acuerdo__cliente__nombre_completo', 'Nombre Cliente'),
+        ('acuerdo__cliente__referencia', 'Referencia Cliente'),
+        ('acuerdo__referencia', 'Referencia Acuerdo'),
+        ('acuerdo__monto_total', 'Monto Total Acuerdo'),
+        ('acuerdo__numero_cuotas', 'Total Cuotas Acuerdo'),
+        ('acuerdo__estado', 'Estado Acuerdo'),
+        ('numero_cuota', 'Número de Cuota'),
+        ('monto', 'Monto Cuota'),
         ('fecha_pago', 'Fecha de Pago'),
         ('fecha_vencimiento', 'Fecha de Vencimiento'),
-        ('estado', 'Estado'),
-        ('medio_pago', 'Medio de Pago'),
+        ('estado', 'Estado Cuota'),
+        ('comprobante', 'Comprobante'),
+        ('observaciones', 'Observaciones')
     ]
 }
 
@@ -327,8 +334,14 @@ def exportar_excel(request):
     elif tipo_reporte == 'pagos':
         queryset = CuotaAcuerdo.objects.select_related('acuerdo__cliente').all()
         if fecha_inicio and fecha_fin:
+            # Convertir las fechas de string a objetos date
+            from datetime import datetime
+            fecha_ini = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+            fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+            
+            # Usar range sin el lookup date__ ya que fecha_pago es DateField
             queryset = queryset.filter(
-                fecha_pago__date__range=[fecha_inicio, fecha_fin]
+                fecha_pago__range=[fecha_ini, fecha_fin]
             )
         
         # Escribir encabezados
