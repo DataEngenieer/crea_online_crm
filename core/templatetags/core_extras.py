@@ -89,11 +89,10 @@ def estilo_tipificacion(tipificacion):
     estilos = {
         # Contacto efectivo - Acuerdos y pagos (verde)
         'AP': {'clase': 'bg-success text-white', 'icono': 'bi-check-circle-fill'},
-        'PP': {'clase': 'bg-success text-white', 'icono': 'bi-calendar-check'},
         'PAGADO': {'clase': 'bg-success text-white', 'icono': 'bi-cash-coin'},
         'PAGADO - Pago formalizado': {'clase': 'bg-success text-white', 'icono': 'bi-cash-coin'},
+        'SAP': {'clase': 'bg-success text-white', 'icono': 'bi-check-circle-fill'},
         'AP - Acuerdo de pago formalizado': {'clase': 'bg-success text-white', 'icono': 'bi-check-circle-fill'},
-        'PP - Promesa de pago': {'clase': 'bg-success text-white', 'icono': 'bi-calendar-check'},
         'SALDADO_LINERU': {'clase': 'bg-success text-white', 'icono': 'bi-check-circle'},
         'Saldado con LINERU': {'clase': 'bg-success text-white', 'icono': 'bi-check-circle'},
         

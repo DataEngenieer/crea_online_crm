@@ -14,8 +14,9 @@ GESTION_OPCIONES = {
     'contacto_efectivo': {
         'label': 'Contacto Efectivo',
         'nivel1': {
-            'AP': {'label': 'AP- Acuerdo de pago formalizado'},
-            'NC': {'label': 'NC -Negociación en curso / pendiente de validación'},
+            'AP': {'label': 'AP - Acuerdo de pago formalizado'},
+            'SAP': {'label': 'SAP - Seguimiento Acuerdo de pago'},
+            'NC': {'label': 'NC - Negociación en curso / pendiente de validación'},
             'RN': {'label': 'RN - Rechaza negociación'},
             'ND': {'label': 'ND - Niega deuda'},
             'REMITE_ABOGADO': {'label': 'Remite a abogado'},
@@ -198,11 +199,12 @@ class Gestion(models.Model):
     
     # Opciones nivel 1 para cada estado de contacto
     # Nota: 
-    # - 'ap' y 'pp' en contacto_efectivo marcan automáticamente acuerdo_pago_realizado = True
+    # - 'ap' en contacto_efectivo marcan automáticamente acuerdo_pago_realizado = True
     # - 'solicita_llamada' marca automáticamente seguimiento_requerido = True
     TIPO_GESTION_N1_OPCIONES = {
         CONTACTO_EFECTIVO: [
             ('ap', 'AP - Acuerdo de pago formalizado'),
+            ('sap', 'SAP - Seguimiento Acuerdo de pago'),
             ('nc', 'NC - Negociación en curso / pendiente de validación'),
             ('rn', 'RN - Rechaza negociación'),
             ('nd', 'ND - Niega deuda'),
