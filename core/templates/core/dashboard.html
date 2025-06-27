@@ -38,6 +38,10 @@
         font-weight: 600;
         color: #04084C;
         line-height: 1.2;
+        word-break: break-word;
+    }
+.card-metric.card-metric-small .card-value {
+        font-size: 1.2rem;
     }
     .card-metric .card-trend {
         font-size: 0.8rem;
@@ -79,7 +83,7 @@
 {% block content %}
 <div class="py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mb-0">Panel de Control</h1>
+        <h1 class="mb-0">Cartera y Soluciones</h1>
         <div class="text-muted">
             <i class="bi bi-calendar3 me-2"></i>
             <span id="fecha-actual"></span>
@@ -162,8 +166,44 @@
             </div>
         </div>
         
-        <!-- Cartera Total -->
+        <!-- Porcentaje Cumplimiento de Pagos -->
         <div class="col-12 col-sm-6 col-lg-4 col-xl-2-4">
+            <div class="card card-metric card-metric-small h-100">
+                <div class="card-body">
+                    <h6 class="card-title">% CUMPLIMIENTO DE PAGOS</h6>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="card-value">{{ porcentaje_cumplimiento_pagos|floatformat:1 }}%</div>
+                        <div class="bg-soft-info rounded p-2">
+                            <i class="fas fa-check-circle fa-2x text-info"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-muted">Cuotas pagadas vs pactadas</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Porcentaje Recuperación de Cartera -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-2-4">
+            <div class="card card-metric card-metric-small h-100">
+                <div class="card-body">
+                    <h6 class="card-title">% RECUPERACIÓN DE CARTERA</h6>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="card-value">{{ porcentaje_recuperacion_cartera|floatformat:1 }}%</div>
+                        <div class="bg-soft-success rounded p-2">
+                            <i class="fas fa-piggy-bank fa-2x text-success"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-muted">Pagado vs cartera asignada</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cartera Total -->
+        <div class="col-12 col-sm-6 col-lg-3 col-xl-3">
             <div class="card card-metric h-100">
                 <div class="card-body">
                     <h6 class="card-title">CARTERA TOTAL</h6>
@@ -181,7 +221,7 @@
         </div>
         
         <!-- Total de Compromisos de Pago -->
-        <div class="col-12 col-sm-6 col-lg-4 col-xl-2-4">
+        <div class="col-12 col-sm-6 col-lg-3 col-xl-3">
             <div class="card card-metric h-100">
                 <div class="card-body">
                     <h6 class="card-title">TOTAL COMPROMISOS</h6>
@@ -199,7 +239,7 @@
         </div>
         
         <!-- Pagos del Mes -->
-        <div class="col-12 col-sm-6 col-lg-4 col-xl-2-4">
+        <div class="col-12 col-sm-6 col-lg-3 col-xl-3">
             <div class="card card-metric h-100">
                 <div class="card-body">
                     <h6 class="card-title">PAGOS ESTE MES</h6>
@@ -217,7 +257,7 @@
         </div>
         
         <!-- Total Pagos Históricos -->
-        <div class="col-12 col-sm-6 col-lg-4 col-xl-2-4">
+        <div class="col-12 col-sm-6 col-lg-3 col-xl-3">
             <div class="card card-metric h-100">
                 <div class="card-body">
                     <h6 class="card-title">TOTAL PAGOS</h6>

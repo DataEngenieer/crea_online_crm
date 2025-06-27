@@ -209,13 +209,12 @@ def dashboard(request):
     
     # Calcular porcentaje de mora
     porcentaje_mora = (cartera_vencida / cartera_total * 100) if cartera_total > 0 else 0
-    
-    # 3. Total de compromisos de pago (suma del valor total de acuerdos)
+
     from .models import AcuerdoPago, CuotaAcuerdo
-    
-    # Calcular el total de compromisos sumando el valor total de los acuerdos
+
+    # 3. Total de compromisos de pago (suma del valor total de acuerdos)
     total_compromisos = AcuerdoPago.objects.aggregate(total=Sum('monto_total'))['total'] or 0
-    
+
     # 4. Pagos del mes actual (suma de los montos de pagos)
     pagos_este_mes = CuotaAcuerdo.objects.filter(
         estado='pagada',
@@ -223,13 +222,22 @@ def dashboard(request):
         fecha_pago__month=hoy.month,
         fecha_pago__year=hoy.year
     ).aggregate(total=Sum('monto'))['total'] or 0
-    
+
     # 4.1 Total de pagos históricos (sin filtro de mes)
     total_pagos_historico = CuotaAcuerdo.objects.filter(
         estado='pagada',
         fecha_pago__isnull=False  # Solo pagos registrados
     ).aggregate(total=Sum('monto'))['total'] or 0
-    
+
+    # --- NUEVAS MÉTRICAS ---
+    # Porcentaje de cumplimiento de pagos sobre acuerdos
+    total_cuotas = CuotaAcuerdo.objects.count()
+    cuotas_pagadas = CuotaAcuerdo.objects.filter(estado='pagada').count()
+    porcentaje_cumplimiento_pagos = (cuotas_pagadas / total_cuotas * 100) if total_cuotas > 0 else 0
+
+    # Porcentaje de recuperación de cartera (pagos efectivos sobre cartera total asignada)
+    porcentaje_recuperacion_cartera = (total_pagos_historico / cartera_total * 100) if cartera_total > 0 else 0
+
     # 5. Estados de los compromisos de pago usando los estados reales del modelo AcuerdoPago
     # Obtener conteo de acuerdos por estado
     acuerdos_por_estado = AcuerdoPago.objects.values('estado').annotate(count=Count('id'))
@@ -427,6 +435,10 @@ def dashboard(request):
         'valores_distribucion': json.dumps(valores_distribucion),
     }
     
+    context.update({
+        'porcentaje_cumplimiento_pagos': round(porcentaje_cumplimiento_pagos, 1),
+        'porcentaje_recuperacion_cartera': round(porcentaje_recuperacion_cartera, 1),
+    })
     return render(request, 'core/dashboard.html', context)
 
 def inicio(request):
