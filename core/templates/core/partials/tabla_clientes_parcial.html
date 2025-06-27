@@ -5,7 +5,7 @@
             <tr>
                 <th>Documento</th>
                 <th>Nombre Cliente</th>
-                <th class="text-end">Deuda K</th>
+                <th class="text-end">Deuda Total</th>
                 <th class="text-center">Días Mora</th>
                 <th class="text-center" style="width: 15%;">Últ. Gestión</th>
                 <th class="text-center">Ult. Tipificación</th>
@@ -18,7 +18,7 @@
             <tr>
                 <td>{{ grupo_cliente.documento }}</td>
                 <td>{{ grupo_cliente.nombre_completo|default:'-' }}</td>
-                <td class="text-end">${{ grupo_cliente.deuda_principal_k|formato_numero|default:'0,00' }}</td>
+                <td class="text-end">${{ grupo_cliente.deuda_total|formato_numero|default:'0,00' }}</td>
                 <td class="text-center">{{ grupo_cliente.total_dias_mora|floatformat:0|default:'-' }}</td>
                 <td class="text-center">{{ grupo_cliente.fecha_ultima_gestion|date:"d/m/Y"|default:'Sin gestión' }}</td>
                 <td class="text-center">

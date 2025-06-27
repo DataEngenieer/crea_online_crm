@@ -35,7 +35,7 @@
                         <label for="referencia" class="form-label">Referencia</label>
                         <input type="text" name="referencia" id="referencia" class="form-control filtro-input" value="{{ filtro_referencia }}" placeholder="Buscar por Referencia">
                     </div>
-                    #<div class="col-md-2">
+                    <div class="col-md-2">
                         <label for="gestion" class="form-label">Estado de Gestión</label>
                         <select name="gestion" id="gestion" class="form-select filtro-select">
                             <option value="todos" {% if filtro_gestion == 'todos' %}selected{% endif %}>Todos los clientes</option>
