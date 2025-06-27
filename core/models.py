@@ -15,7 +15,6 @@ GESTION_OPCIONES = {
         'label': 'Contacto Efectivo',
         'nivel1': {
             'AP': {'label': 'AP- Acuerdo de pago formalizado'},
-            'PP': {'label': 'PP - Promesa de pago'},
             'NC': {'label': 'NC -Negociación en curso / pendiente de validación'},
             'RN': {'label': 'RN - Rechaza negociación'},
             'ND': {'label': 'ND - Niega deuda'},
@@ -204,7 +203,6 @@ class Gestion(models.Model):
     TIPO_GESTION_N1_OPCIONES = {
         CONTACTO_EFECTIVO: [
             ('ap', 'AP - Acuerdo de pago formalizado'),
-            ('pp', 'PP - Promesa de pago'),
             ('nc', 'NC - Negociación en curso / pendiente de validación'),
             ('rn', 'RN - Rechaza negociación'),
             ('nd', 'ND - Niega deuda'),
@@ -264,7 +262,7 @@ class Gestion(models.Model):
 
     def save(self, *args, **kwargs):
         # Si el tipo de gestión es AP o PP, marcar automáticamente como acuerdo de pago
-        if self.tipo_gestion_n1 in ['ap', 'pp']:
+        if self.tipo_gestion_n1 in ['ap']:
             self.acuerdo_pago_realizado = True
             
         # Si el tipo de gestión es solicita_llamada, marcar como requiere seguimiento

@@ -7,49 +7,252 @@
 
 {% block extra_css %}
 <style>
+    /* Estilos generales y mejoras visuales */
     .ticket-header {
         background-color: #f8f9fa;
         border-left: 4px solid #0d6efd;
+        transition: all 0.3s ease;
     }
+    
     .ticket-priority-high { border-left-color: #dc3545; }
     .ticket-priority-medium { border-left-color: #fd7e14; }
     .ticket-priority-low { border-left-color: #198754; }
+    
+    /* Mejora para las tarjetas de información */
     .ticket-info-card {
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
         border: none;
-        border-radius: 0.5rem;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        transition: all 0.3s ease;
     }
+    
+    .ticket-info-card:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        transform: translateY(-3px);
+    }
+    
     .ticket-info-card .card-header {
-        background-color: #f8f9fa;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         font-weight: 600;
+        padding: 1rem 1.25rem;
     }
+    
+    /* Estilos para texto y descripciones */
     .ticket-meta {
         font-size: 0.85rem;
         color: #6c757d;
     }
+    
     .ticket-description {
         white-space: pre-line;
         line-height: 1.7;
-    }
-    .response-card {
-        border-left: 3px solid #0d6efd;
+        font-size: 1.05rem;
+        color: #212529;
+        background: rgba(248, 249, 250, 0.7);
+        border-radius: 0.5rem;
         transition: all 0.2s;
     }
+    
+    .ticket-description:hover {
+        background-color: #f8f9fa;
+    }
+    
+    /* Animaciones y estilos para respuestas */
+    .response-card {
+        border-left: 3px solid #0d6efd;
+        transition: all 0.3s ease;
+        margin-bottom: 0.5rem;
+        background-color: #ffffff;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .response-card:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: linear-gradient(90deg, #0d6efd, transparent);
+        transition: width 0.3s ease;
+    }
+    
     .response-card:hover {
         transform: translateX(5px);
+        background-color: #f8f9fa;
     }
+    
+    .response-card:hover:after {
+        width: 100%;
+    }
+    
+    /* Mejoras en badges y etiquetas */
     .badge-status {
         padding: 0.4em 0.8em;
         font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
+    
     .attachment-badge {
         background-color: #e9ecef;
         color: #495057;
-        padding: 0.25em 0.6em;
+        padding: 0.25em 0.8em;
         border-radius: 0.25rem;
         font-size: 0.8em;
+        transition: all 0.2s ease;
+        border: 1px solid rgba(0,0,0,0.05);
+        display: inline-flex;
+        align-items: center;
     }
+    
+    .attachment-badge:hover {
+        background-color: #dee2e6;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* Asegurarse de que los campos del formulario sean visibles */
+    .form-control, .form-select {
+        display: block !important;
+        width: 100% !important;
+        padding: 0.5rem 0.75rem;
+        visibility: visible !important;
+        opacity: 1 !important;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        background-color: #fff;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #86b7fe;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    
+    /* Estilos para los botones de acción */
+    .btn {
+        transition: all 0.3s ease;
+        border-radius: 0.5rem;
+        padding: 0.5rem 1.25rem;
+        font-weight: 500;
+    }
+    
+    .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .btn:active {
+        transform: translateY(-1px);
+    }
+    
+    /* Lista de detalles mejorada */
+    .list-group-item {
+        padding: 1rem 0;
+        transition: all 0.2s;
+    }
+    
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .list-group-item i {
+        transition: all 0.2s;
+    }
+    
+    .list-group-item:hover i {
+        transform: translateX(3px);
+    }
+    
+    /* Mejoras móviles */
+    @media (max-width: 768px) {
+        .ticket-info-card:hover {
+            transform: none;
+        }
+        
+        .response-card {
+            border-left-width: 5px;
+        }
+    }
+    
+    /* Animación de pulso para el indicador de estado */
+    .status-indicator {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: rgba(248, 249, 250, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .status-indicator i {
+        z-index: 2;
+        font-size: 0.9rem;
+    }
+    
+    .pulse-animation {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+        opacity: 0.6;
+    }
+    
+    @keyframes pulse {
+        0% {
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0.6;
+        }
+        70% {
+            transform: translate(-50%, -50%) scale(1.3);
+            opacity: 0;
+        }
+        100% {
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0;
+        }
+    }
+    
+    /* Estilos para archivos adjuntos mejorados */
+    .file-preview {
+        display: inline-flex;
+        align-items: center;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        padding: 0.3rem 0.5rem;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+        border: 1px solid #dee2e6;
+        transition: all 0.2s;
+    }
+    
+    .file-preview:hover {
+        background-color: #e9ecef;
+        transform: translateY(-2px);
+    }
+    
+    .file-preview .remove-file {
+        margin-left: 0.5rem;
+        cursor: pointer;
+        color: #dc3545;
+        opacity: 0.7;
+    }
+    
+    .file-preview .remove-file:hover {
+        opacity: 1;
+    }
+
 </style>
 {% endblock %}
 
@@ -69,9 +272,18 @@
         <div class="col-lg-8">
             <!-- Tarjeta del ticket -->
             <div class="card ticket-info-card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">{{ ticket.titulo }}</h5>
+                <div class="card-header d-flex justify-content-between align-items-center py-3">
+                    <div class="d-flex align-items-center"> 
+                        <div class="position-relative me-3">
+                            <div class="status-indicator position-relative">
+                                <div class="pulse-animation bg-{{ ticket.get_estado_color }}"></div>
+                                <i class="fas {% if ticket.estado == 'AB' %}fa-exclamation{% elif ticket.estado == 'EP' %}fa-spinner fa-spin{% elif ticket.estado == 'PE' %}fa-clock{% elif ticket.estado == 'RS' %}fa-check{% else %}fa-lock{% endif %} text-{{ ticket.get_estado_color }}"></i>
+                            </div>
+                        </div>
+                        <h5 class="mb-0 fw-bold">{{ ticket.titulo }}</h5>
+                    </div>
                     <span class="badge bg-{{ ticket.get_estado_color }} badge-status">
+                        <i class="fas {% if ticket.estado == 'AB' %}fa-door-open{% elif ticket.estado == 'EP' %}fa-cog{% elif ticket.estado == 'PE' %}fa-hourglass-half{% elif ticket.estado == 'RS' %}fa-check-circle{% else %}fa-lock{% endif %} me-1"></i>
                         {{ ticket.get_estado_display }}
                     </span>
                 </div>
@@ -184,27 +396,71 @@
                     {% endif %}
 
                     <!-- Formulario de respuesta -->
-                    <div class="p-3 border-top">
-                        <h6 class="mb-3"><i class="fas fa-reply me-2"></i>Responder al ticket</h6>
-                        <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
-                            {% csrf_token %}
-                            <div class="mb-3">
-                                {{ respuesta_form.mensaje|as_crispy_field }}
+                    <div class="p-4 border-top bg-light">
+                        {% if ticket.estado != 'CE' %}
+                        <!-- Formulario de respuesta (visible solo cuando el ticket no está cerrado) -->
+                        <h6 class="mb-3 d-flex align-items-center">
+                            <span class="badge bg-primary rounded-circle me-2">
+                                <i class="fas fa-reply"></i>
+                            </span>
+                            Responder al ticket
+                        </h6>
+                        <div class="card shadow-sm border-0 rounded-lg">
+                            <div class="card-body p-3">
+                                <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <!-- Reemplazamos el campo crispy por un textarea directo para asegurar visibilidad -->
+                                        <label for="id_mensaje" class="form-label fw-bold">
+                                            <i class="fas fa-comment me-1"></i>Mensaje
+                                        </label>
+                                        <textarea name="mensaje" id="id_mensaje" rows="4" class="form-control" placeholder="Escribe tu respuesta aquí..." required></textarea>
+                                        <div class="invalid-feedback">Este campo es obligatorio.</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="id_archivos_reply" class="form-label fw-bold">
+                                            <i class="fas fa-paperclip me-1"></i>Adjuntar archivos (opcional)
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light">
+                                                <i class="fas fa-file"></i>
+                                            </span>
+                                            <input type="file" name="archivo" class="form-control" multiple id="id_archivos_reply" 
+                                                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
+                                        </div>
+                                        <div class="form-text">
+                                            <i class="fas fa-info-circle me-1 text-primary"></i>
+                                            Puedes seleccionar múltiples archivos (PDF, Office, imágenes)
+                                        </div>
+                                        <div id="selectedFiles" class="d-flex flex-wrap gap-2 mt-2"></div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <button type="reset" class="btn btn-outline-secondary">
+                                            <i class="fas fa-undo me-1"></i> Limpiar
+                                        </button>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-paper-plane me-1"></i> Enviar respuesta
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
-                            <div class="mb-3">
-                                <label for="id_archivos_reply" class="form-label">
-                                    <i class="fas fa-paperclip me-1"></i>Adjuntar archivos (opcional)
-                                </label>
-                                <input type="file" name="archivo" class="form-control" multiple id="id_archivos_reply" 
-                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
-                                <div class="form-text">Puedes seleccionar múltiples archivos</div>
+                        </div>
+                        {% else %}
+                        <!-- Mensaje informativo cuando el ticket está cerrado -->
+                        <div class="alert alert-secondary border-0 shadow-sm">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="fas fa-lock fa-2x text-secondary"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Este ticket está cerrado</h6>
+                                    <p class="mb-0 small">No se pueden añadir más respuestas. Para continuar la conversación, un administrador debe reabrir el ticket.</p>
+                                </div>
                             </div>
-                            <div class="d-flex justify-content-end">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-paper-plane me-1"></i> Enviar respuesta
-                                </button>
-                            </div>
-                        </form>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -330,8 +586,8 @@
 
 {% block extra_js %}
 <script>
-// Validación de formulario
-(function () {
+// Validación de formulario y mejoras en la interfaz
+document.addEventListener('DOMContentLoaded', function() {
     'use strict'
     
     // Obtener todos los formularios que necesitan validación
@@ -348,6 +604,70 @@
             form.classList.add('was-validated')
         }, false)
     })
+    
+    // Previsualización de archivos adjuntos
+    const fileInput = document.getElementById('id_archivos_reply');
+    const selectedFilesContainer = document.getElementById('selectedFiles');
+    
+    if (fileInput && selectedFilesContainer) {
+        fileInput.addEventListener('change', function() {
+            // Limpiar contenedor de archivos
+            selectedFilesContainer.innerHTML = '';
+            
+            if (this.files.length > 0) {
+                // Crear previsualización para cada archivo
+                Array.from(this.files).forEach((file, index) => {
+                    const filePreview = document.createElement('div');
+                    filePreview.className = 'file-preview';
+                    
+                    // Determinar el icono según el tipo de archivo
+                    let fileIcon = 'fa-file';
+                    if (file.type.includes('pdf')) {
+                        fileIcon = 'fa-file-pdf';
+                    } else if (file.type.includes('word') || file.name.endsWith('.doc') || file.name.endsWith('.docx')) {
+                        fileIcon = 'fa-file-word';
+                    } else if (file.type.includes('excel') || file.name.endsWith('.xls') || file.name.endsWith('.xlsx')) {
+                        fileIcon = 'fa-file-excel';
+                    } else if (file.type.includes('image')) {
+                        fileIcon = 'fa-file-image';
+                    }
+                    
+                    // Crear contenido de la previsualización
+                    filePreview.innerHTML = `
+                        <i class="fas ${fileIcon} me-1"></i>
+                        <span class="file-name">${file.name.length > 15 ? file.name.substring(0, 15) + '...' : file.name}</span>
+                    `;
+                    
+                    selectedFilesContainer.appendChild(filePreview);
+                });
+                
+                // Añadir contador si hay más de 3 archivos
+                if (this.files.length > 3) {
+                    const countBadge = document.createElement('span');
+                    countBadge.className = 'badge bg-primary';
+                    countBadge.innerHTML = `+${this.files.length - 3} más`;
+                    selectedFilesContainer.appendChild(countBadge);
+                }
+            }
+        });
+    }
+    
+    // Añadir efectos de hover a elementos importantes
+    const addHoverEffect = (selector, effect) => {
+        document.querySelectorAll(selector).forEach(item => {
+            item.addEventListener('mouseenter', () => effect(item, true));
+            item.addEventListener('mouseleave', () => effect(item, false));
+        });
+    };
+    
+    // Efecto para los iconos en la barra lateral
+    addHoverEffect('.list-group-item i', (item, isHover) => {
+        if(isHover) {
+            item.classList.add('text-primary');
+        } else {
+            item.classList.remove('text-primary');
+        }
+    });
 })()
 </script>
 {% endblock %}

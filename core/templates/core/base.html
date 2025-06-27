@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="{% static 'core/custom.css' %}">
     <link rel="stylesheet" href="{% static 'core/notificaciones.css' %}">
+    {% block extra_css %}{% endblock %}
 </head>
 <body class="d-flex vh-100">
     <!-- Sidebar -->
@@ -80,9 +81,11 @@
         </div>
 
         <div class="px-3 py-3">
-            <!-- <a href="{% url 'tickets:ticket_list' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.app_name == 'tickets' %}active{% endif %}">
+            {% if request.user.is_superuser or request.user.groups.all.0.name == "administrador" %}
+            <a href="{% url 'tickets:ticket_list' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.app_name == 'tickets' %}active{% endif %}">
                 <i class="fas fa-life-ring me-2"></i> Soporte
-            </a> -->
+            </a>
+            {% endif %}
             <a href="{% url 'core:perfil' %}" class="d-block text-white text-decoration-none py-1">
                 <i class="bi bi-person me-2"></i> Mi Perfil
             </a>

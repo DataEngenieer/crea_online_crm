@@ -6,7 +6,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Ticket, ArchivoAdjunto
+from .models import Ticket, ArchivoAdjunto, RespuestaTicket
 from .forms import TicketForm, RespuestaTicketForm
 
 class TicketListView(LoginRequiredMixin, ListView):
@@ -18,24 +18,59 @@ class TicketListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['ticket_form'] = TicketForm()
+        
+        # Añadir conteo de tickets por estado para gráficos
+        estado_counts = {
+            'AB': Ticket.objects.filter(estado=Ticket.Estado.ABIERTO).count(),
+            'EP': Ticket.objects.filter(estado=Ticket.Estado.EN_PROGRESO).count(),
+            'PE': Ticket.objects.filter(estado=Ticket.Estado.PENDIENTE).count(),
+            'RS': Ticket.objects.filter(estado=Ticket.Estado.RESUELTO).count(),
+            'CE': Ticket.objects.filter(estado=Ticket.Estado.CERRADO).count(),
+        }
+        
+        # Enviar datos para gráfico de barras de estados
+        context['estados_count'] = [estado_counts['AB'], estado_counts['EP'], 
+                                   estado_counts['PE'], estado_counts['RS'], 
+                                   estado_counts['CE']]
+        
+        # Contadores para tarjetas de estadísticas
+        context['tickets_abiertos'] = estado_counts['AB'] + estado_counts['EP']
+        context['tickets_pendientes'] = estado_counts['PE']
+        context['tickets_resueltos'] = estado_counts['RS']
+        
+        # Añadir conteo de tickets por prioridad para gráfico circular
+        context['prioridades_count'] = [
+            Ticket.objects.filter(prioridad=Ticket.Prioridad.BAJA).count(),
+            Ticket.objects.filter(prioridad=Ticket.Prioridad.MEDIA).count(),
+            Ticket.objects.filter(prioridad=Ticket.Prioridad.ALTA).count(),
+            Ticket.objects.filter(prioridad=Ticket.Prioridad.URGENTE).count(),
+        ]
+        
         return context
 
     def post(self, request, *args, **kwargs):
-        ticket_form = TicketForm(request.POST)
+        ticket_form = TicketForm(request.POST, request.FILES)
 
         if ticket_form.is_valid():
             ticket = ticket_form.save(commit=False)
             ticket.solicitante = request.user
             ticket.save()
 
-            files = request.FILES.getlist('archivos')  # Cambiado de 'archivo' a 'archivos'
+            # Obtener los archivos adjuntos del formulario
+            # Usamos getlist para obtener todos los archivos con el mismo nombre
+            files = request.FILES.getlist('archivos')
             for f in files:
                 ArchivoAdjunto.objects.create(ticket=ticket, archivo=f)
             
+            messages.success(request, 'Ticket creado correctamente.')
             return redirect('tickets:ticket_list')
+        else:
+            # Si el formulario no es válido, mostrar errores
+            for field, errors in ticket_form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Error en {field}: {error}")
         
-        # Si el formulario no es válido, se recarga la página mostrando los errores.
-        # Esto es una simplificación. Una implementación más robusta usaría AJAX.
+        # Si el formulario no es válido, se recarga la página mostrando los errores
         return self.get(request, *args, **kwargs)
 
 class TicketDetailView(LoginRequiredMixin, DetailView):
@@ -58,6 +93,12 @@ class TicketDetailView(LoginRequiredMixin, DetailView):
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
+        
+        # Verificar si el ticket está cerrado
+        if self.object.estado == Ticket.Estado.CERRADO:
+            messages.error(request, 'No se pueden añadir respuestas a un ticket cerrado.')
+            return redirect('tickets:ticket_detail', pk=self.object.pk)
+        
         respuesta_form = RespuestaTicketForm(request.POST)
 
         if respuesta_form.is_valid():
@@ -90,10 +131,10 @@ def cerrar_ticket(request, pk):
             messages.error(request, 'No tienes permiso para cerrar este ticket.')
             return redirect('tickets:ticket_detail', pk=ticket.pk)
         
-        # Marcar el ticket como resuelto
-        if not ticket.estado == 'cerrado':
-            ticket.estado = 'cerrado'
-            ticket.fecha_resolucion = timezone.now()
+        # Marcar el ticket como cerrado
+        if not ticket.estado == Ticket.Estado.CERRADO:
+            ticket.estado = Ticket.Estado.CERRADO
+            ticket.fecha_cierre = timezone.now()
             ticket.save()
             messages.success(request, 'El ticket ha sido cerrado exitosamente.')
         else:
@@ -118,8 +159,8 @@ def reabrir_ticket(request, pk):
             return redirect('tickets:ticket_detail', pk=ticket.pk)
         
         # Reabrir el ticket
-        if ticket.estado == 'cerrado':
-            ticket.estado = 'abierto'  # o el estado por defecto que uses para tickets abiertos
+        if ticket.estado == Ticket.Estado.CERRADO:
+            ticket.estado = Ticket.Estado.ABIERTO  # o el estado por defecto que uses para tickets abiertos
             ticket.fecha_resolucion = None
             ticket.save()
             messages.success(request, 'El ticket ha sido reabierto exitosamente.')

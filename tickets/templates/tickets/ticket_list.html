@@ -4,56 +4,307 @@
 
 {% block title %}Tickets de Soporte{% endblock %}
 
+{% block extra_css %}
+<style>
+    .dashboard-stat-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+        background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+    }
+    .dashboard-stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    }
+    .dashboard-stat-card.primary {
+        border-left-color: #4e73df;
+    }
+    .dashboard-stat-card.success {
+        border-left-color: #1cc88a;
+    }
+    .dashboard-stat-card.info {
+        border-left-color: #36b9cc;
+    }
+    .dashboard-stat-card.warning {
+        border-left-color: #f6c23e;
+    }
+    .dashboard-stat-card.danger {
+        border-left-color: #e74a3b;
+    }
+    
+    .chart-container {
+        position: relative;
+        margin: auto;
+        height: 250px;
+    }
+    
+    .badge-estado {
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 0.4rem 0.75rem;
+        border-radius: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        letter-spacing: 0.02em;
+        transition: transform 0.2s ease;
+    }
+    /* Colores por estado */
+    .badge-estado.estado-ab { background-color: #0d6efd; }
+    .badge-estado.estado-ep { background-color: #0dcaf0; }
+    .badge-estado.estado-pe { background-color: #ffc107; color: #212529; }
+    .badge-estado.estado-rs { background-color: #198754; }
+    .badge-estado.estado-ce { background-color: #6c757d; }
+    
+    .badge-estado i {
+        margin-right: 5px;
+        font-size: 0.9rem;
+    }
+    
+    .table-tickets {
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 12px;
+        overflow: hidden;
+        font-size: 1rem;
+    }
+    
+    .table-tickets thead th {
+        background-color: #f8f9fa;
+        color: #6c2eb9;
+        font-weight: 700;
+        border-bottom: 2px solid #dee2e6;
+        padding: 1rem 0.75rem;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+    }
+    
+    .table-tickets tbody tr {
+        transition: all 0.2s ease;
+        height: 60px;
+    }
+    
+    .table-tickets tbody td {
+        padding: 0.8rem 0.75rem;
+        vertical-align: middle;
+        font-size: 0.95rem;
+    }
+    
+    .table-tickets tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+    
+    .ticket-priority-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 6px;
+    }
+    /* Botón icono reducido */
+    .btn-icon {
+        padding: 0.35rem 0.55rem;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid px-4">
-    <h1 class="mt-4">Tickets de Soporte</h1>
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="mt-4">Tickets de Soporte</h1>
+        <button type="button" class="btn btn-primary d-none d-sm-inline-block shadow-sm" data-bs-toggle="modal" data-bs-target="#createTicketModal">
+            <i class="fas fa-plus fa-sm me-2"></i>Crear Nuevo Ticket
+        </button>
+    </div>
+    
     <ol class="breadcrumb mb-4">
         <li class="breadcrumb-item"><a href="{% url 'core:inicio' %}">Dashboard</a></li>
         <li class="breadcrumb-item active">Tickets de Soporte</li>
     </ol>
+    
+    <!-- Tarjetas de estadísticas resumidas -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card shadow-sm dashboard-stat-card primary h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Tickets</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ tickets.count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-ticket-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <div class="card mb-4">
-        <div class="card-header">
-            <i class="fas fa-table me-1"></i>
-            Listado de Tickets
-            <button type="button" class="btn btn-primary btn-sm float-end" data-bs-toggle="modal" data-bs-target="#createTicketModal">
-                <i class="fas fa-plus me-1"></i> Crear Nuevo Ticket
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card shadow-sm dashboard-stat-card info h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Abiertos/En Progreso</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ tickets_abiertos|default:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-spinner fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card shadow-sm dashboard-stat-card success h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Resueltos</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ tickets_resueltos|default:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card shadow-sm dashboard-stat-card warning h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pendientes</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ tickets_pendientes|default:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Gráficos de resumen -->
+    <div class="row mb-4">
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold">Tickets por Estado</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="ticketsByStatusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold">Tickets por Prioridad</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="ticketsByPriorityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold">
+                <i class="fas fa-list me-1"></i>
+                Listado de Tickets
+            </h6>
+            <button type="button" class="btn btn-primary btn-sm d-sm-none shadow-sm" data-bs-toggle="modal" data-bs-target="#createTicketModal">
+                <i class="fas fa-plus me-1"></i> Nuevo Ticket
             </button>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover" id="datatablesSimple">
+                <table class="table table-tickets" id="ticketsTable">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Título</th>
-                            <th>Estado</th>
-                            <th>Prioridad</th>
-                            <th>Solicitante</th>
-                            <th>Asignado a</th>
-                            <th>Última Actualización</th>
-                            <th>Acciones</th>
+                            <th width="5%">ID</th>
+                            <th width="25%">Título</th>
+                            <th width="12%">Estado</th>
+                            <th width="10%">Prioridad</th>
+                            <th width="12%">Solicitante</th>
+                            <th width="12%">Asignado a</th>
+                            <th width="14%">Actualizado</th>
+                            <th width="10%">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for ticket in tickets %}
                         <tr>
-                            <td>#{{ ticket.id }}</td>
-                            <td>{{ ticket.titulo }}</td>
-                            <td><span class="badge bg-secondary">{{ ticket.get_estado_display }}</span></td>
-                            <td><span class="badge bg-info">{{ ticket.get_prioridad_display }}</span></td>
-                            <td>{{ ticket.solicitante.username }}</td>
-                            <td>{{ ticket.asignado_a.username|default:"Sin asignar" }}</td>
-                            <td>{{ ticket.fecha_actualizacion|naturaltime }}</td>
+                            <td class="fw-bold text-primary">#{{ ticket.id }}</td>
                             <td>
-                                <a href="{% url 'tickets:ticket_detail' ticket.pk %}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-eye"></i> Ver
+                                <div class="d-flex align-items-center">
+                                    <div>
+                                        <span class="d-block fw-semibold">{{ ticket.titulo }}</span>
+                                        <small class="text-muted">{{ ticket.get_tipo_display }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge-estado estado-{{ ticket.estado|lower }}">
+                                    <i class="fas {% if ticket.estado == 'AB' %}fa-door-open{% elif ticket.estado == 'EP' %}fa-cog fa-spin{% elif ticket.estado == 'PE' %}fa-hourglass-half{% elif ticket.estado == 'RS' %}fa-check-circle{% else %}fa-lock{% endif %}"></i>
+                                    {{ ticket.get_estado_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span class="ticket-priority-indicator bg-{{ ticket.get_prioridad_color }}"></span>
+                                    {{ ticket.get_prioridad_display }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user-circle me-2 text-secondary"></i>
+                                    {{ ticket.solicitante.username }}
+                                </div>
+                            </td>
+                            <td>
+                                {% if ticket.asignado_a %}
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user-tie me-2 text-primary"></i>
+                                    {{ ticket.asignado_a.username }}
+                                </div>
+                                {% else %}
+                                <span class="badge bg-light text-dark">Sin asignar</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="far fa-clock me-2 text-muted"></i>
+                                    <span class="small">{{ ticket.fecha_actualizacion|naturaltime }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="{% url 'tickets:ticket_detail' ticket.pk %}" class="btn btn-outline-primary btn-icon">
+                                    <i class="fas fa-eye"></i>
                                 </a>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center">No hay tickets para mostrar.</td>
+                            <td colspan="8" class="text-center py-4">
+                                <i class="fas fa-search fa-2x text-muted mb-3"></i>
+                                <p class="mb-0">No hay tickets para mostrar.</p>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -79,22 +330,137 @@
     </div>
 </div>
 
-<!-- Estilos adicionales para la tabla -->
-<style>
-    #datatablesSimple {
-        font-size: 0.9rem;
-    }
-    #datatablesSimple th {
-        font-weight: 600;
-        background-color: #f8f9fa;
-    }
-    .badge {
-        font-weight: 500;
-        padding: 0.4em 0.6em;
-    }
-    .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.8rem;
-    }
-</style>
+{% block extra_js %}
+<!-- Incluir Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicialización del datatable para tickets
+        const ticketsTable = document.getElementById('ticketsTable');
+        if (ticketsTable) {
+            // Puedes inicializar DataTables si lo tienes disponible
+            // $(ticketsTable).DataTable();
+        }
+        
+        // Datos para gráficos
+        // Estos valores son pasados desde el backend o usamos valores por defecto
+        const estadosLabels = ['Abierto', 'En Progreso', 'Pendiente', 'Resuelto', 'Cerrado'];
+        {% if estados_count %}
+        const estadosData = {{ estados_count|safe }};
+        {% else %}
+        const estadosData = [5, 3, 2, 8, 4]; // Valores por defecto para demostración
+        {% endif %}
+        const estadosColores = ['#4e73df', '#36b9cc', '#f6c23e', '#1cc88a', '#858796'];
+        
+        const prioridadLabels = ['Baja', 'Media', 'Alta', 'Urgente'];
+        {% if prioridades_count %}
+        const prioridadData = {{ prioridades_count|safe }};
+        {% else %}
+        const prioridadData = [6, 12, 3, 1]; // Valores por defecto para demostración
+        {% endif %}
+        const prioridadColores = ['#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'];
+        
+        // Gráfico de estados
+        const statusCtx = document.getElementById('ticketsByStatusChart');
+        if (statusCtx) {
+            new Chart(statusCtx, {
+                type: 'bar',
+                data: {
+                    labels: estadosLabels,
+                    datasets: [{
+                        label: 'Tickets',
+                        data: estadosData,
+                        backgroundColor: estadosColores,
+                        borderWidth: 0,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            left: 10,
+                            right: 25,
+                            top: 25,
+                            bottom: 0
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false,
+                                drawBorder: false
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                beginAtZero: true,
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: "rgb(255,255,255)",
+                            bodyColor: "#858796",
+                            titleColor: "#6e707e",
+                            borderColor: '#dddfeb',
+                            borderWidth: 1,
+                            displayColors: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Gráfico de prioridades
+        const priorityCtx = document.getElementById('ticketsByPriorityChart');
+        if (priorityCtx) {
+            new Chart(priorityCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: prioridadLabels,
+                    datasets: [{
+                        data: prioridadData,
+                        backgroundColor: prioridadColores,
+                        hoverOffset: 4,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: "rgb(255,255,255)",
+                            bodyColor: "#858796",
+                            borderColor: '#dddfeb',
+                            borderWidth: 1,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.raw + ' tickets';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
 {% endblock %}

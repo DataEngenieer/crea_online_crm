@@ -54,6 +54,40 @@ class Ticket(models.Model):
         if self.fecha_resolucion:
             return self.fecha_resolucion - self.fecha_creacion
         return None
+        
+    @property
+    def get_estado_color(self):
+        """Devuelve el color correspondiente al estado actual del ticket."""
+        colores = {
+            self.Estado.ABIERTO: 'primary',
+            self.Estado.EN_PROGRESO: 'info',
+            self.Estado.PENDIENTE: 'warning',
+            self.Estado.RESUELTO: 'success',
+            self.Estado.CERRADO: 'secondary'
+        }
+        return colores.get(self.estado, 'secondary')
+        
+    @property
+    def get_prioridad_color(self):
+        """Devuelve el color correspondiente a la prioridad del ticket."""
+        colores = {
+            self.Prioridad.BAJA: 'success',
+            self.Prioridad.MEDIA: 'info',
+            self.Prioridad.ALTA: 'warning',
+            self.Prioridad.URGENTE: 'danger'
+        }
+        return colores.get(self.prioridad, 'secondary')
+        
+    @property
+    def get_prioridad_icon(self):
+        """Devuelve el icono correspondiente a la prioridad del ticket."""
+        iconos = {
+            self.Prioridad.BAJA: 'flag text-success',
+            self.Prioridad.MEDIA: 'flag text-info',
+            self.Prioridad.ALTA: 'flag-checkered text-warning',
+            self.Prioridad.URGENTE: 'exclamation-triangle text-danger'
+        }
+        return iconos.get(self.prioridad, 'flag')
 
     class Meta:
         verbose_name = "Ticket de Soporte"
@@ -84,9 +118,6 @@ def ruta_archivo_adjunto(instance, filename):
     return f'tickets/{instance.ticket.id}/adjuntos/{filename}'
 
 class ArchivoAdjunto(models.Model):
-    def get_filename(self):
-        return os.path.basename(self.archivo.name)
-
     """
     Modelo para almacenar archivos adjuntos asociados a un ticket o a una respuesta.
     """
@@ -94,6 +125,39 @@ class ArchivoAdjunto(models.Model):
     respuesta = models.ForeignKey(RespuestaTicket, on_delete=models.CASCADE, related_name='adjuntos', null=True, blank=True)
     archivo = models.FileField(upload_to=ruta_archivo_adjunto)
     fecha_subida = models.DateTimeField(auto_now_add=True)
+    
+    def get_filename(self):
+        return os.path.basename(self.archivo.name)
+        
+    @property
+    def get_file_icon(self):
+        """Devuelve el icono correspondiente al tipo de archivo adjunto."""
+        filename = self.get_filename().lower()
+        if filename.endswith(('.jpg', '.jpeg', '.png', '.gif')):
+            return 'fa-file-image'
+        elif filename.endswith('.pdf'):
+            return 'fa-file-pdf'
+        elif filename.endswith(('.doc', '.docx')):
+            return 'fa-file-word'
+        elif filename.endswith(('.xls', '.xlsx')):
+            return 'fa-file-excel'
+        elif filename.endswith(('.ppt', '.pptx')):
+            return 'fa-file-powerpoint'
+        elif filename.endswith(('.zip', '.rar', '.7z')):
+            return 'fa-file-archive'
+        elif filename.endswith(('.txt', '.log', '.md')):
+            return 'fa-file-alt'
+        else:
+            return 'fa-file'
+    
+    @property
+    def get_short_name(self):
+        """Devuelve un nombre corto para mostrar en la interfaz."""
+        filename = self.get_filename()
+        if len(filename) > 20:
+            name, ext = os.path.splitext(filename)
+            return f"{name[:15]}...{ext}"
+        return filename
 
     def __str__(self):
         return self.archivo.name

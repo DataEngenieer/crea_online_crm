@@ -12,6 +12,8 @@ import pandas as pd
 from .models import Cliente, Gestion, AcuerdoPago, CuotaAcuerdo
 
 # Diccionario con los campos disponibles para cada tipo de reporte
+from django.contrib.auth.models import User, Group
+
 CAMPOS_DISPONIBLES = {
     'clientes': [
         ('documento', 'Documento'),
@@ -22,24 +24,62 @@ CAMPOS_DISPONIBLES = {
         ('email', 'Email'),
         ('estado', 'Estado'),
         ('fecha_registro', 'Fecha de Registro'),
+        ('ultima_gestion', 'Última Gestión Realizada'),
     ],
     'gestiones': [
         ('fecha_hora_gestion', 'Fecha y Hora'),
-        ('cliente__nombre_completo', 'Cliente'),
-        ('tipo_gestion_n1', 'Tipo de Gestión'),
-        ('estado_contacto', 'Estado de Contacto'),
+        ('canal_contacto', 'Canal'),
+        ('cliente__documento', 'Documento Cliente'),
+        ('cliente__nombre_completo', 'Nombre Cliente'),
+        ('cliente__referencia', 'Referencia Cliente'),
+        ('cliente__telefono_celular', 'Teléfono Cliente'),
+        ('cliente__email', 'Email Cliente'),
+        ('cliente__deuda_total', 'Deuda Total Cliente'),
+        ('cliente__total_dias_mora', 'Días Mora Cliente'),
+        ('cliente__ciudad', 'Ciudad Cliente'),
+        ('cliente__direccion_1', 'Dirección Cliente'),
+        ('cliente__observaciones_adicionales', 'Observaciones Cliente'),
+        ('referencia_producto', 'Referencia Producto'),
+        ('comprobante_pago', 'Comprobante de Pago'),
+        ('tipo_gestion_n1', 'Tipo Gestión N1'),
+        ('estado_contacto', 'Estado Contacto'),
         ('usuario_gestion__username', 'Usuario'),
         ('comentarios', 'Comentarios'),
         ('acuerdos__monto_total', 'Monto Acuerdo'),
-        ('acuerdos__numero_cuotas', 'Número de Cuotas'),
+        ('acuerdos__numero_cuotas', 'Número Cuotas'),
         ('acuerdos__fecha_creacion', 'Fecha Acuerdo'),
         ('acuerdos__estado', 'Estado Acuerdo'),
     ],
+    'usuarios': [
+        ('username', 'Usuario'),
+        ('first_name', 'Nombre'),
+        ('last_name', 'Apellido'),
+        ('email', 'Email'),
+        ('is_active', 'Activo'),
+        ('date_joined', 'Fecha Registro'),
+        ('last_login', 'Último Acceso'),
+        ('groups', 'Grupos'),
+    ],
     'acuerdos': [
         ('id', 'ID Acuerdo'),
-        ('cliente__nombre_completo', 'Cliente'),
+        ('cliente__documento', 'Documento Cliente'),
+        ('cliente__nombre_completo', 'Nombre Cliente'),
+        ('cliente__ciudad', 'Ciudad Cliente'),
+        ('cliente__email', 'Email Cliente'),
+        ('cliente__telefono_celular', 'Teléfono Cliente'),
+        ('cliente__referencia', 'Referencia Cliente'),
+        ('cliente__direccion_1', 'Dirección Cliente'),
+        ('cliente__observaciones_adicionales', 'Observaciones Cliente'),
         ('monto_total', 'Monto Total'),
         ('numero_cuotas', 'Número de Cuotas'),
+        ('cuotas_pagadas', 'Cuotas Pagadas'),
+        ('monto_pagado', 'Monto Total Pagado'),
+        ('fecha_ultimo_pago', 'Fecha Último Pago'),
+        ('estado_cuotas', 'Estado Global Cuotas'),
+        ('comprobantes_pago', 'Comprobantes de Pago'),
+        ('fecha_ultima_gestion', 'Fecha Última Gestión'),
+        ('usuario_ultima_gestion', 'Usuario Última Gestión'),
+        ('observaciones_ultima_gestion', 'Observaciones Última Gestión'),
         ('estado', 'Estado'),
         ('fecha_creacion', 'Fecha de Creación'),
         ('fecha_vencimiento', 'Fecha de Vencimiento'),
@@ -91,7 +131,37 @@ def reportes(request):
     }
     
     # Obtener datos según el tipo de reporte
-    if tipo_reporte == 'clientes':
+    if tipo_reporte == 'usuarios':
+        wb = Workbook()
+        ws = wb.active
+        from openpyxl.styles import Font, Alignment, PatternFill
+        header_fill = PatternFill(start_color='E5E5E5', end_color='E5E5E5', fill_type='solid')
+        header_font = Font(bold=True, color='000000')
+        alignment = Alignment(horizontal='center', vertical='center')
+        queryset = User.objects.all()
+        # Escribir encabezados
+        for col_num, campo in enumerate(campos_seleccionados, 1):
+            etiqueta = next((etq for c, etq in CAMPOS_DISPONIBLES[tipo_reporte] if c == campo), campo.replace('_', ' ').title())
+            cell = ws.cell(row=1, column=col_num, value=etiqueta)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = alignment
+        # Escribir datos
+        for row_num, obj in enumerate(queryset, 2):
+            for col_num, campo in enumerate(campos_seleccionados, 1):
+                valor = ''
+                if campo == 'groups':
+                    valor = ', '.join([g.name for g in obj.groups.all()])
+                else:
+                    valor = getattr(obj, campo, '')
+                # Manejar fechas
+                if hasattr(valor, 'strftime'):
+                    valor = valor.strftime('%Y-%m-%d %H:%M:%S')
+                elif isinstance(valor, bool):
+                    valor = 'Sí' if valor else 'No'
+                ws.cell(row=row_num, column=col_num, value=valor)
+
+    elif tipo_reporte == 'clientes':
         # Lógica para reporte de clientes
         clientes = Cliente.objects.all()
         
@@ -242,7 +312,60 @@ def exportar_excel(request):
         # Escribir datos
         for row_num, obj in enumerate(queryset, 2):
             for col_num, campo in enumerate(campos_seleccionados, 1):
-                valor = get_valor(obj, campo)
+                valor = ''
+                if campo == 'ultima_gestion':
+                    ultima_gestion = obj.gestiones.order_by('-fecha_hora_gestion').first()
+                    if ultima_gestion:
+                        valor = f"{ultima_gestion.fecha_hora_gestion.strftime('%Y-%m-%d %H:%M')} - {ultima_gestion.usuario_gestion.username if ultima_gestion.usuario_gestion else ''} - {ultima_gestion.tipo_gestion_n1} - {ultima_gestion.estado_contacto}"
+                    else:
+                        valor = ''
+                elif campo == 'cliente__documento':
+                    valor = obj.cliente.documento if obj.cliente else ''
+                elif campo == 'cliente__nombre_completo':
+                    valor = obj.cliente.nombre_completo if obj.cliente else ''
+                elif campo == 'cliente__ciudad':
+                    valor = obj.cliente.ciudad if obj.cliente else ''
+                elif campo == 'cliente__email':
+                    valor = obj.cliente.email if obj.cliente else ''
+                elif campo == 'cliente__telefono_celular':
+                    valor = obj.cliente.telefono_celular if obj.cliente else ''
+                elif campo == 'cliente__referencia':
+                    valor = obj.cliente.referencia if obj.cliente else ''
+                elif campo == 'cliente__direccion_1':
+                    valor = obj.cliente.direccion_1 if obj.cliente else ''
+                elif campo == 'cliente__observaciones_adicionales':
+                    valor = obj.cliente.observaciones_adicionales if obj.cliente else ''
+                elif campo == 'cuotas_pagadas':
+                    valor = obj.cuotas.filter(estado='pagada').count()
+                elif campo == 'monto_pagado':
+                    valor = sum([c.monto for c in obj.cuotas.filter(estado='pagada')])
+                elif campo == 'fecha_ultimo_pago':
+                    ultima = obj.cuotas.filter(estado='pagada', fecha_pago__isnull=False).order_by('-fecha_pago').first()
+                    valor = ultima.fecha_pago.strftime('%Y-%m-%d') if ultima and ultima.fecha_pago else ''
+                elif campo == 'estado_cuotas':
+                    total = obj.cuotas.count()
+                    pagadas = obj.cuotas.filter(estado='pagada').count()
+                    vencidas = obj.cuotas.filter(estado='vencida').count()
+                    if total == pagadas:
+                        valor = 'Pagado'
+                    elif vencidas > 0:
+                        valor = f'{vencidas} vencida(s)'
+                    else:
+                        valor = f'{pagadas} pagada(s) de {total}'
+                elif campo == 'comprobantes_pago':
+                    comprobantes = obj.cuotas.filter(comprobante_pago__isnull=False).exclude(comprobante_pago='')
+                    valor = ', '.join([c.comprobante_pago.url for c in comprobantes if c.comprobante_pago])
+                elif campo == 'fecha_ultima_gestion':
+                    ultima_gestion = Gestion.objects.filter(cliente=obj.cliente).order_by('-fecha_hora_gestion').first()
+                    valor = ultima_gestion.fecha_hora_gestion.strftime('%Y-%m-%d %H:%M') if ultima_gestion and ultima_gestion.fecha_hora_gestion else ''
+                elif campo == 'usuario_ultima_gestion':
+                    ultima_gestion = Gestion.objects.filter(cliente=obj.cliente).order_by('-fecha_hora_gestion').first()
+                    valor = ultima_gestion.usuario_gestion.username if ultima_gestion and ultima_gestion.usuario_gestion else ''
+                elif campo == 'observaciones_ultima_gestion':
+                    ultima_gestion = Gestion.objects.filter(cliente=obj.cliente).order_by('-fecha_hora_gestion').first()
+                    valor = ultima_gestion.observaciones if ultima_gestion and ultima_gestion.observaciones else ''
+                else:
+                    valor = get_valor(obj, campo)
                 ws.cell(row=row_num, column=col_num, value=valor)
     
     elif tipo_reporte == 'gestiones':
@@ -292,13 +415,30 @@ def exportar_excel(request):
             
             for col_num, campo in enumerate(campos_seleccionados, 1):
                 valor = get_valor(obj, campo)
-                
+
+                # Manejar campos especiales
+                if campo == 'comprobante_pago' and getattr(obj, 'comprobante_pago', None):
+                    # Si hay archivo, poner la URL relativa para descarga
+                    valor = obj.comprobante_pago.url if obj.comprobante_pago else ''
+                elif campo == 'cliente__referencia':
+                    # Mostrar todas las referencias asociadas al documento del cliente
+                    if obj.cliente:
+                        referencias = Cliente.objects.filter(documento=obj.cliente.documento).exclude(referencia__isnull=True).exclude(referencia='').values_list('referencia', flat=True).distinct()
+                        valor = ', '.join(referencias)
+                    else:
+                        valor = ''
+                elif campo == 'cliente__observaciones_adicionales':
+                    valor = obj.cliente.observaciones_adicionales if obj.cliente and hasattr(obj.cliente, 'observaciones_adicionales') else ''
+                elif campo == 'cliente__direccion_1':
+                    valor = obj.cliente.direccion_1 if obj.cliente and hasattr(obj.cliente, 'direccion_1') else ''
+                elif campo == 'cliente__ciudad':
+                    valor = obj.cliente.ciudad if obj.cliente and hasattr(obj.cliente, 'ciudad') else ''
+
                 # Manejar valores nulos
                 if valor is None:
                     valor = ''
                 # Manejar fechas
                 elif hasattr(valor, 'strftime'):
-                    # Convertir a string directamente, lo que ignora la zona horaria
                     valor = valor.strftime('%Y-%m-%d %H:%M:%S')
                 # Manejar booleanos
                 elif isinstance(valor, bool):
@@ -306,7 +446,7 @@ def exportar_excel(request):
                 # Para relaciones, asegurarse de obtener el string
                 elif hasattr(valor, '__str__') and not isinstance(valor, (str, int, float, bool)):
                     valor = str(valor)
-                
+
                 print(f"Fila {row_num}, Col {col_num} ({campo}): {valor}")
                 ws.cell(row=row_num, column=col_num, value=valor)
     
