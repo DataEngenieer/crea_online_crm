@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'widget_tweaks',  # Añadido aquí
     'crispy_forms', # Añadido para Crispy Forms
     'crispy_bootstrap5', # Añadido para el paquete Bootstrap 5 de Crispy Forms
+    'chat',
 ]
 
 MIDDLEWARE = [
@@ -130,7 +131,9 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Archivos multimedia
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# Configuración de la ruta para los archivos multimedia, usando una variable de entorno
+# para la ruta base en producción (ej. el volumen de Railway en /data/media)
+MEDIA_ROOT = os.getenv('MEDIA_ROOT', os.path.join(BASE_DIR, 'media'))
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -178,3 +181,10 @@ LOGOUT_REDIRECT_URL = 'core:login'
 # Configuraciones para django-crispy-forms
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+# --- Depuración de variables de entorno en producción ---
+# Imprime los valores en los logs para verificar que se están leyendo correctamente.
+import sys
+print(f"[DJANGO-SETTINGS] DEBUG = {DEBUG}", file=sys.stderr)
+print(f"[DJANGO-SETTINGS] MEDIA_ROOT = {MEDIA_ROOT}", file=sys.stderr)
+# --- Fin de la depuración ---

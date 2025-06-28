@@ -1,0 +1,11 @@
+/* Estilos básicos para el modal de chat */
+.chat-modal {
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+    min-width: 320px;
+    max-width: 95vw;
+}
+#chat-fab {
+    display: block;
+}
