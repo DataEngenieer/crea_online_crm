@@ -1,0 +1,10 @@
+{% load static %}
+{% if show_telefonica_menu %}
+<!-- Script de integración del menú lateral de Telefónica -->
+<script src="{% static 'telefonica/js/menu_integrator.js' %}"></script>
+
+<!-- Marca para indicar al script que debe mostrar el menú de Telefónica -->
+<script>
+    document.body.setAttribute('data-show-telefonica-menu', 'true');
+</script>
+{% endif %}

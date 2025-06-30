@@ -1,0 +1,235 @@
+{% extends 'telefonica/base_telefonica.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }} - Portal Telefónica{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ titulo }}</h6>
+                    <div class="d-flex">
+                        <form method="get" id="filtroMesForm" class="form-inline mr-2">
+                            <div class="input-group input-group-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">Mes</span>
+                                </div>
+                                <select name="mes" class="form-control form-control-sm" id="filtroMes">
+                                    <option value="1" {% if mes_actual == 1 %}selected{% endif %}>Enero</option>
+                                    <option value="2" {% if mes_actual == 2 %}selected{% endif %}>Febrero</option>
+                                    <option value="3" {% if mes_actual == 3 %}selected{% endif %}>Marzo</option>
+                                    <option value="4" {% if mes_actual == 4 %}selected{% endif %}>Abril</option>
+                                    <option value="5" {% if mes_actual == 5 %}selected{% endif %}>Mayo</option>
+                                    <option value="6" {% if mes_actual == 6 %}selected{% endif %}>Junio</option>
+                                    <option value="7" {% if mes_actual == 7 %}selected{% endif %}>Julio</option>
+                                    <option value="8" {% if mes_actual == 8 %}selected{% endif %}>Agosto</option>
+                                    <option value="9" {% if mes_actual == 9 %}selected{% endif %}>Septiembre</option>
+                                    <option value="10" {% if mes_actual == 10 %}selected{% endif %}>Octubre</option>
+                                    <option value="11" {% if mes_actual == 11 %}selected{% endif %}>Noviembre</option>
+                                    <option value="12" {% if mes_actual == 12 %}selected{% endif %}>Diciembre</option>
+                                </select>
+                            </div>
+                            <div class="input-group input-group-sm ml-2">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">Año</span>
+                                </div>
+                                <select name="anio" class="form-control form-control-sm" id="filtroAnio">
+                                    {% for anio in anios_disponibles %}
+                                        <option value="{{ anio }}" {% if anio == anio_actual %}selected{% endif %}>{{ anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary ml-2">
+                                <i class="fas fa-filter mr-1"></i> Filtrar
+                            </button>
+                        </form>
+                        
+                        <a href="{% url 'telefonica:dashboard' %}" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-arrow-left mr-1"></i> Volver
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Resumen de comisiones -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card border-left-primary shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                Total Ventas Comisionadas
+                                            </div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_ventas }}</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="card border-left-success shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                Total Comisiones
+                                            </div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">$ {{ total_comisiones|floatformat:0 }}</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="card border-left-info shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                                Promedio por Venta
+                                            </div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">$ {{ promedio_comision|floatformat:0 }}</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-calculator fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="card border-left-warning shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                Comisión más alta
+                                            </div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">$ {{ comision_maxima|floatformat:0 }}</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-trophy fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if comisiones %}
+                    <!-- Tabla de comisiones -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Venta #</th>
+                                    <th>Cliente</th>
+                                    <th>Plan</th>
+                                    <th>Fecha Aprobación</th>
+                                    <th>Estado</th>
+                                    <th>Valor</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for comision in comisiones %}
+                                <tr>
+                                    <td>{{ comision.venta.numero }}</td>
+                                    <td>{{ comision.venta.cliente.nombre_completo }}</td>
+                                    <td>{{ comision.venta.plan_adquiere }}</td>
+                                    <td>{{ comision.fecha_calculo|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        {% if comision.estado == 'pendiente' %}
+                                            <span class="badge badge-warning">Pendiente</span>
+                                        {% elif comision.estado == 'pagada' %}
+                                            <span class="badge badge-success">Pagada</span>
+                                        {% elif comision.estado == 'anulada' %}
+                                            <span class="badge badge-danger">Anulada</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="font-weight-bold">$ {{ comision.valor|floatformat:0 }}</td>
+                                    <td>
+                                        <a href="{% url 'telefonica:venta_detalle' comision.venta.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i> Ver Venta
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    {% if page_obj.paginator.num_pages > 1 %}
+                    <div class="pagination mt-3 justify-content-center">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination">
+                                {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1&mes={{ mes_actual }}&anio={{ anio_actual }}" aria-label="First">
+                                        <span aria-hidden="true">&laquo;&laquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&mes={{ mes_actual }}&anio={{ anio_actual }}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                    <li class="page-item active"><a class="page-link" href="?page={{ num }}&mes={{ mes_actual }}&anio={{ anio_actual }}">{{ num }}</a></li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item"><a class="page-link" href="?page={{ num }}&mes={{ mes_actual }}&anio={{ anio_actual }}">{{ num }}</a></li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&mes={{ mes_actual }}&anio={{ anio_actual }}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&mes={{ mes_actual }}&anio={{ anio_actual }}" aria-label="Last">
+                                        <span aria-hidden="true">&raquo;&raquo;</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">No hay comisiones calculadas para el período seleccionado.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Activar elemento de menú correspondiente
+        $("#sidebarTelefonica").addClass("active");
+        $("#comisionesLink").addClass("active");
+    });
+</script>
+{% endblock %}

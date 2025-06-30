@@ -16,13 +16,15 @@ GESTION_OPCIONES = {
         'nivel1': {
             'AP': {'label': 'AP - Acuerdo de pago formalizado'},
             'SAP': {'label': 'SAP - Seguimiento Acuerdo de pago'},
-            'NC': {'label': 'NC - Negociación en curso / pendiente de validación'},
+            'NC': {'label': 'NC - Negociación en curso'},
+            'PV': {'label': 'PV - Pendiente de validación'},
             'RN': {'label': 'RN - Rechaza negociación'},
             'ND': {'label': 'ND - Niega deuda'},
             'REMITE_ABOGADO': {'label': 'Remite a abogado'},
             'SOLICITA_INFO': {'label': 'Solicita más información'},
             'SOLICITA_LLAMADA': {'label': 'Solicita llamada posterior'},
             'NO_CAPACIDAD_PAGO': {'label': 'No tiene capacidad de pago'},
+            'TITULAR_FALLECIDO': {'label': 'Titular fallecido'},
             'TRAMITE_RECLAMO': {'label': 'Trámite de reclamo en curso'},
             'TERCERO_INFORMACION': {'label': 'Tercero brinda información'},
             'TERCERO_NO_INFORMACION': {'label': 'Tercero no brinda información'},
@@ -33,7 +35,8 @@ GESTION_OPCIONES = {
     'contacto_no_efectivo': {
         'label': 'Contacto No Efectivo',
         'nivel1': {
-            'TELEFONO_APAGADO': {'label': 'Teléfono apagado / fuera de servicio'},
+            'TELEFONO_APAGADO': {'label': 'Teléfono apagado'},
+            'FUERA_DE_SERVICIO': {'label': 'Fuera de servicio'},
             'NO_CONTESTA': {'label': 'No contesta'},
             'BUZON_VOZ': {'label': 'Buzón de voz'},
         }
@@ -48,18 +51,8 @@ GESTION_OPCIONES = {
 }
 
 
-class LoginUser(models.Model):
-    created_user = models.DateTimeField(auto_now_add=True)
-    id_user = models.CharField(max_length=10)
-    tipo = models.CharField(max_length=10)
-    ip = models.CharField(max_length=20, null=True, blank=True)
-
-    @classmethod
-    def registrar(cls, user, tipo, ip=None):
-        return cls.objects.create(id_user=str(user.id), tipo=tipo, ip=ip)
-
-    class Meta:
-        db_table = 'login_user'
+# La definición antigua del modelo LoginUser se ha eliminado para evitar duplicidades.
+# Ahora se utiliza la versión actualizada que se encuentra más adelante en este archivo.
 
 
 class Empleado(models.Model):
@@ -395,3 +388,44 @@ class CuotaAcuerdo(models.Model):
         
         # Actualizar el estado del acuerdo padre
         self.acuerdo.actualizar_estado()
+
+
+class LoginUser(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="logins")
+    tipo = models.CharField(max_length=50, default="login")
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Login de usuario"
+        verbose_name_plural = "Logins de usuario"
+        ordering = ["-fecha"]
+    
+    @classmethod
+    def registrar(cls, user, tipo="login", ip=None):
+        return cls.objects.create(user=user, tipo=tipo, ip=ip)
+
+
+class Campana(models.Model):
+    """Modelo para gestionar las diferentes campañas en el sistema."""
+    nombre = models.CharField(max_length=100, verbose_name=_('Nombre'))
+    codigo = models.CharField(max_length=50, unique=True, verbose_name=_('Código'))
+    descripcion = models.TextField(blank=True, null=True, verbose_name=_('Descripción'))
+    activa = models.BooleanField(default=True, verbose_name=_('Activa'))
+    modulo = models.CharField(
+        max_length=50, 
+        choices=[('core', 'Core'), ('telefonica', 'Telefónica')],
+        default='core',
+        verbose_name=_('Módulo')
+    )
+    usuarios = models.ManyToManyField(User, blank=True, related_name='campanas', verbose_name=_('Usuarios'))
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_('Fecha de creación'))
+    fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name=_('Fecha de actualización'))
+    
+    class Meta:
+        verbose_name = _('Campaña')
+        verbose_name_plural = _('Campañas')
+        ordering = ['nombre']
+        
+    def __str__(self):
+        return f"{self.nombre} ({self.codigo})"

@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import (
     HttpResponse,
-    HttpResponseRedirect,
     JsonResponse,
     HttpResponseForbidden,
     FileResponse,
@@ -11,6 +10,7 @@ from django.contrib import messages
 from django.urls import reverse
 from django.core.paginator import Paginator
 from django import forms
+from django.views.decorators.http import require_POST
 import json
 from django.db import transaction
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -50,7 +50,7 @@ import re
 import pandas as pd
 
 from .utils import determinar_estado_cliente
-from .models import Cliente, Gestion, AcuerdoPago, CuotaAcuerdo, LoginUser
+from .models import Cliente, Gestion, AcuerdoPago, CuotaAcuerdo, LoginUser, Campana
 from .forms import EmailAuthenticationForm, ClienteForm, GestionForm
 
 
@@ -63,7 +63,34 @@ class LoginAuditoriaView(LoginView):
         user = self.request.user
         ip = self.request.META.get('REMOTE_ADDR')
         LoginUser.registrar(user, tipo='login', ip=ip)
+        
+        # Procesar la selección del módulo
+        selected_module = self.request.POST.get('selected_module', 'core')
+        
+        # Redireccionar según el módulo seleccionado
+        if selected_module == 'telefonica':
+            # Verificar si el usuario tiene acceso al módulo de Telefónica
+            # El acceso se determina por las campañas asignadas al usuario o si es superusuario
+            try:
+                if user.is_superuser or user.campanas.filter(modulo='telefonica', activa=True).exists():
+                    # Guardar en sesión la selección del módulo
+                    self.request.session['selected_module'] = 'telefonica'
+                    return redirect('telefonica:dashboard')
+                else:
+                    # Si intentó acceder pero no tiene permisos, mostrar mensaje
+                    messages.warning(self.request, 'No tienes campañas asignadas para el módulo de Telefónica')
+            except Exception as e:
+                # En caso de error (por ejemplo, si la relación de campañas aún no existe)
+                print(f"Error al verificar campañas: {e}")
+                messages.warning(self.request, 'Error al verificar permisos para el módulo de Telefónica')
+        
+        # Por defecto o si no tiene permisos para Telefónica, ir al dashboard de Core
+        self.request.session['selected_module'] = 'core'
         return response
+        
+    def get_success_url(self):
+        # Este método solo se usará si form_valid no redirecciona a telefónica
+        return reverse('core:dashboard')
 
 class LogoutAuditoriaView(LogoutView):
     next_page = 'core:login'  # Especifica el nombre de la URL de login
@@ -443,6 +470,24 @@ def dashboard(request):
 
 def inicio(request):
     return render(request, 'core/inicio.html')
+
+
+@require_POST
+def cambiar_modulo(request):
+    """Vista para cambiar entre módulos (Core y Telefónica)"""
+    data = json.loads(request.body)
+    modulo = data.get('module', 'core')
+    
+    # Guardar el módulo seleccionado en la sesión
+    request.session['selected_module'] = modulo
+    
+    # Verificar si el usuario tiene acceso al módulo de Telefónica
+    if modulo == 'telefonica':
+        user = request.user
+        if not user.is_superuser and not user.campanas.filter(modulo='telefonica', activa=True).exists():
+            return JsonResponse({'success': False, 'message': 'No tienes acceso al módulo de Telefónica'})
+    
+    return JsonResponse({'success': True})
 
 def es_admin(user):
     return user.is_superuser or user.groups.filter(name__iexact='Administrador').exists()
@@ -1607,6 +1652,7 @@ def admin_usuarios(request):
         fullname=Concat('first_name', Value(' '), 'last_name')
     ).order_by('username')
     grupos = Group.objects.all().order_by('name')
+    campanas = Campana.objects.filter(activa=True).order_by('nombre')
 
     if q:
         usuarios = usuarios.filter(
@@ -1625,6 +1671,33 @@ def admin_usuarios(request):
         user_id = request.POST.get('user_id')
         grupo_id = request.POST.get('grupo_id')
         accion = request.POST.get('accion')
+        
+        # Manejar cambio de grupo
+        if 'cambiar_grupo' in request.POST and user_id and grupo_id:
+            user = User.objects.get(id=user_id)
+            grupo = Group.objects.get(id=grupo_id)
+            user.groups.clear()
+            user.groups.add(grupo)
+            messages.success(request, f'Grupo actualizado para el usuario {user.username}.')
+            return redirect(request.path + f'?q={q}&grupo={grupo_filtro}&page={page_number}')
+            
+        # Manejar cambio de campañas
+        if 'actualizar_campanas' in request.POST and user_id:
+            user = User.objects.get(id=user_id)
+            campanas_seleccionadas = request.POST.getlist('campanas')
+            
+            # Obtener las campañas seleccionadas
+            nuevas_campanas = Campana.objects.filter(
+                id__in=campanas_seleccionadas
+            )
+            
+            # Actualizar las campañas del usuario
+            user.campanas.clear()
+            user.campanas.add(*nuevas_campanas)
+            
+            messages.success(request, f'Campañas actualizadas para el usuario {user.username}.')
+            return redirect(request.path + f'?q={q}&grupo={grupo_filtro}&page={page_number}')
+
         if accion == 'toggle_activo' and user_id:
             user = User.objects.get(id=user_id)
             user.is_active = not user.is_active
@@ -1638,14 +1711,17 @@ def admin_usuarios(request):
             user.groups.add(grupo)
             return redirect(request.path + f'?q={q}&grupo={grupo_filtro}&page={page_number}')
 
+    # Preparar datos de campañas para la plantilla
+    for usuario in page_obj:
+        usuario.campanas_usuario = list(usuario.campanas.values_list('id', flat=True))
+
     return render(request, 'core/admin_usuarios.html', {
         'page_obj': page_obj,
         'grupos': grupos,
+        'campanas': campanas,
         'q': q,
         'grupo_filtro': grupo_filtro,
     })
-
-@login_required
 @user_passes_test(es_admin)
 def detalle_usuario(request, user_id):
     """

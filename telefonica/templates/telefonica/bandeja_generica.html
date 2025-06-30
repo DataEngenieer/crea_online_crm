@@ -1,0 +1,148 @@
+{% extends "telefonica/base_telefonica.html" %}
+{% load static %}
+{% load telefonica_extras %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Cabecera con información de la bandeja -->
+  <div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">{{ titulo }}</h1>
+    <div>
+      <span class="badge bg-primary">Total: {{ total }}</span>
+    </div>
+  </div>
+  
+  <p class="mb-4">{{ subtitulo }}</p>
+  
+  <!-- Tabla de ventas -->
+  <div class="card shadow mb-4">
+    <div class="card-header py-3">
+      <h6 class="m-0 font-weight-bold text-primary">Listado de ventas</h6>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Cliente</th>
+              <th>Plan</th>
+              <th>Agente</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for venta in ventas %}
+            <tr>
+              <td>{{ venta.numero }}</td>
+              <td>{{ venta.cliente.nombres }} {{ venta.cliente.apellidos }}</td>
+              <td>{{ venta.plan_adquiere }}</td>
+              <td>{{ venta.agente.get_full_name }}</td>
+              <td>
+                <span class="badge {% if venta.estado_revisado == 'aprobada' %}bg-success{% elif venta.estado_revisado == 'pendiente_revision' %}bg-warning{% elif venta.estado_revisado == 'devuelta' %}bg-danger{% elif venta.estado_revisado == 'digitada' %}bg-info{% elif venta.estado_revisado == 'rechazada' %}bg-secondary{% elif venta.estado_revisado == 'completada' %}bg-primary{% else %}bg-dark{% endif %}">
+                  {{ venta.get_estado_revisado_display }}
+                </span>
+              </td>
+              <td>{{ venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
+              <td>
+                <div class="btn-group" role="group">
+                  <a href="{% url 'telefonica:venta_detalle' venta.pk %}" class="btn btn-sm btn-primary" title="Ver detalle">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  {% if user|has_group:"Backoffice" and venta.estado_revisado == 'pendiente_revision' %}
+                  <a href="{% url 'telefonica:venta_gestionar' venta.pk %}" class="btn btn-sm btn-warning" title="Gestionar">
+                    <i class="fas fa-tasks"></i>
+                  </a>
+                  {% endif %}
+                  {% if user|has_group:"Asesores" and venta.estado_revisado == 'devuelta' and venta.agente == user %}
+                  <a href="{% url 'telefonica:venta_corregir' venta.pk %}" class="btn btn-sm btn-danger" title="Corregir">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center">No hay ventas para mostrar</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Paginación -->
+      {% if ventas.has_other_pages %}
+      <div class="d-flex justify-content-center mt-4">
+        <nav aria-label="Navegación de páginas">
+          <ul class="pagination">
+            {% if ventas.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page=1" aria-label="Primera">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+              </a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ ventas.previous_page_number }}" aria-label="Anterior">
+                <span aria-hidden="true">&laquo;</span>
+              </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&laquo;</span>
+            </li>
+            {% endif %}
+            
+            {% for i in ventas.paginator.page_range %}
+              {% if ventas.number == i %}
+              <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+              {% elif i > ventas.number|add:'-3' and i < ventas.number|add:'3' %}
+              <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+              {% endif %}
+            {% endfor %}
+            
+            {% if ventas.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ ventas.next_page_number }}" aria-label="Siguiente">
+                <span aria-hidden="true">&raquo;</span>
+              </a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ ventas.paginator.num_pages }}" aria-label="Última">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+              </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&raquo;</span>
+            </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  $(document).ready(function() {
+    // Inicializar DataTable con configuración personalizada
+    $('#dataTable').DataTable({
+      "paging": false,  // Desactivar paginación de DataTable ya que usamos la de Django
+      "info": false,    // Quitar información "Mostrando X de Y registros"
+      "language": {
+        "search": "Buscar:",
+        "zeroRecords": "No se encontraron resultados",
+        "emptyTable": "No hay datos disponibles en la tabla"
+      }
+    });
+  });
+</script>
+{% endblock %}

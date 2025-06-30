@@ -4,384 +4,315 @@
 {% block extra_css %}
 <style>
   :root {
-    --primary-blue: #4a69e2;
-    --secondary-teal: #41c7c7;
-    --light-bg: #f8f9fe;
-    --form-bg: #ffffff;
-    --text-dark: #333;
-    --text-light: #555;
-    --border-color: #e6e6e6;
-    --input-bg: #f0f4ff;
+    --primary-color: #007bff; /* Azul más vibrante */
+    --primary-hover: #0069d9;
+    --accent-gradient: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    --secondary-color: #6c757d;
+    --background-color: #f8f9fa; /* Gris muy claro */
+    --card-background: #ffffff;
+    --text-primary: #212529; /* Negro estándar */
+    --text-secondary: #6c757d;
+    --border-color: #dee2e6;
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    --shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    --border-radius: 0.75rem;
+    --transition-speed: 0.2s ease-in-out;
   }
-  
+
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
   body {
-    background-color: var(--light-bg);
-    font-family: 'Inter', sans-serif;
+    background-color: var(--background-color);
+    font-family: var(--font-family);
+    margin: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    margin: 0;
+    padding: 2rem;
+    box-sizing: border-box;
   }
-  
+
   .auth-container {
     display: flex;
     width: 100%;
     max-width: 1100px;
-    background: var(--form-bg);
-    border-radius: 16px;
-    border: 1px solid #e0e7ff;
-    box-shadow: 0 8px 32px rgba(74, 105, 226, 0.2);
-    overflow: hidden;
-  }
-  
-  .auth-left, .auth-right {
-    padding: 3rem;
-  }
-  
-  /* Panel Izquierdo */
-  .auth-left {
-    flex-basis: 45%;
-    background-color: #fdfdff;
-    border-right: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-  
-  .auth-left-header {
-    margin-bottom: 2rem;
-  }
-  
-  .auth-left-header img {
-    max-width: 180px;
-  }
-  
-  .auth-left h2 {
-    font-weight: 600;
-    color: var(--text-dark);
-    margin-bottom: 0.5rem;
-  }
-  
-  .auth-left > p {
-    color: var(--text-light);
-    margin-bottom: 2rem;
-  }
-  
-  .portal-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    max-width: 280px;
-    padding: 0.9rem;
-    margin-bottom: 1rem;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    border: none;
-  }
-  
-  .portal-btn i {
-    margin-right: 0.75rem;
-  }
-  
-  .portal-btn-primary {
-    background-color: var(--primary-blue);
-    color: white;
-  }
-  .portal-btn-primary:hover {
-    background-color: #3b55b5;
-  }
-  
-  .portal-btn-secondary {
-    background-color: var(--secondary-teal);
-    color: white;
-  }
-  .portal-btn-secondary:hover {
-    background-color: #329a9a;
-  }
-  
-  .register-section {
-    margin-top: auto;
-    padding-top: 2rem;
-  }
-  
-  .register-section p {
-    color: var(--text-light);
-    margin-bottom: 0.5rem;
-  }
-  
-  .register-btn {
-    display: inline-flex;
-    padding: 0.6rem 1.2rem;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--primary-blue);
-    font-weight: 500;
-    text-decoration: none;
-  }
-  
-  /* Panel Derecho */
-  .auth-right {
-    flex-basis: 55%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-  
-  .auth-right h3 {
-    font-weight: 600;
-    font-size: 1.5rem;
-    color: var(--text-dark);
-    /* margin-bottom will be handled by decorator */
+    min-height: 650px;
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    overflow: hidden; /* Para que los bordes redondeados afecten a los hijos */
+    transition: all var(--transition-speed);
   }
 
-  .title-decorator {
-    width: 40px;
-    height: 4px;
-    background-color: var(--primary-blue);
-    border-radius: 2px;
-    margin-top: 0.5rem;
+  .auth-container:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 1rem 1.5rem rgba(0, 0, 0, 0.12);
+  }
+
+  .auth-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 4rem; /* Padding generoso */
+  }
+
+  .auth-left {
+    flex-basis: 45%;
+    background-color: #f8f9fa;
+    text-align: center;
+    align-items: center;
+    position: relative;
+    border-right: 1px solid var(--border-color);
+  }
+
+  .auth-left::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: var(--accent-gradient);
+  }
+
+  .auth-right {
+    flex-basis: 55%;
+  }
+
+  .auth-logo {
+    max-width: 170px;
     margin-bottom: 2rem;
+    transition: transform var(--transition-speed);
   }
-  
-  .auth-left .title-decorator {
-    margin-left: auto;
-    margin-right: auto;
+
+  .auth-logo:hover {
+    transform: scale(1.05);
   }
-  
-  .auth-right .title-decorator {
-    margin-left: 0;
+
+  .auth-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
   }
-  
+
+  .auth-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin: 0 0 2.5rem 0;
+    max-width: 350px;
+  }
+
+  .module-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .module-btn {
+    padding: 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background-color: var(--card-background);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-speed);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .module-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  }
+
+  .module-btn.active {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    border-color: var(--primary-color);
+  }
+
+  .form-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 2.5rem 0;
+    text-align: left;
+  }
+
   .form-group {
     margin-bottom: 1.5rem;
+    text-align: left;
   }
-  
+
   .form-group label {
     display: block;
-    font-size: 0.9rem;
-    color: var(--text-light);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
     margin-bottom: 0.5rem;
   }
-  
+
   .input-wrapper {
     position: relative;
   }
-  
-  .input-wrapper i {
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-light);
-  }
-  
-  .password-toggle {
-    background: none;
-    border: none;
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    color: var(--text-light);
-    padding: 0;
-  }
-  
+
   .form-control {
     width: 100%;
-    padding: 0.9rem 2.5rem 0.9rem 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background-color: var(--input-bg);
+    padding: 0.85rem 1rem;
     font-size: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background-color: var(--background-color);
+    color: var(--text-primary);
+    transition: all var(--transition-speed);
     box-sizing: border-box;
-    transition: all 0.2s ease;
   }
 
   .form-control:focus {
     outline: none;
-    border-color: var(--primary-blue);
-    box-shadow: 0 0 0 3px rgba(74, 105, 226, 0.2);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
   }
-  
+
+  .password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 0;
+  }
+
   .form-options {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 2rem;
     font-size: 0.9rem;
-    margin-bottom: 1.5rem;
   }
-  
+
   .checkbox-group {
     display: flex;
     align-items: center;
-  }
-  
-  .checkbox-group label {
-    color: var(--text-light);
-    cursor: pointer;
-  }
-  
-  .checkbox-group input[type="checkbox"] {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 18px;
-    height: 18px;
-    border: 2px solid var(--border-color);
-    border-radius: 4px;
-    margin-right: 0.5rem;
-    cursor: pointer;
-    position: relative;
-    top: 2px;
-    transition: all 0.2s ease;
+    gap: 0.5rem;
   }
 
-  .checkbox-group input[type="checkbox"]:checked {
-    background-color: var(--primary-blue);
-    border-color: var(--primary-blue);
-  }
-
-  .checkbox-group input[type="checkbox"]:checked::after {
-    content: '\2713'; /* Checkmark character */
-    font-size: 14px;
-    color: white;
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    font-weight: bold;
-  }
-  
   .form-options a {
-    color: var(--primary-blue);
+    color: var(--primary-color);
     text-decoration: none;
+    font-weight: 500;
   }
-  
+  .form-options a:hover {
+    text-decoration: underline;
+  }
+
   .btn-submit {
     width: 100%;
     padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
     border: none;
-    border-radius: 8px;
-    background: linear-gradient(90deg, #6a82ff, #4a69e2);
-    color: white;
-    font-size: 1rem;
-    font-weight: 500;
+    border-radius: 0.5rem;
+    background-color: var(--primary-color);
+    color: #ffffff;
     cursor: pointer;
-    transition: all 0.3s ease;
-    margin-bottom: 2rem;
+    transition: all var(--transition-speed);
   }
 
   .btn-submit:hover {
-    filter: brightness(1.1);
-  }
-  
-  .support-section {
-    text-align: center;
-    font-size: 0.9rem;
-  }
-  
-  .support-section p {
-    margin-bottom: 0.5rem;
-  }
-  
-  .support-section a {
-    color: var(--primary-blue);
-    text-decoration: none;
-    font-weight: 500;
+    background-color: var(--primary-hover);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 123, 255, 0.3);
   }
 
+  .alert-danger {
+    background-color: #f8d7da;
+    border: 1px solid #f5c2c7;
+    color: #842029;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    text-align: left;
+  }
+
+  /* Responsive */
   @media (max-width: 992px) {
     .auth-container {
       flex-direction: column;
-      margin: 2rem 1rem;
+      min-height: auto;
       max-width: 500px;
+      margin: 1rem auto;
+    }
+    .auth-panel {
+      padding: 2.5rem;
     }
     .auth-left {
-      border-right: none;
-      border-bottom: 1px solid var(--border-color);
+      text-align: center;
     }
-    .auth-left, .auth-right {
-      padding: 2rem;
-      flex-basis: auto;
+    .auth-title {
+      font-size: 1.75rem;
     }
   }
 
-  @media (max-width: 576px) {
-    body {
-      padding: 0;
-    }
-    .auth-container {
-      margin: 0;
-      border-radius: 0;
-      min-height: 100vh;
-      box-shadow: none;
-      border: none;
-    }
-    .auth-left, .auth-right {
-      padding: 2rem 1.5rem;
-    }
-    .auth-right h3 {
-      font-size: 1.3rem;
-    }
-  }
-  
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="auth-container">
-  <div class="auth-left">
-    <div class="auth-left-header">
-      <img src="{% static 'core/img/logo_letra_azul.png' %}" alt="Logo CREA ONLINE">
-    </div>
-    <h2>Bienvenido al sistema</h2>
-    <div class="title-decorator"></div>
-    <!-- <p>Selecciona tu portal de acceso</p> 
-    <a href="#" class="portal-btn portal-btn-primary">
-      <i class="bi bi-person-workspace"></i> Portal Talento Humano
-    </a>
-    <a href="#" class="portal-btn portal-btn-secondary">
-      <i class="bi bi-patch-check"></i> Portal Operaciones
-    </a>
-    -->
-    <div class="register-section">
-      <p>¿No tienes una cuenta?</p>
-      <a href="{% url 'core:registro' %}" class="register-btn">
-        <i class="bi bi-person-plus"></i> Regístrate aquí
-      </a>
+  <!-- Columna Izquierda -->
+  <div class="auth-panel auth-left">
+    <img src="{% static 'core/img/logo_letra_azul.png' %}" alt="Logo de CREA" class="auth-logo">
+    <h1 class="auth-title">Bienvenido a Sinergy</h1>
+    <p class="auth-subtitle">Elige un módulo para comenzar.</p>
+    
+    <div class="module-selector">
+      <button type="button" class="module-btn active" data-module="core">
+        <i class="bi bi-building"></i>
+        <span>Cartera</span>
+      </button>
+      <button type="button" class="module-btn" data-module="telefonica">
+        <i class="bi bi-telephone"></i>
+        <span>Telefónica</span>
+      </button>
     </div>
   </div>
-  
-  <div class="auth-right">
-    <h3>Iniciar sesión</h3>
-    <div class="title-decorator"></div>
+
+  <!-- Columna Derecha -->
+  <div class="auth-panel auth-right">
+    <h2 class="form-title">Iniciar Sesión</h2>
     <form method="POST" id="loginForm" autocomplete="off">
       {% csrf_token %}
       
       {% if form.errors %}
-        <div class="alert alert-danger mb-2" role="alert">
+        <div class="alert alert-danger" role="alert">
           Usuario o contraseña incorrectos.
         </div>
       {% endif %}
       
       <div class="form-group">
-        <label for="id_username">Correo electrónico</label>
-        <div class="input-wrapper">
-          <input type="email" id="id_username" name="username" class="form-control" required autofocus>
-          <i class="bi bi-envelope"></i>
-        </div>
+        <label for="id_username">Correo Electrónico</label>
+        <input type="email" id="id_username" name="username" class="form-control" required autofocus>
       </div>
       
       <div class="form-group">
         <label for="id_password">Contraseña</label>
         <div class="input-wrapper">
           <input type="password" id="id_password" name="password" class="form-control" required>
-          <button type="button" class="password-toggle" onclick="togglePassword()">
+          <button type="button" class="password-toggle" id="passwordToggle">
             <i class="bi bi-eye"></i>
           </button>
         </div>
@@ -395,17 +326,45 @@
         <a href="{% url 'core:password_reset' %}">¿Olvidaste tu contraseña?</a>
       </div>
       
-      <button type="submit" class="btn-submit" id="loginButton">
-        <i class="bi bi-box-arrow-in-right"></i> Ingresar
-      </button>
+      <input type="hidden" id="selected_module" name="selected_module" value="core">
       
-      <div class="support-section">
-        <p>¿Problemas para iniciar sesión?</p>
-        <a href="https://wa.link/67h47h" target="_blank" class="small text-decoration-none">
-          <i class="bi bi-headset me-1"></i>Contactar soporte
-        </a>
-      </div>
+      <button type="submit" class="btn-submit">Ingresar</button>
     </form>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const moduleButtons = document.querySelectorAll('.module-btn');
+  const selectedModuleInput = document.getElementById('selected_module');
+  
+  moduleButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      moduleButtons.forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
+      selectedModuleInput.value = button.dataset.module;
+    });
+  });
+
+  const passwordInput = document.getElementById('id_password');
+  const passwordToggle = document.getElementById('passwordToggle');
+  
+  if (passwordToggle) {
+    const toggleIcon = passwordToggle.querySelector('i');
+    passwordToggle.addEventListener('click', () => {
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('bi-eye');
+        toggleIcon.classList.add('bi-eye-slash');
+      } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('bi-eye-slash');
+        toggleIcon.classList.add('bi-eye');
+      }
+    });
+  }
+});
+</script>
 {% endblock %}

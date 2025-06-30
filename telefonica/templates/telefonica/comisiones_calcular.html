@@ -1,0 +1,29 @@
+{% extends 'telefonica/base_telefonica.html' %}
+{% load static %}
+
+{% block titulo_pagina %}Calcular Comisiones{% endblock %}
+
+{% block contenido_telefonica %}
+<div class="card shadow-sm">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Cálculo de Comisiones</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-calculator me-1"></i> Calcular
+            </button>
+            <a href="{% url 'telefonica:comisiones_lista' %}" class="btn btn-secondary ms-2">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </form>
+        {% if resultado %}
+        <div class="alert alert-success mt-4">
+            <strong>Resultado:</strong> {{ resultado }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

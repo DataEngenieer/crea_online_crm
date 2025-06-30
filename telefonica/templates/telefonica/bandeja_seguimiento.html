@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }} - Portal Telefónica{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ titulo }}</h6>
+                    <div class="d-flex">
+                        <!-- Selector de estados para filtrar -->
+                        <div class="form-group mb-0 mr-2">
+                            <form method="get" id="filtroEstadoForm" class="form-inline">
+                                <select name="estado" class="form-control form-control-sm" id="filtroEstado">
+                                    <option value="">Todos los estados</option>
+                                    <option value="digitada" {% if estado_filtro == 'digitada' %}selected{% endif %}>Digitación</option>
+                                    <option value="seguimiento" {% if estado_filtro == 'seguimiento' %}selected{% endif %}>Seguimiento</option>
+                                    <option value="completada" {% if estado_filtro == 'completada' %}selected{% endif %}>Completada</option>
+                                    <option value="rechazada" {% if estado_filtro == 'rechazada' %}selected{% endif %}>Rechazada</option>
+                                </select>
+                            </form>
+                        </div>
+                        <a href="{% url 'telefonica:dashboard' %}" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-arrow-left mr-1"></i> Volver
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if page_obj %}
+                    <!-- Tabla de ventas -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Número</th>
+                                    <th>Cliente</th>
+                                    <th>Documento</th>
+                                    <th>Plan</th>
+                                    <th>Fecha Aprobación</th>
+                                    <th>Estado</th>
+                                    <th>Último Seguimiento</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for venta in page_obj %}
+                                <tr>
+                                    <td>{{ venta.numero }}</td>
+                                    <td>{{ venta.cliente.nombre_completo }}</td>
+                                    <td>{{ venta.cliente.documento }}</td>
+                                    <td>{{ venta.plan_adquiere }}</td>
+                                    <td>
+                                        {% with aprobacion=venta.gestiones_backoffice.all|dictsort:"fecha_gestion"|last %}
+                                            {% if aprobacion.estado == 'aprobada' %}
+                                                {{ aprobacion.fecha_gestion|date:"d/m/Y H:i" }}
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        {% if venta.estado == 'digitada' %}
+                                            <span class="badge badge-primary">Digitación</span>
+                                        {% elif venta.estado == 'seguimiento' %}
+                                            <span class="badge badge-info">Seguimiento</span>
+                                        {% elif venta.estado == 'completada' %}
+                                            <span class="badge badge-success">Completada</span>
+                                        {% elif venta.estado == 'rechazada' %}
+                                            <span class="badge badge-danger">Rechazada</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% with ultimo_seguimiento=venta.gestiones_backoffice.last %}
+                                            {% if ultimo_seguimiento %}
+                                                {{ ultimo_seguimiento.fecha_gestion|date:"d/m/Y H:i" }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'telefonica:venta_detalle' venta.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i> Ver
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#seguimientoModal-{{ venta.id }}">
+                                            <i class="fas fa-comment"></i> Seguimiento
+                                        </button>
+                                        
+                                        <!-- Modal para agregar seguimiento -->
+                                        <div class="modal fade" id="seguimientoModal-{{ venta.id }}" tabindex="-1" role="dialog" aria-labelledby="seguimientoModalLabel-{{ venta.id }}" aria-hidden="true">
+                                            <div class="modal-dialog modal-lg" role="document">
+                                                <div class="modal-content">
+                                                    <form action="{% url 'telefonica:venta_seguimiento' venta.id %}" method="post">
+                                                        {% csrf_token %}
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="seguimientoModalLabel-{{ venta.id }}">Agregar Seguimiento - Venta #{{ venta.numero }}</h5>
+                                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                <span aria-hidden="true">&times;</span>
+                                                            </button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <div class="form-group">
+                                                                <label for="estado">Estado de la Venta:</label>
+                                                                <select name="estado" class="form-control" required>
+                                                                    <option value="digitada" {% if venta.estado == 'digitada' %}selected{% endif %}>Digitación</option>
+                                                                    <option value="seguimiento" {% if venta.estado == 'seguimiento' %}selected{% endif %}>Seguimiento</option>
+                                                                    <option value="completada">Completada</option>
+                                                                    <option value="rechazada">Rechazada</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="form-group">
+                                                                <label for="observacion">Observación de Seguimiento:</label>
+                                                                <textarea name="observacion" class="form-control" rows="5" required></textarea>
+                                                                <small class="form-text text-muted">Detalle la actualización del estado o gestión realizada para esta venta.</small>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                                                            <button type="submit" class="btn btn-primary">Guardar Seguimiento</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    {% if page_obj.paginator.num_pages > 1 %}
+                    <div class="pagination mt-3 justify-content-center">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination">
+                                {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}" aria-label="First">
+                                        <span aria-hidden="true">&laquo;&laquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                    <li class="page-item active"><a class="page-link" href="?page={{ num }}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}">{{ num }}</a></li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item"><a class="page-link" href="?page={{ num }}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}">{{ num }}</a></li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}" aria-label="Last">
+                                        <span aria-hidden="true">&raquo;&raquo;</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">No hay ventas en seguimiento{% if estado_filtro %} con el estado seleccionado{% endif %}.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Activar elemento de menú correspondiente
+        $("#sidebarTelefonica").addClass("active");
+        $("#seguimientoLink").addClass("active");
+        
+        // Cambiar de estado automáticamente cuando se selecciona un filtro
+        $("#filtroEstado").change(function() {
+            $("#filtroEstadoForm").submit();
+        });
+    });
+</script>
+{% endblock %}

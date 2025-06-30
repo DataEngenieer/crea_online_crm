@@ -1,0 +1,137 @@
+{% extends "telefonica/base_telefonica.html" %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+          <h6 class="m-0 font-weight-bold text-primary">{{ titulo }}</h6>
+        </div>
+        <div class="card-body">
+          <!-- Información de la venta y del cliente -->
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                  <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                      <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                        Información de la Venta
+                      </div>
+                      <div class="h5 mb-0 font-weight-bold text-gray-800">{{ venta.numero }}</div>
+                      <hr>
+                      <div class="row">
+                        <div class="col-md-6">
+                          <p><strong>Plan:</strong> {{ venta.plan_adquiere }}</p>
+                          <p><strong>Segmento:</strong> {{ venta.get_segmento_display }}</p>
+                          <p><strong>Tipo de Cliente:</strong> {{ venta.get_tipo_cliente_display }}</p>
+                        </div>
+                        <div class="col-md-6">
+                          <p><strong>Fecha de Creación:</strong> {{ venta.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                          <p><strong>Estado Actual:</strong> <span class="badge {% if venta.estado_revisado == 'aprobada' %}bg-success{% elif venta.estado_revisado == 'pendiente_revision' %}bg-warning{% elif venta.estado_revisado == 'devuelta' %}bg-danger{% else %}bg-secondary{% endif %}">{{ venta.get_estado_revisado_display }}</span></p>
+                          <p><strong>Agente:</strong> {{ venta.agente.get_full_name }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                  <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                      <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                        Información del Cliente
+                      </div>
+                      <div class="h5 mb-0 font-weight-bold text-gray-800">{{ cliente.documento }} - {{ cliente.nombres }} {{ cliente.apellidos }}</div>
+                      <hr>
+                      <div class="row">
+                        <div class="col-md-6">
+                          <p><strong>Correo:</strong> {{ cliente.correo }}</p>
+                          <p><strong>Teléfono:</strong> {{ cliente.telefono }}</p>
+                        </div>
+                        <div class="col-md-6">
+                          <p><strong>Ciudad:</strong> {{ cliente.ciudad }}, {{ cliente.departamento }}</p>
+                          <p><strong>Dirección:</strong> {{ cliente.direccion }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Formulario de gestión de venta -->
+          <div class="card shadow mb-4">
+            <div class="card-header py-3">
+              <h6 class="m-0 font-weight-bold text-primary">Gestionar esta venta</h6>
+            </div>
+            <div class="card-body">
+              <form method="post" class="user">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                  <label for="{{ form.estado.id_for_label }}" class="form-label">Estado de Revisión:</label>
+                  {{ form.estado }}
+                </div>
+                
+                <div class="form-group">
+                  <label for="{{ form.observacion.id_for_label }}" class="form-label">Observaciones:</label>
+                  {{ form.observacion }}
+                  <small class="form-text text-muted">Ingrese comentarios adicionales sobre la gestión.</small>
+                </div>
+                
+                <div id="motivo_devolucion_container" class="form-group d-none">
+                  <label for="{{ form.motivo_devolucion.id_for_label }}" class="form-label">Motivo de Devolución:</label>
+                  {{ form.motivo_devolucion }}
+                  <small class="form-text text-muted">Explique el motivo por el cual se devuelve la venta al asesor.</small>
+                </div>
+                
+                <div class="form-group">
+                  <button type="submit" class="btn btn-primary">
+                    Guardar Gestión
+                  </button>
+                  <a href="{% url 'telefonica:venta_detalle' venta.pk %}" class="btn btn-secondary">
+                    Cancelar
+                  </a>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Mostrar/ocultar campo de motivo de devolución según el estado seleccionado
+    const estadoSelect = document.getElementById('{{ form.estado.id_for_label }}');
+    const motivoContainer = document.getElementById('motivo_devolucion_container');
+    
+    function updateMotivoVisibility() {
+      if (estadoSelect.value === 'devuelta') {
+        motivoContainer.classList.remove('d-none');
+      } else {
+        motivoContainer.classList.add('d-none');
+      }
+    }
+    
+    // Ejecutar al cargar la página
+    updateMotivoVisibility();
+    
+    // Ejecutar cuando cambie el estado
+    estadoSelect.addEventListener('change', updateMotivoVisibility);
+  });
+</script>
+{% endblock %}

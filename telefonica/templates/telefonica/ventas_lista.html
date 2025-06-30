@@ -1,0 +1,178 @@
+{% extends 'telefonica/base_telefonica.html' %}
+{% load static %}
+
+{% block title %}Listado de Ventas - Portal Telefónica{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Listado de Ventas</h6>
+                    <div>
+                        {% if not es_backoffice %}
+                        <a href="{% url 'telefonica:venta_crear' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus mr-1"></i> Nueva Venta
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filtros -->
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <form method="get" class="form-inline">
+                                <div class="input-group mr-2">
+                                    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Buscar por número, documento o nombre...">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-primary" type="submit">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <select name="estado" class="form-control mr-2" onchange="this.form.submit()">
+                                    <option value="">Todos los estados</option>
+                                    <option value="pendiente_revision" {% if estado == "pendiente_revision" %}selected{% endif %}>Pendiente de Revisión</option>
+                                    <option value="devuelta" {% if estado == "devuelta" %}selected{% endif %}>Devuelta</option>
+                                    <option value="aprobada" {% if estado == "aprobada" %}selected{% endif %}>Aprobada</option>
+                                    <option value="digitada" {% if estado == "digitada" %}selected{% endif %}>Digitada</option>
+                                    <option value="rechazada" {% if estado == "rechazada" %}selected{% endif %}>Rechazada</option>
+                                    <option value="completada" {% if estado == "completada" %}selected{% endif %}>Completada</option>
+                                </select>
+                                
+                                {% if q or estado %}
+                                <a href="{% url 'telefonica:ventas_lista' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times mr-1"></i> Limpiar
+                                </a>
+                                {% endif %}
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de ventas -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Número</th>
+                                    <th>Cliente</th>
+                                    <th>Documento</th>
+                                    <th>Plan</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th>Agente</th>
+                                    {% if es_backoffice %}
+                                    <th>Backoffice</th>
+                                    {% endif %}
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for venta in page_obj %}
+                                <tr>
+                                    <td>{{ venta.numero }}</td>
+                                    <td>{{ venta.cliente.nombre_completo }}</td>
+                                    <td>{{ venta.cliente.documento }}</td>
+                                    <td>{{ venta.plan_adquiere }}</td>
+                                    <td>{{ venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        {% if venta.estado_revisado == 'pendiente_revision' %}
+                                        <span class="badge badge-info">Pendiente</span>
+                                        {% elif venta.estado_revisado == 'devuelta' %}
+                                        <span class="badge badge-warning">Devuelta</span>
+                                        {% elif venta.estado_revisado == 'aprobada' %}
+                                        <span class="badge badge-success">Aprobada</span>
+                                        {% elif venta.estado_revisado == 'digitada' %}
+                                        <span class="badge badge-primary">Digitada</span>
+                                        {% elif venta.estado_revisado == 'rechazada' %}
+                                        <span class="badge badge-danger">Rechazada</span>
+                                        {% elif venta.estado_revisado == 'completada' %}
+                                        <span class="badge badge-dark">Completada</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ venta.agente.username }}</td>
+                                    {% if es_backoffice %}
+                                    <td>{{ venta.backoffice.username|default:"-" }}</td>
+                                    {% endif %}
+                                    <td>
+                                        <a href="{% url 'telefonica:venta_detalle' venta.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if not es_backoffice and venta.estado_revisado == 'devuelta' %}
+                                        <a href="{% url 'telefonica:venta_corregir' venta.id %}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="{% if es_backoffice %}9{% else %}8{% endif %}" class="text-center">
+                                        No se encontraron ventas con los filtros seleccionados
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    {% if page_obj.paginator.num_pages > 1 %}
+                    <div class="pagination mt-3 justify-content-center">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination">
+                                {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if q %}&q={{ q }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}" aria-label="First">
+                                        <span aria-hidden="true">&laquo;&laquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                    <li class="page-item active"><a class="page-link" href="?page={{ num }}{% if q %}&q={{ q }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}">{{ num }}</a></li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item"><a class="page-link" href="?page={{ num }}{% if q %}&q={{ q }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}">{{ num }}</a></li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if q %}&q={{ q }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}" aria-label="Last">
+                                        <span aria-hidden="true">&raquo;&raquo;</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Activar elemento de menú correspondiente
+        $("#sidebarTelefonica").addClass("active");
+        $("#ventasLink").addClass("active");
+    });
+</script>
+{% endblock %}

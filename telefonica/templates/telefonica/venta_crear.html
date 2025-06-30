@@ -1,0 +1,470 @@
+{% extends 'telefonica/base_telefonica.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'telefonica/css/venta_form.css' %}">
+{% endblock %}
+
+
+{% block contenido_telefonica %}
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Registrar nueva venta</h5>
+        <div class="steps-indicator">
+            <div class="step-dots">
+                <span class="step-dot active" data-step="1"></span>
+                <span class="step-dot" data-step="2"></span>
+                <span class="step-dot" data-step="3"></span>
+                <span class="step-dot" data-step="4"></span>
+            </div>
+            <div class="step-text text-white">Paso <span id="current-step">1</span> de 4</div>
+        </div>
+    </div>
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data" id="ventaForm">
+            {% csrf_token %}
+            
+            <!-- Navegación de pestañas -->
+            <ul class="nav nav-tabs" id="ventaTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link active" id="cliente-tab" data-bs-toggle="tab" data-bs-target="#cliente" role="tab" aria-controls="cliente" aria-selected="true">
+                        <i class="fas fa-user me-2"></i>Datos del Cliente
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="venta-tab" data-bs-toggle="tab" data-bs-target="#venta" role="tab" aria-controls="venta" aria-selected="false">
+                        <i class="fas fa-shopping-cart me-2"></i>Datos de la Venta
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="documento-tab" data-bs-toggle="tab" data-bs-target="#documento" role="tab" aria-controls="documento" aria-selected="false">
+                        <i class="fas fa-file-alt me-2"></i>Documentación
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="confirmar-tab" data-bs-toggle="tab" data-bs-target="#confirmar" role="tab" aria-controls="confirmar" aria-selected="false">
+                        <i class="fas fa-check-circle me-2"></i>Confirmación
+                    </a>
+                </li>
+            </ul>
+            
+            <!-- Contenido de pestañas -->
+            <div class="tab-content pt-4" id="ventaTabsContent">
+                <!-- Pestaña: Datos del Cliente -->
+                <div class="tab-pane fade show active" id="cliente" role="tabpanel" aria-labelledby="cliente-tab">
+                    <div class="card-body px-0">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> Complete los datos del cliente. Si ya existe, puede buscarlo por documento.
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="id_tipo_documento">Tipo:</label>
+                                    <select name="tipo_documento" id="id_tipo_documento" class="form-select">
+                                        <option value="CC">CC</option>
+                                        <option value="CE">CE</option>
+                                        <option value="NIT">NIT</option>
+                                        <option value="PP">Pasaporte</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_documento">Documento:</label>
+                                    <div class="input-group">
+                                        {{ form.documento }}
+                                        <div class="input-group-append">
+                                            <button class="btn btn-outline-secondary" type="button" id="buscarCliente">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="invalid-feedback" id="documento-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_nombres">Nombres:</label>
+                                    {{ form.nombres }}
+                                    <div class="invalid-feedback" id="nombres-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_apellidos">Apellidos:</label>
+                                    {{ form.apellidos }}
+                                    <div class="invalid-feedback" id="apellidos-error"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_correo">Correo Electrónico:</label>
+                                    {{ form.correo }}
+                                    <div class="invalid-feedback" id="correo-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_telefono">Teléfono:</label>
+                                    {{ form.telefono }}
+                                    <div class="invalid-feedback" id="telefono-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_departamento">Departamento:</label>
+                                    {{ form.departamento }}
+                                    <div class="invalid-feedback" id="departamento-error"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_ciudad">Ciudad:</label>
+                                    {{ form.ciudad }}
+                                    <div class="invalid-feedback" id="ciudad-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_barrio">Barrio:</label>
+                                    {{ form.barrio }}
+                                    <div class="invalid-feedback" id="barrio-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_direccion">Dirección:</label>
+                                    {{ form.direccion }}
+                                    <div class="invalid-feedback" id="direccion-error"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <div></div>
+                            <button type="button" class="btn btn-primary next-step" data-next="venta">
+                                Siguiente <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pestaña: Datos de la Venta -->
+                <div class="tab-pane fade" id="venta" role="tabpanel" aria-labelledby="venta-tab">
+                    <div class="card-body px-0">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> Complete los datos relacionados con la venta y el servicio.
+                        </div>
+                        
+                        <!-- Campos para tipo de cliente y segmento -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_tipo_cliente">Tipo de Cliente:</label>
+                                    {{ form.tipo_cliente }}
+                                    <div class="invalid-feedback" id="tipo-cliente-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_segmento">Segmento:</label>
+                                    {{ form.segmento }}
+                                    <div class="invalid-feedback" id="segmento-error"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Campos para plan y datos de contacto -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_plan_adquiere">Plan Adquirido:</label>
+                                    {{ form.plan_adquiere }}
+                                    <div class="invalid-feedback" id="plan-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_numero_contacto">Número de Contacto:</label>
+                                    {{ form.numero_contacto }}
+                                    <div class="invalid-feedback" id="numero-contacto-error"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Campos para NIP e IMEI -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_nip">NIP (para portabilidad):</label>
+                                    {{ form.nip }}
+                                    <div class="invalid-feedback" id="nip-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_imei">IMEI:</label>
+                                    {{ form.imei }}
+                                    <div class="invalid-feedback" id="imei-error"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Campos para FVC y fechas -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_fvc">FVC:</label>
+                                    {{ form.fvc }}
+                                    <div class="invalid-feedback" id="fvc-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_fecha_entrega">Fecha de Entrega:</label>
+                                    {{ form.fecha_entrega }}
+                                    <div class="invalid-feedback" id="fecha-entrega-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_fecha_expedicion">Fecha de Expedición:</label>
+                                    {{ form.fecha_expedicion }}
+                                    <div class="invalid-feedback" id="fecha-expedicion-error"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Campos para grabación y orden -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_numero_grabacion">Número de Grabación:</label>
+                                    {{ form.numero_grabacion }}
+                                    <div class="invalid-feedback" id="numero-grabacion-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_orden">Número de Orden:</label>
+                                    {{ form.orden }}
+                                    <div class="invalid-feedback" id="orden-error"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Campos adicionales -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_origen">Origen:</label>
+                                    {{ form.origen }}
+                                    <div class="invalid-feedback" id="origen-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_selector">Selector:</label>
+                                    {{ form.selector }}
+                                    <div class="invalid-feedback" id="selector-error"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Observaciones -->
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="id_observacion">Observaciones:</label>
+                                    {{ form.observacion }}
+                                    <div class="invalid-feedback" id="observacion-error"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-secondary prev-step" data-prev="cliente">
+                                <i class="fas fa-arrow-left me-2"></i> Anterior
+                            </button>
+                            <button type="button" class="btn btn-primary next-step" data-next="documento">
+                                Siguiente <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pestaña: Documentación -->
+                <div class="tab-pane fade" id="documento" role="tabpanel" aria-labelledby="documento-tab">
+                    <div class="card-body px-0">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> Suba los documentos requeridos para completar la venta.
+                        </div>
+                        
+                        <div class="card mb-4 border-left-primary">
+                            <div class="card-body">
+                                <h6 class="font-weight-bold mb-3">Documento de identidad <span class="text-danger">*</span></h6>
+                                <div class="custom-file mb-3">
+                                    <input type="file" class="custom-file-input" id="documento_identidad" name="documento_identidad" accept=".jpg,.jpeg,.png,.pdf" required>
+                                    <label class="custom-file-label" for="documento_identidad">Seleccionar archivo...</label>
+                                    <div class="invalid-feedback" id="documento-identidad-error">Este documento es requerido</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4 border-left-success">
+                            <div class="card-body">
+                                <h6 class="font-weight-bold mb-3">Contrato firmado <span class="text-danger">*</span></h6>
+                                <div class="custom-file mb-3">
+                                    <input type="file" class="custom-file-input" id="contrato_firmado" name="contrato_firmado" accept=".jpg,.jpeg,.png,.pdf" required>
+                                    <label class="custom-file-label" for="contrato_firmado">Seleccionar archivo...</label>
+                                    <div class="invalid-feedback" id="contrato-firmado-error">Este documento es requerido</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4 border-left-warning">
+                            <div class="card-body">
+                                <h6 class="font-weight-bold mb-3">Confronta <span class="text-danger">*</span></h6>
+                                <div class="custom-file mb-3">
+                                    <input type="file" class="custom-file-input" id="confronta" name="confronta" accept=".jpg,.jpeg,.png,.pdf" required>
+                                    <label class="custom-file-label" for="confronta">Seleccionar archivo...</label>
+                                    <div class="invalid-feedback" id="confronta-error">Este documento es requerido</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4 border-left-info">
+                            <div class="card-body">
+                                <h6 class="font-weight-bold mb-3">Documentos adicionales</h6>
+                                <div class="custom-file mb-3">
+                                    <input type="file" class="custom-file-input" id="documentos_adicionales" name="documentos_adicionales[]" multiple accept=".jpg,.jpeg,.png,.pdf">
+                                    <label class="custom-file-label" for="documentos_adicionales">Seleccionar archivos...</label>
+                                </div>
+                                <small class="text-muted">Puede seleccionar múltiples archivos</small>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-secondary prev-step" data-prev="venta">
+                                <i class="fas fa-arrow-left me-2"></i> Anterior
+                            </button>
+                            <button type="button" class="btn btn-primary next-step" data-next="confirmar">
+                                Siguiente <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pestaña: Confirmación -->
+                <div class="tab-pane fade" id="confirmar" role="tabpanel" aria-labelledby="confirmar-tab">
+                    <div class="card-body px-0">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle mr-2"></i> Por favor revise cuidadosamente la información antes de guardar la venta.
+                        </div>
+                        
+                        <div class="card mb-4 border-left-info">
+                            <div class="card-header bg-light">
+                                <h6 class="font-weight-bold mb-0">Resumen de la Venta</h6>
+                            </div>
+                            <div class="card-body">
+                                <!-- Sección de datos del cliente -->
+                                <h6 class="font-weight-bold text-primary mb-3">Datos del Cliente</h6>
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <p><strong>Cliente:</strong> <span id="resumen-nombre"></span></p>
+                                        <p><strong>Documento:</strong> <span id="resumen-documento"></span></p>
+                                        <p><strong>Teléfono:</strong> <span id="resumen-telefono"></span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Email:</strong> <span id="resumen-email"></span></p>
+                                        <p><strong>Dirección:</strong> <span id="resumen-direccion"></span></p>
+                                        <p><strong>Ciudad:</strong> <span id="resumen-ciudad"></span></p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Sección de datos de la venta -->
+                                <h6 class="font-weight-bold text-primary mb-3">Datos de la Venta</h6>
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <p><strong>Tipo de Cliente:</strong> <span id="resumen-tipo-cliente"></span></p>
+                                        <p><strong>Segmento:</strong> <span id="resumen-segmento"></span></p>
+                                        <p><strong>Plan Adquirido:</strong> <span id="resumen-plan"></span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Número de Contacto:</strong> <span id="resumen-numero-contacto"></span></p>
+                                        <p id="resumen-nip-container" style="display: none;"><strong>NIP:</strong> <span id="resumen-nip"></span></p>
+                                        <p id="resumen-imei-container" style="display: none;"><strong>IMEI:</strong> <span id="resumen-imei"></span></p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Sección de documentación -->
+                                <h6 class="font-weight-bold text-primary mb-3">Documentación</h6>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                         <ul class="list-group">
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                Documento de Identidad
+                                                <span class="badge bg-secondary rounded-pill" id="doc-identidad-badge">No cargado</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                Contrato Firmado
+                                                <span class="badge bg-secondary rounded-pill" id="contrato-badge">No cargado</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                Confronta
+                                                <span class="badge bg-secondary rounded-pill" id="confronta-badge">No cargado</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="confirmo_venta" required>
+                                <label class="form-check-label" for="confirmo_venta">
+                                    Confirmo que todos los datos son correctos y la venta puede ser registrada
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-secondary prev-step" data-prev="documento">
+                                <i class="fas fa-arrow-left me-2"></i> Anterior
+                            </button>
+                            <button type="submit" class="btn btn-success" id="btn-guardar-venta">
+                                <i class="fas fa-save me-1"></i> Guardar Venta
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    // Variable global para la URL de búsqueda de clientes
+    var buscarClienteUrl = "{% url 'telefonica:buscar_cliente' %}";
+    
+    // Verificar que jQuery y Bootstrap están disponibles
+    $(document).ready(function() {
+        console.log("jQuery está cargado: " + (typeof jQuery !== 'undefined'));
+        console.log("Bootstrap está cargado: " + (typeof bootstrap !== 'undefined'));
+    });
+</script>
+<script src="{% static 'telefonica/js/venta_form.js' %}"></script>
+{% endblock %}

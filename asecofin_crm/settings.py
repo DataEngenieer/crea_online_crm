@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'crispy_forms', # Añadido para Crispy Forms
     'crispy_bootstrap5', # Añadido para el paquete Bootstrap 5 de Crispy Forms
     'chat',
+    'telefonica',
 ]
 
 MIDDLEWARE = [
@@ -54,6 +55,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'core.middleware.LoginRequiredMiddleware',  # Middleware personalizado para requerir login
+    'telefonica.middleware.TelefonicaMenuMiddleware',  # Middleware para el menú de Telefónica
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -71,6 +73,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'telefonica.context_processors.telefonica_menu',  # Contexto para menú de Telefónica
             ],
         },
     },

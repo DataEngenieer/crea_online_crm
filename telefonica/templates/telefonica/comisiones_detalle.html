@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }} - Portal Telefónica{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ titulo }}</h6>
+                    <div>
+                        <a href="{% url 'telefonica:comisiones' %}" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-arrow-left mr-1"></i> Volver a Comisiones
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Datos de la comisión -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6 class="mb-0 font-weight-bold text-info">Datos de la Comisión</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>Venta #:</strong> {{ comision.venta.numero }}</p>
+                                            <p><strong>Estado:</strong> 
+                                                {% if comision.estado == 'pendiente' %}
+                                                    <span class="badge badge-warning">Pendiente</span>
+                                                {% elif comision.estado == 'pagada' %}
+                                                    <span class="badge badge-success">Pagada</span>
+                                                {% elif comision.estado == 'anulada' %}
+                                                    <span class="badge badge-danger">Anulada</span>
+                                                {% endif %}
+                                            </p>
+                                            <p><strong>Fecha de Cálculo:</strong> {{ comision.fecha_calculo|date:"d/m/Y H:i" }}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><strong>Asesor:</strong> {{ comision.venta.agente.get_full_name }}</p>
+                                            <p><strong>Valor:</strong> <span class="font-weight-bold">$ {{ comision.valor|floatformat:0 }}</span></p>
+                                            {% if comision.fecha_pago %}
+                                            <p><strong>Fecha de Pago:</strong> {{ comision.fecha_pago|date:"d/m/Y" }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    {% if comision.observacion %}
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <p><strong>Observaciones:</strong></p>
+                                            <p class="text-muted">{{ comision.observacion }}</p>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6 class="mb-0 font-weight-bold text-info">Datos de la Venta</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>Cliente:</strong> {{ comision.venta.cliente.nombre_completo }}</p>
+                                            <p><strong>Documento:</strong> {{ comision.venta.cliente.documento }}</p>
+                                            <p><strong>Plan:</strong> {{ comision.venta.plan_adquiere }}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><strong>Tipo Cliente:</strong> {{ comision.venta.get_tipo_cliente_display }}</p>
+                                            <p><strong>Segmento:</strong> {{ comision.venta.get_segmento_display }}</p>
+                                            <p><strong>Estado Venta:</strong> 
+                                                {% if comision.venta.estado == 'pendiente' %}
+                                                    <span class="badge badge-warning">Pendiente</span>
+                                                {% elif comision.venta.estado == 'aprobada' %}
+                                                    <span class="badge badge-success">Aprobada</span>
+                                                {% elif comision.venta.estado == 'devuelta' %}
+                                                    <span class="badge badge-info">Devuelta</span>
+                                                {% elif comision.venta.estado == 'digitada' %}
+                                                    <span class="badge badge-primary">Digitada</span>
+                                                {% elif comision.venta.estado == 'seguimiento' %}
+                                                    <span class="badge badge-secondary">Seguimiento</span>
+                                                {% elif comision.venta.estado == 'completada' %}
+                                                    <span class="badge badge-success">Completada</span>
+                                                {% elif comision.venta.estado == 'rechazada' %}
+                                                    <span class="badge badge-danger">Rechazada</span>
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <a href="{% url 'telefonica:venta_detalle' comision.venta.id %}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-search"></i> Ver detalles de la venta
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Formularios de actualización (solo para usuarios con permisos de backoffice) -->
+                    {% if es_backoffice %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0 font-weight-bold text-info">Gestión de Comisión</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_estado">Estado de la Comisión:</label>
+                                            <select name="estado" id="id_estado" class="form-control">
+                                                <option value="pendiente" {% if comision.estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                                                <option value="pagada" {% if comision.estado == 'pagada' %}selected{% endif %}>Pagada</option>
+                                                <option value="anulada" {% if comision.estado == 'anulada' %}selected{% endif %}>Anulada</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_fecha_pago">Fecha de Pago:</label>
+                                            <input type="text" name="fecha_pago" id="id_fecha_pago" value="{% if comision.fecha_pago %}{{ comision.fecha_pago|date:'Y-m-d' }}{% endif %}" class="form-control datepicker">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_valor">Valor:</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">$</span>
+                                                </div>
+                                                <input type="number" name="valor" id="id_valor" value="{{ comision.valor }}" class="form-control">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="form-group">
+                                            <label for="id_observacion">Observaciones:</label>
+                                            <textarea name="observacion" id="id_observacion" class="form-control" rows="3">{{ comision.observacion }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group text-center">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save mr-1"></i> Actualizar Comisión
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Historial de cambios en la comisión -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0 font-weight-bold text-info">Historial de la Comisión</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if historial_comision %}
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Usuario</th>
+                                            <th>Estado Anterior</th>
+                                            <th>Estado Nuevo</th>
+                                            <th>Observación</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in historial_comision %}
+                                        <tr>
+                                            <td>{{ item.fecha|date:"d/m/Y H:i" }}</td>
+                                            <td>{{ item.usuario }}</td>
+                                            <td>{{ item.estado_anterior }}</td>
+                                            <td>{{ item.estado_nuevo }}</td>
+                                            <td>{{ item.observacion }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No hay historial de cambios para esta comisión.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Activar elemento de menú correspondiente
+        $("#sidebarTelefonica").addClass("active");
+        $("#comisionesLink").addClass("active");
+        
+        // Configuración de datepicker para fechas
+        $('.datepicker').datepicker({
+            format: 'yyyy-mm-dd',
+            language: 'es',
+            autoclose: true,
+            todayHighlight: true
+        });
+    });
+</script>
+{% endblock %}

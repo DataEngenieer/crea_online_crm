@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }} - Portal Telefónica{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ titulo }}</h6>
+                    <div>
+                        <a href="{% url 'telefonica:dashboard' %}" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-arrow-left mr-1"></i> Volver
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if page_obj %}
+                    <!-- Tabla de ventas -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Número</th>
+                                    <th>Cliente</th>
+                                    <th>Documento</th>
+                                    <th>Plan</th>
+                                    <th>Fecha Devolución</th>
+                                    {% if es_backoffice %}
+                                    <th>Agente</th>
+                                    {% endif %}
+                                    <th>Motivo</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for venta in page_obj %}
+                                <tr>
+                                    <td>{{ venta.numero }}</td>
+                                    <td>{{ venta.cliente.nombre_completo }}</td>
+                                    <td>{{ venta.cliente.documento }}</td>
+                                    <td>{{ venta.plan_adquiere }}</td>
+                                    <td>
+                                        {% with devolucion=venta.gestiones_backoffice.all|dictsort:"fecha_gestion"|last %}
+                                            {% if devolucion.estado == 'devuelta' %}
+                                                {{ devolucion.fecha_gestion|date:"d/m/Y H:i" }}
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    {% if es_backoffice %}
+                                    <td>{{ venta.agente.username }}</td>
+                                    {% endif %}
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-info ver-motivo" data-toggle="modal" data-target="#motivoModal-{{ venta.id }}">
+                                            Ver motivo
+                                        </button>
+                                        
+                                        <!-- Modal para ver el motivo de devolución -->
+                                        <div class="modal fade" id="motivoModal-{{ venta.id }}" tabindex="-1" role="dialog" aria-labelledby="motivoModalLabel-{{ venta.id }}" aria-hidden="true">
+                                            <div class="modal-dialog modal-lg" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="motivoModalLabel-{{ venta.id }}">Motivo de Devolución - Venta #{{ venta.numero }}</h5>
+                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <h6>Motivo de devolución:</h6>
+                                                        <p>{{ venta.observacion_2 }}</p>
+                                                        
+                                                        {% for gestion in venta.gestiones_backoffice.all %}
+                                                            {% if gestion.estado == 'devuelta' and gestion.campos_corregir %}
+                                                            <h6 class="mt-3">Campos a corregir:</h6>
+                                                            <p>{{ gestion.campos_corregir }}</p>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'telefonica:venta_detalle' venta.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i> Ver
+                                        </a>
+                                        {% if not es_backoffice %}
+                                        <a href="{% url 'telefonica:venta_corregir' venta.id %}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i> Corregir
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    {% if page_obj.paginator.num_pages > 1 %}
+                    <div class="pagination mt-3 justify-content-center">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination">
+                                {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1" aria-label="First">
+                                        <span aria-hidden="true">&laquo;&laquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                    <li class="page-item active"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                                        <span aria-hidden="true">&raquo;&raquo;</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">No hay ventas devueltas para corrección.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Activar elemento de menú correspondiente
+        $("#sidebarTelefonica").addClass("active");
+        $("#devueltasLink").addClass("active");
+    });
+</script>
+{% endblock %}

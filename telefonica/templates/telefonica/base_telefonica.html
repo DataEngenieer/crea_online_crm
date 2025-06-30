@@ -1,0 +1,137 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load telefonica_extras %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'telefonica/css/telefonica.css' %}">
+    <style>
+        /* Estilos específicos para el módulo de Telefónica */
+        .telefonica-content {
+            padding: 20px;
+        }
+        .menu-section {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            margin: 1rem 0 0.5rem;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .badge-notification {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+        }
+    </style>
+{% endblock %}
+
+
+
+{% block sidebar_menu %}
+    <!-- Menú lateral de navegación para el módulo Telefónica -->
+    <nav class="list-group list-group-flush sidebar-menu-telefonica">
+        <!-- Dashboard -->
+        <a href="{% url 'telefonica:dashboard' %}"
+           class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="bi bi-speedometer2 me-2"></i> Dashboard
+        </a>
+        <!-- Ventas -->
+        <span class="menu-section">Ventas</span>
+        <a href="{% url 'telefonica:ventas_lista' %}"
+           class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'ventas_lista' %}active{% endif %}">
+            <i class="bi bi-list-ul me-2"></i> Lista de Ventas
+        </a>
+        <a href="{% url 'telefonica:venta_crear' %}"
+           class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'venta_crear' %}active{% endif %}">
+            <i class="bi bi-plus-circle me-2"></i> Nueva Venta
+        </a>
+        {% if user|has_group:"Asesores" %}
+        <a href="{% url 'telefonica:ventas_lista' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'ventas_lista' %}active{% endif %}">
+            <i class="bi bi-list-ul me-2"></i> Mis Ventas
+        </a>
+        <div class="menu-section">Bandejas</div>
+        <a href="{% url 'telefonica:bandeja_pendientes' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'bandeja_pendientes' %}active{% endif %}">
+            <i class="bi bi-hourglass-split me-2"></i> Pendientes
+            {% if user.ventas_pendientes.count > 0 %}
+            <span class="badge bg-warning float-end">{{ user.ventas_pendientes.count }}</span>
+            {% endif %}
+        </a>
+        <a href="{% url 'telefonica:bandeja_devueltas' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'bandeja_devueltas' %}active{% endif %}">
+            <i class="bi bi-arrow-return-left me-2"></i> Devueltas
+            {% if user.ventas_devueltas.count > 0 %}
+            <span class="badge bg-danger float-end">{{ user.ventas_devueltas.count }}</span>
+            {% endif %}
+        </a>
+        {% endif %}
+        {% if user|has_group:"Backoffice" or user.is_superuser %}
+        <div class="menu-section">Bandejas</div>
+        <a href="{% url 'telefonica:bandeja_pendientes' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'bandeja_pendientes' %}active{% endif %}">
+            <i class="bi bi-hourglass-split me-2"></i> Pendientes
+            {% if ventas_pendientes %}
+            <span class="badge bg-warning float-end">{{ ventas_pendientes }}</span>
+            {% endif %}
+        </a>
+        <a href="{% url 'telefonica:bandeja_digitacion' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'bandeja_digitacion' %}active{% endif %}">
+            <i class="bi bi-input-cursor me-2"></i> Para Digitación
+            {% if ventas_digitacion %}
+            <span class="badge bg-info float-end">{{ ventas_digitacion }}</span>
+            {% endif %}
+        </a>
+        <a href="{% url 'telefonica:bandeja_seguimiento' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'bandeja_seguimiento' %}active{% endif %}">
+            <i class="bi bi-clipboard-check me-2"></i> Seguimiento
+        </a>
+        <a href="{% url 'telefonica:bandeja_devueltas' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'bandeja_devueltas' %}active{% endif %}">
+            <i class="bi bi-arrow-return-left me-2"></i> Devueltas
+            {% if ventas_devueltas %}
+            <span class="badge bg-danger float-end">{{ ventas_devueltas }}</span>
+            {% endif %}
+        </a>
+        {% endif %}
+        <!-- Comisiones -->
+        <span class="menu-section">Comisiones</span>
+        <a href="{% url 'telefonica:comisiones_lista' %}"
+           class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'comisiones_lista' %}active{% endif %}">
+            <i class="bi bi-cash-stack me-2"></i> Lista de Comisiones
+        </a>
+        <a href="{% url 'telefonica:comisiones_calcular' %}"
+           class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'comisiones_calcular' %}active{% endif %}">
+            <i class="bi bi-calculator me-2"></i> Calcular Comisiones
+        </a>
+        <!-- APIs y otros accesos -->
+        <span class="menu-section">APIs</span>
+        <a href="{% url 'telefonica:buscar_cliente' %}"
+           class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'buscar_cliente' %}active{% endif %}">
+            <i class="bi bi-search me-2"></i> Buscar Cliente
+        </a>
+    </nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="telefonica-content">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">{% block titulo_pagina %}{% endblock %}</h1>
+        </div>
+        
+        {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        {% block contenido_telefonica %}
+        <!-- Contenido específico de cada página -->
+        {% endblock %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'telefonica/js/telefonica.js' %}"></script>
+{% endblock %}

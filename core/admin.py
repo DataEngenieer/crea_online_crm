@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from .models import LoginUser, Empleado, Cliente, Gestion, AcuerdoPago, CuotaAcuerdo
+from .models import LoginUser, Empleado, Cliente, Gestion, AcuerdoPago, CuotaAcuerdo, Campana
 
 # Personalizar el panel de administración
 class ClienteAdmin(admin.ModelAdmin):
@@ -17,8 +17,8 @@ class GestionAdmin(admin.ModelAdmin):
     date_hierarchy = 'fecha_hora_gestion'
 
 class LoginUserAdmin(admin.ModelAdmin):
-    list_display = ('created_user', 'id_user', 'tipo', 'ip')
-    list_filter = ('tipo', 'created_user')
+    list_display = ('user', 'tipo', 'ip', 'fecha')
+    list_filter = ('tipo', 'fecha')
 
 class EmpleadoAdmin(admin.ModelAdmin):
     list_display = ('nombre_empleado', 'apellido_empleado', 'email_empleado', 'documento')
@@ -42,6 +42,14 @@ class CuotaAcuerdoAdmin(admin.ModelAdmin):
     search_fields = ('acuerdo__cliente__nombre_completo', 'observaciones')
     date_hierarchy = 'fecha_vencimiento'
 
+# Clase para administrar las campañas
+class CampanaAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'codigo', 'modulo', 'activa', 'fecha_creacion')
+    list_filter = ('modulo', 'activa')
+    search_fields = ('nombre', 'codigo', 'descripcion')
+    date_hierarchy = 'fecha_creacion'
+    filter_horizontal = ('usuarios',)  # Permite seleccionar múltiples usuarios de manera más amigable
+
 # Registrar modelos con sus configuraciones personalizadas
 admin.site.register(LoginUser, LoginUserAdmin)
 admin.site.register(Cliente, ClienteAdmin)
@@ -49,6 +57,7 @@ admin.site.register(Empleado, EmpleadoAdmin)
 admin.site.register(Gestion, GestionAdmin)
 admin.site.register(AcuerdoPago, AcuerdoPagoAdmin)
 admin.site.register(CuotaAcuerdo, CuotaAcuerdoAdmin)
+admin.site.register(Campana, CampanaAdmin)
 
 # Personalizar el título del panel de administración
 admin.site.site_header = 'CREA CRM - Panel de Administración'

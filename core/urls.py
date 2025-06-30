@@ -9,7 +9,7 @@ from django.contrib.auth.views import (
 )
 
 from .forms import EmailAuthenticationForm
-from .views import LoginAuditoriaView, LogoutAuditoriaView
+from .views import LoginAuditoriaView, LogoutAuditoriaView, inicio, cambiar_modulo
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -50,6 +50,9 @@ urlpatterns = [
     # Reportes
     path('reportes/', views_reportes.reportes, name='reportes'),
     path('reportes/exportar/', views_reportes.exportar_excel, name='reportes_exportar'),
+    
+    # Cambio de módulo
+    path('set_module/', views.cambiar_modulo, name='cambiar_modulo'),
 ]
 
 if settings.DEBUG:

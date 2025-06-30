@@ -1,0 +1,90 @@
+/**
+ * Estilos específicos para la aplicación Telefónica
+ */
+
+/* Estilos para el menú lateral de Telefónica */
+#sidebarTelefonica {
+    margin-top: 10px;
+}
+
+#sidebarTelefonica .nav-link {
+    color: white;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s;
+}
+
+#sidebarTelefonica .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+#collapseTelefonica .collapse-header {
+    color: #4e73df;
+    font-weight: 800;
+    font-size: 0.65rem;
+    padding: 0.5rem 1rem;
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+}
+
+#collapseTelefonica .collapse-item {
+    padding: 0.5rem 1rem;
+    margin: 0 0.5rem;
+    display: block;
+    color: #3a3b45;
+    text-decoration: none;
+    border-radius: 0.35rem;
+    white-space: nowrap;
+}
+
+#collapseTelefonica .collapse-item:hover {
+    background-color: #eaecf4;
+}
+
+#collapseTelefonica .collapse-item.active {
+    color: #4e73df;
+    font-weight: 700;
+    background-color: #eaecf4;
+}
+
+/* Ajustes para que el menú se adapte al estilo general */
+#sidebarTelefonica.active .nav-link {
+    font-weight: 700;
+}
+
+/* Estilos para las bandejas y páginas específicas */
+.telefonica-card {
+    border-left: 0.25rem solid #4e73df;
+    margin-bottom: 1rem;
+}
+
+.bandeja-pendientes .telefonica-card {
+    border-left-color: #f6c23e;
+}
+
+.bandeja-digitacion .telefonica-card {
+    border-left-color: #1cc88a;
+}
+
+.bandeja-devueltas .telefonica-card {
+    border-left-color: #e74a3b;
+}
+
+.bandeja-seguimiento .telefonica-card {
+    border-left-color: #4e73df;
+}
+
+.comisiones-lista .telefonica-card {
+    border-left-color: #36b9cc;
+}
+
+/* Compatibilidad con el tema principal */
+.list-group-item-telefonica {
+    color: white !important;
+    background-color: transparent !important;
+    border: none !important;
+}
+
+/* Estilos para los íconos del menú */
+#sidebarTelefonica i {
+    margin-right: 0.5rem;
+}

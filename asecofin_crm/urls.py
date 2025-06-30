@@ -1,27 +1,30 @@
+"""asecofin_crm URL Configuration
+
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/4.0/topics/http/urls/
+Examples:
+Function views
+    1. Add an import:  from my_app import views
+    2. Add a URL to urlpatterns:  path('', views.home, name='home')
+Class-based views
+    1. Add an import:  from other_app.views import Home
+    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
+Including another URLconf
+    1. Import the include() function: from django.urls import include, path
+    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+"""
 from django.contrib import admin
-from django.urls import path, include, re_path
-from django.conf.urls import handler404
-from django.shortcuts import render
+from django.urls import path, include
 from django.conf import settings
-from django.views.static import serve
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('core.urls')),
-    path('tickets/', include('tickets.urls')),
-    path('chat/', include('chat.urls')),
+    path('telefonica/', include('telefonica.urls')),  # Inclusión de la aplicación Telefónica
+    path('tickets/', include('tickets.urls')),  # Inclusión de la aplicación de Tickets
 ]
 
-# Configuración de vistas de error personalizadas
-def custom_404(request, exception):
-    return render(request, '404.html', status=404)
-
-handler404 = custom_404
-
-# Añadir la configuración para servir archivos multimedia en producción.
-# Esta configuración permite que Django sirva los archivos multimedia directamente.
-# Es una solución práctica para entornos como Railway donde no se configura un servidor web aparte para esta tarea.
-if not settings.DEBUG:
-    urlpatterns += [
-        re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT})
-    ]
+# Configuración para servir archivos en modo de desarrollo
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

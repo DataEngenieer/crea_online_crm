@@ -28,9 +28,12 @@
             <div class="text-white">
                 <div class="fw-bold">{{ request.user.get_full_name|default:request.user.username }}</div>
                 <div class="small">{{ request.user.groups.first.name|default:'Usuario' }}</div>
+                <!-- Información de usuario sin selector de módulos -->
             </div>
         </div>
-
+        
+        <!-- Menú principal del sistema -->
+        {% block sidebar_menu %}
         <div class="list-group list-group-flush flex-grow-1">
             <a href="{% url 'core:inicio' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.path == '/' or request.path == '/inicio/' %}active{% endif %}">
                 <i class="bi bi-house-door me-2"></i> Inicio
@@ -79,6 +82,7 @@
             </a>
             {% endif %}
         </div>
+        {% endblock %}
 
         <div class="px-3 py-3">
             {% if request.user.is_superuser %}
@@ -406,6 +410,40 @@
             // Verificar inmediatamente al cargar la página
             verificarSeguimientosPendientes();
         });
+        
+        // Función para cambiar de módulo
+        function changeModule(moduleName) {
+            // Guardar el módulo seleccionado en una cookie para persistencia
+            document.cookie = `selected_module=${moduleName}; path=/; max-age=86400`;
+            
+            // También enviamos una petición al servidor para actualizar la sesión
+            fetch('/set_module/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    module: moduleName
+                })
+            });
+        }
+        
+        // Función auxiliar para obtener cookies
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
     </script>
     {% block extra_js %}{% endblock %}
     <!-- Toast container para notificaciones temporales -->

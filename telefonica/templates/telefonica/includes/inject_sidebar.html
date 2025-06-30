@@ -1,0 +1,6 @@
+{% load telefonica_extras %}
+
+{% if user.is_authenticated %}
+    <!-- Este bloque se insertará en la navegación principal -->
+    {% telefonica_sidebar_menu %}
+{% endif %}

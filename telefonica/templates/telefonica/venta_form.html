@@ -1,0 +1,428 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }} - Portal Telefónica{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ titulo }}</h6>
+                    <div class="steps-indicator">
+                        <div class="step-dots">
+                            <span class="step-dot active" data-step="1"></span>
+                            <span class="step-dot" data-step="2"></span>
+                            <span class="step-dot" data-step="3"></span>
+                            <span class="step-dot" data-step="4"></span>
+                        </div>
+                        <div class="step-text">Paso <span id="current-step">1</span> de 4</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" id="ventaForm">
+                        {% csrf_token %}
+                        
+                        <!-- Navegación de pestañas -->
+                        <ul class="nav nav-tabs" id="ventaTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <a class="nav-link active" id="cliente-tab" data-toggle="tab" href="#cliente" role="tab" aria-controls="cliente" aria-selected="true">
+                                    <i class="fas fa-user mr-2"></i>Datos del Cliente
+                                </a>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <a class="nav-link" id="venta-tab" data-toggle="tab" href="#venta" role="tab" aria-controls="venta" aria-selected="false">
+                                    <i class="fas fa-shopping-cart mr-2"></i>Datos de la Venta
+                                </a>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <a class="nav-link" id="documento-tab" data-toggle="tab" href="#documento" role="tab" aria-controls="documento" aria-selected="false">
+                                    <i class="fas fa-file-alt mr-2"></i>Documentación
+                                </a>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <a class="nav-link" id="confirmar-tab" data-toggle="tab" href="#confirmar" role="tab" aria-controls="confirmar" aria-selected="false">
+                                    <i class="fas fa-check-circle mr-2"></i>Confirmación
+                                </a>
+                            </li>
+                        </ul>
+                        
+                        <!-- Contenido de pestañas -->
+                        <div class="tab-content pt-4" id="ventaTabsContent">
+                            <!-- Pestaña: Datos del Cliente -->
+                            <div class="tab-pane fade show active" id="cliente" role="tabpanel" aria-labelledby="cliente-tab">
+                                <div class="card-body px-0">
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_documento">Documento:</label>
+                                            <div class="input-group">
+                                                {{ form.documento }}
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-outline-secondary" type="button" id="buscarCliente">
+                                                        <i class="fas fa-search"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_nombres">Nombres:</label>
+                                            {{ form.nombres }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_apellidos">Apellidos:</label>
+                                            {{ form.apellidos }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_correo">Correo Electrónico:</label>
+                                            {{ form.correo }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_telefono">Teléfono:</label>
+                                            {{ form.telefono }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_departamento">Departamento:</label>
+                                            {{ form.departamento }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_ciudad">Ciudad:</label>
+                                            {{ form.ciudad }}
+                                            <div class="invalid-feedback" id="ciudad-error"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_barrio">Barrio:</label>
+                                            {{ form.barrio }}
+                                            <div class="invalid-feedback" id="barrio-error"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_direccion">Dirección:</label>
+                                            {{ form.direccion }}
+                                            <div class="invalid-feedback" id="direccion-error"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-4">
+                                    <div></div>
+                                    <button type="button" class="btn btn-primary next-step" data-next="venta">
+                                        Siguiente <i class="fas fa-arrow-right ml-2"></i>
+                                    </button>
+                                </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Pestaña: Datos de la Venta -->
+                            <div class="tab-pane fade" id="venta" role="tabpanel" aria-labelledby="venta-tab">
+                                <div class="card-body px-0">
+                        
+
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_tipo_cliente">Tipo de Cliente:</label>
+                                            {{ form.tipo_cliente }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_segmento">Segmento:</label>
+                                            {{ form.segmento }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_plan_adquiere">Plan Adquirido:</label>
+                                            {{ form.plan_adquiere }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_numero_contacto">Número de Contacto:</label>
+                                            {{ form.numero_contacto }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_imei">IMEI:</label>
+                                            {{ form.imei }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_fvc">FVC:</label>
+                                            {{ form.fvc }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_nip">NIP:</label>
+                                            {{ form.nip }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_fecha_entrega">Fecha de Entrega:</label>
+                                            {{ form.fecha_entrega }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_fecha_expedicion">Fecha de Expedición:</label>
+                                            {{ form.fecha_expedicion }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_origen">Origen:</label>
+                                            {{ form.origen }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_numero_grabacion">Número de Grabación:</label>
+                                            {{ form.numero_grabacion }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_selector">Selector:</label>
+                                            {{ form.selector }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="id_orden">Orden:</label>
+                                            {{ form.orden }}
+                                            <div class="invalid-feedback" id="orden-error"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="form-group">
+                                            <label for="id_confronta">Confronta (documento de validación):</label>
+                                            {{ form.confronta }}
+                                            <div class="invalid-feedback" id="confronta-error"></div>
+                                            <small class="form-text text-muted">Seleccione el archivo de confronta si está disponible</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <div class="form-group">
+                                            <label for="id_observacion">Observaciones:</label>
+                                            {{ form.observacion }}
+                                            <div class="invalid-feedback" id="observacion-error"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mt-4">
+                                    <button type="button" class="btn btn-secondary prev-step" data-prev="cliente">
+                                        <i class="fas fa-arrow-left mr-2"></i> Anterior
+                                    </button>
+                                    <button type="button" class="btn btn-primary next-step" data-next="documento">
+                                        Siguiente <i class="fas fa-arrow-right ml-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Pestaña: Documentación -->
+                            <div class="tab-pane fade" id="documento" role="tabpanel" aria-labelledby="documento-tab">
+                                <div class="card-body px-0">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle mr-2"></i> En esta sección puede adjuntar documentos adicionales relacionados con la venta.
+                                    </div>
+                                    
+                                    <div class="card mb-4 border-left-primary">
+                                        <div class="card-body">
+                                            <h6 class="font-weight-bold mb-3">Documento de identidad</h6>
+                                            <div class="custom-file mb-3">
+                                                <input type="file" class="custom-file-input" id="documento_identidad" name="documento_identidad">
+                                                <label class="custom-file-label" for="documento_identidad">Seleccionar archivo...</label>
+                                                <div class="invalid-feedback">Por favor seleccione un archivo válido</div>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="validado_documento" name="validado_documento">
+                                                <label class="form-check-label" for="validado_documento">
+                                                    Documento verificado
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="card mb-4 border-left-success">
+                                        <div class="card-body">
+                                            <h6 class="font-weight-bold mb-3">Contrato firmado</h6>
+                                            <div class="custom-file mb-3">
+                                                <input type="file" class="custom-file-input" id="contrato_firmado" name="contrato_firmado">
+                                                <label class="custom-file-label" for="contrato_firmado">Seleccionar archivo...</label>
+                                                <div class="invalid-feedback">Por favor seleccione un archivo válido</div>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="validado_contrato" name="validado_contrato">
+                                                <label class="form-check-label" for="validado_contrato">
+                                                    Contrato verificado
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between mt-4">
+                                        <button type="button" class="btn btn-secondary prev-step" data-prev="venta">
+                                            <i class="fas fa-arrow-left mr-2"></i> Anterior
+                                        </button>
+                                        <button type="button" class="btn btn-primary next-step" data-next="confirmar">
+                                            Siguiente <i class="fas fa-arrow-right ml-2"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Pestaña: Confirmación -->
+                            <div class="tab-pane fade" id="confirmar" role="tabpanel" aria-labelledby="confirmar-tab">
+                                <div class="card-body px-0">
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle mr-2"></i> Por favor revise cuidadosamente la información antes de guardar la venta.
+                                    </div>
+                                    
+                                    <div class="card mb-4 border-left-info">
+                                        <div class="card-header bg-light">
+                                            <h6 class="font-weight-bold mb-0">Resumen de la Venta</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <p><strong>Cliente:</strong> <span id="resumen-nombre"></span></p>
+                                                    <p><strong>Documento:</strong> <span id="resumen-documento"></span></p>
+                                                    <p><strong>Teléfono:</strong> <span id="resumen-telefono"></span></p>
+                                                    <p><strong>Email:</strong> <span id="resumen-email"></span></p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <p><strong>Plan:</strong> <span id="resumen-plan"></span></p>
+                                                    <p><strong>Segmento:</strong> <span id="resumen-segmento"></span></p>
+                                                    <p><strong>Número de contacto:</strong> <span id="resumen-numero-contacto"></span></p>
+                                                    <p><strong>Fecha entrega:</strong> <span id="resumen-fecha-entrega"></span></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input" id="confirmo_venta" required>
+                                            <label class="custom-control-label" for="confirmo_venta">
+                                                Confirmo que todos los datos son correctos y la venta puede ser registrada
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between mt-4">
+                                        <button type="button" class="btn btn-secondary prev-step" data-prev="documento">
+                                            <i class="fas fa-arrow-left mr-2"></i> Anterior
+                                        </button>
+                                        <button type="submit" class="btn btn-success" id="btn-guardar-venta" disabled>
+                                            <i class="fas fa-save mr-1"></i> Guardar Venta
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group text-center d-none">
+                            <a href="{% url 'telefonica:ventas_lista' %}" class="btn btn-secondary ml-2">
+                                <i class="fas fa-times mr-1"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Activar elemento de menú correspondiente
+        $("#sidebarTelefonica").addClass("active");
+        
+        // Buscar cliente por documento
+        $("#buscarCliente").click(function() {
+            var documento = $("#id_documento").val();
+            if (documento) {
+                $.ajax({
+                    url: "{% url 'telefonica:buscar_cliente' %}",
+                    data: {
+                        'documento': documento
+                    },
+                    dataType: 'json',
+                    success: function(data) {
+                        if (data.found) {
+                            $("#id_nombres").val(data.nombres);
+                            $("#id_apellidos").val(data.apellidos);
+                            $("#id_correo").val(data.correo);
+                            $("#id_departamento").val(data.departamento);
+                            $("#id_ciudad").val(data.ciudad);
+                            $("#id_barrio").val(data.barrio);
+                            $("#id_direccion").val(data.direccion);
+                            $("#id_telefono").val(data.telefono);
+                            
+                            // Notificar al usuario
+                            toastr.success('Cliente encontrado y datos cargados');
+                        } else {
+                            // No se encontró el cliente, se dejan los campos vacíos para que se complete
+                            toastr.info('Cliente no encontrado. Por favor complete los datos');
+                        }
+                    }
+                });
+            } else {
+                toastr.error('Por favor ingrese un documento para buscar');
+            }
+        });
+        
+        // Configuración de datepicker para fechas
+        $('.datepicker').datepicker({
+            format: 'yyyy-mm-dd',
+            language: 'es',
+            autoclose: true,
+            todayHighlight: true
+        });
+    });
+</script>
+{% endblock %}

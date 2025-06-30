@@ -1,0 +1,193 @@
+{% extends 'telefonica/base_telefonica.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">Dashboard Telefónica</h1>
+    
+    <div class="row">
+        {% if es_asesor %}
+        <!-- Tarjetas para Asesores -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="telefonica-card card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Mis Ventas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ mis_ventas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-list-ul fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="telefonica-card card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pendientes</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ mis_ventas_pendientes }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-hourglass-split fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="telefonica-card card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Devueltas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ mis_ventas_devueltas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-arrow-return-left fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="telefonica-card card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Comisiones</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ mis_comisiones_pendientes }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-cash fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if es_backoffice %}
+        <!-- Tarjetas para Backoffice -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="telefonica-card card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pendientes de Revisión</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_pendientes }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-hourglass-split fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="telefonica-card card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Devueltas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_devueltas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-arrow-return-left fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="telefonica-card card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Aprobadas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_aprobadas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="telefonica-card card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Digitadas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_digitadas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-input-cursor fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Lista de ventas recientes -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Ventas Recientes</h6>
+        </div>
+        <div class="card-body">
+            {% if ventas_recientes %}
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Producto</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for venta in ventas_recientes %}
+                        <tr>
+                            <td>{{ venta.id }}</td>
+                            <td>{{ venta.cliente.nombre }} {{ venta.cliente.apellido }}</td>
+                            <td>{{ venta.producto }}</td>
+                            <td>{{ venta.fecha_creacion|date:"d/m/Y" }}</td>
+                            <td>
+                                <span class="badge {% if venta.estado_revisado == 'pendiente_revision' %}bg-warning{% elif venta.estado_revisado == 'aprobada' %}bg-success{% elif venta.estado_revisado == 'devuelta' %}bg-danger{% elif venta.estado_revisado == 'digitada' %}bg-info{% endif %}">
+                                    {{ venta.get_estado_revisado_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'telefonica:detalle_venta' venta.id %}" class="btn btn-info btn-sm">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                No hay ventas recientes para mostrar.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

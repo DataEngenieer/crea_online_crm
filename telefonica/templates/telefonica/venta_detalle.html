@@ -1,0 +1,375 @@
+{% extends 'telefonica/base_telefonica.html' %}
+{% load static %}
+
+{% block title %}Detalle de Venta - Portal Telefónica{% endblock %}
+
+{% block contenido_telefonica %}
+<div class="container-fluid mt-4">
+    <!-- Encabezado con información principal -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Venta #{{ venta.numero }}</h6>
+                    <div>
+                        <a href="{% url 'telefonica:ventas_lista' %}" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-arrow-left mr-1"></i> Volver
+                        </a>
+                        {% if es_asesor and venta.estado_revisado == 'devuelta' %}
+                        <a href="{% url 'telefonica:venta_corregir' venta.id %}" class="btn btn-sm btn-warning ml-2">
+                            <i class="fas fa-edit mr-1"></i> Corregir
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Información de la Venta</h5>
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <th width="150">Estado:</th>
+                                    <td>
+                                        {% if venta.estado_revisado == 'pendiente_revision' %}
+                                        <span class="badge badge-info">Pendiente de Revisión</span>
+                                        {% elif venta.estado_revisado == 'devuelta' %}
+                                        <span class="badge badge-warning">Devuelta para Corrección</span>
+                                        {% elif venta.estado_revisado == 'aprobada' %}
+                                        <span class="badge badge-success">Aprobada</span>
+                                        {% elif venta.estado_revisado == 'digitada' %}
+                                        <span class="badge badge-primary">Digitada</span>
+                                        {% elif venta.estado_revisado == 'rechazada' %}
+                                        <span class="badge badge-danger">Rechazada</span>
+                                        {% elif venta.estado_revisado == 'completada' %}
+                                        <span class="badge badge-dark">Completada</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Plan:</th>
+                                    <td>{{ venta.plan_adquiere }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Segmento:</th>
+                                    <td>{{ venta.get_segmento_display }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Tipo de Cliente:</th>
+                                    <td>{{ venta.get_tipo_cliente_display }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Fecha de Creación:</th>
+                                    <td>{{ venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Agente:</th>
+                                    <td>{{ venta.agente.first_name }} {{ venta.agente.last_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Backoffice:</th>
+                                    <td>{% if venta.backoffice %}{{ venta.backoffice.first_name }} {{ venta.backoffice.last_name }}{% else %}-{% endif %}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Información del Cliente</h5>
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <th width="150">Nombre:</th>
+                                    <td>{{ venta.cliente.nombre_completo }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Documento:</th>
+                                    <td>{{ venta.cliente.documento }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Correo:</th>
+                                    <td>{{ venta.cliente.correo|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Teléfono:</th>
+                                    <td>{{ venta.cliente.telefono }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Dirección:</th>
+                                    <td>{{ venta.cliente.direccion }}, {{ venta.cliente.barrio|default:"" }}, {{ venta.cliente.ciudad }}, {{ venta.cliente.departamento }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalles técnicos de la venta -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Detalles Técnicos</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <th width="150">Número de Contacto:</th>
+                                    <td>{{ venta.numero_contacto }}</td>
+                                </tr>
+                                <tr>
+                                    <th>IMEI:</th>
+                                    <td>{{ venta.imei|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>FVC:</th>
+                                    <td>{{ venta.fvc|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>NIP:</th>
+                                    <td>{{ venta.nip|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Orden:</th>
+                                    <td>{{ venta.orden|default:"-" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <th width="150">Fecha de Entrega:</th>
+                                    <td>{{ venta.fecha_entrega|date:"d/m/Y"|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Fecha de Expedición:</th>
+                                    <td>{{ venta.fecha_expedicion|date:"d/m/Y"|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Origen:</th>
+                                    <td>{{ venta.origen|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Número de Grabación:</th>
+                                    <td>{{ venta.numero_grabacion|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Selector:</th>
+                                    <td>{{ venta.selector|default:"-" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Observaciones y confronta -->
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Observaciones</h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if venta.observacion %}
+                                    <p>{{ venta.observacion }}</p>
+                                    {% else %}
+                                    <p class="text-muted">Sin observaciones</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Confronta</h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if venta.confronta %}
+                                    <p>
+                                        <a href="{{ venta.confronta.url }}" class="btn btn-outline-primary" target="_blank">
+                                            <i class="fas fa-file-download mr-1"></i> Descargar Confronta
+                                        </a>
+                                    </p>
+                                    {% else %}
+                                    <p class="text-muted">No se ha adjuntado confronta</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gestión de Backoffice (si aplica) -->
+    {% if es_backoffice and venta.estado_revisado in 'pendiente_revision,aprobada' %}
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Gestionar Venta</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'telefonica:venta_gestionar' venta.id %}">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_estado">Estado:</label>
+                                    {{ gestion_form.estado }}
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="form-group">
+                                    <label for="id_comentario">Comentario:</label>
+                                    {{ gestion_form.comentario }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Campos para devolución, aparecen dinámicamente con JavaScript -->
+                        <div id="campos_devolucion" style="display:none;">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="id_motivo_devolucion">Motivo de Devolución:</label>
+                                        {{ gestion_form.motivo_devolucion }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="id_campos_corregir">Campos a Corregir:</label>
+                                        {{ gestion_form.campos_corregir }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group text-center mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save mr-1"></i> Guardar Gestión
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Historial de gestiones -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Gestiones del Asesor</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th>Comentario</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for gestion in gestiones_asesor %}
+                                <tr>
+                                    <td>{{ gestion.fecha_gestion|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        {% if gestion.estado == 'pendiente_revision' %}
+                                        <span class="badge badge-info">Pendiente</span>
+                                        {% elif gestion.estado == 'devuelta' %}
+                                        <span class="badge badge-warning">Devuelta</span>
+                                        {% elif gestion.estado == 'aprobada' %}
+                                        <span class="badge badge-success">Aprobada</span>
+                                        {% elif gestion.estado == 'digitada' %}
+                                        <span class="badge badge-primary">Digitada</span>
+                                        {% elif gestion.estado == 'rechazada' %}
+                                        <span class="badge badge-danger">Rechazada</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ gestion.comentario }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center">No hay gestiones de asesor registradas</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Gestiones de Backoffice</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th>Comentario</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for gestion in gestiones_backoffice %}
+                                <tr>
+                                    <td>{{ gestion.fecha_gestion|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        {% if gestion.estado == 'pendiente_revision' %}
+                                        <span class="badge badge-info">Pendiente</span>
+                                        {% elif gestion.estado == 'devuelta' %}
+                                        <span class="badge badge-warning">Devuelta</span>
+                                        {% elif gestion.estado == 'aprobada' %}
+                                        <span class="badge badge-success">Aprobada</span>
+                                        {% elif gestion.estado == 'digitada' %}
+                                        <span class="badge badge-primary">Digitada</span>
+                                        {% elif gestion.estado == 'rechazada' %}
+                                        <span class="badge badge-danger">Rechazada</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ gestion.comentario }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center">No hay gestiones de backoffice registradas</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Activar elemento de menú correspondiente
+        $("#sidebarTelefonica").addClass("active");
+        
+        // Mostrar/ocultar campos de devolución según el estado seleccionado
+        $("#id_estado").change(function() {
+            if ($(this).val() === 'devuelta') {
+                $("#campos_devolucion").slideDown();
+            } else {
+                $("#campos_devolucion").slideUp();
+            }
+        });
+    });
+</script>
+{% endblock %}
