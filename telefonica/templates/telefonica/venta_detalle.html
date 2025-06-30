@@ -202,7 +202,7 @@
     </div>
 
     <!-- Gestión de Backoffice (si aplica) -->
-    {% if es_backoffice and venta.estado_revisado in 'pendiente_revision,aprobada' %}
+    {% if es_backoffice and venta.estado_revisado in 'pendiente_revision,aprobada' or es_asesor and venta.estado_revisado == 'devuelta' %}
     <div class="row mb-4">
         <div class="col-lg-12">
             <div class="card shadow">

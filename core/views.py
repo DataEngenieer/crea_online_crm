@@ -57,39 +57,54 @@ from .forms import EmailAuthenticationForm, ClienteForm, GestionForm
 class LoginAuditoriaView(LoginView):
     template_name = 'core/login.html'
     authentication_form = EmailAuthenticationForm
-
+    redirect_authenticated_user = True
+    
     def form_valid(self, form):
-        response = super().form_valid(form)
-        user = self.request.user
+        """Procesa un formulario de inicio de sesión válido."""
+        # Obtener el usuario
+        user = form.get_user()
+        
+        # Registrar el inicio de sesión
         ip = self.request.META.get('REMOTE_ADDR')
         LoginUser.registrar(user, tipo='login', ip=ip)
         
-        # Procesar la selección del módulo
+        # Iniciar sesión
+        login(self.request, user)
+        
+        # Determinar el módulo seleccionado (core por defecto)
         selected_module = self.request.POST.get('selected_module', 'core')
         
-        # Redireccionar según el módulo seleccionado
-        if selected_module == 'telefonica':
-            # Verificar si el usuario tiene acceso al módulo de Telefónica
-            # El acceso se determina por las campañas asignadas al usuario o si es superusuario
-            try:
-                if user.is_superuser or user.campanas.filter(modulo='telefonica', activa=True).exists():
-                    # Guardar en sesión la selección del módulo
-                    self.request.session['selected_module'] = 'telefonica'
-                    return redirect('telefonica:dashboard')
-                else:
-                    # Si intentó acceder pero no tiene permisos, mostrar mensaje
-                    messages.warning(self.request, 'No tienes campañas asignadas para el módulo de Telefónica')
-            except Exception as e:
-                # En caso de error (por ejemplo, si la relación de campañas aún no existe)
-                print(f"Error al verificar campañas: {e}")
-                messages.warning(self.request, 'Error al verificar permisos para el módulo de Telefónica')
+        # Guardar el módulo en la sesión
+        self.request.session['selected_module'] = selected_module
         
-        # Por defecto o si no tiene permisos para Telefónica, ir al dashboard de Core
-        self.request.session['selected_module'] = 'core'
-        return response
+        # Redirigir al dashboard correspondiente
+        if selected_module == 'telefonica':
+            return redirect('telefonica:dashboard')
+        return redirect('core:dashboard')
+    
+    def form_invalid(self, form):
+        """Maneja un formulario de inicio de sesión inválido."""
+        # Mostrar mensajes de error del formulario
+        for field, errors in form.errors.items():
+            for error in errors:
+                if field == '__all__':
+                    # Para errores generales que no están asociados a un campo específico
+                    messages.error(self.request, str(error))
+                else:
+                    # Para errores de campos específicos
+                    field_label = form.fields[field].label if field in form.fields else field
+                    messages.error(self.request, f"{field_label}: {error}")
+        
+        # Asegurarse de que el usuario no quede autenticado
+        if hasattr(self.request, 'user') and self.request.user.is_authenticated:
+            logout(self.request)
+            
+        return super().form_invalid(form)
         
     def get_success_url(self):
-        # Este método solo se usará si form_valid no redirecciona a telefónica
+        """URL a la que redirigir después de un inicio de sesión exitoso."""
+        # Este método solo se usará como respaldo si form_valid no redirecciona
+        return reverse('core:dashboard')
         return reverse('core:dashboard')
 
 class LogoutAuditoriaView(LogoutView):
@@ -1686,16 +1701,22 @@ def admin_usuarios(request):
             user = User.objects.get(id=user_id)
             campanas_seleccionadas = request.POST.getlist('campanas')
             
-            # Obtener las campañas seleccionadas
-            nuevas_campanas = Campana.objects.filter(
-                id__in=campanas_seleccionadas
-            )
+            # Si no se selecciona ninguna campaña, limpiar todas las campañas del usuario
+            if not campanas_seleccionadas:
+                user.campanas.clear()
+                messages.success(request, f'Se han quitado todas las campañas al usuario {user.username}.')
+            else:
+                # Obtener las campañas seleccionadas
+                nuevas_campanas = Campana.objects.filter(
+                    id__in=campanas_seleccionadas
+                )
+                
+                # Actualizar las campañas del usuario
+                user.campanas.clear()
+                user.campanas.add(*nuevas_campanas)
+                
+                messages.success(request, f'Campañas actualizadas para el usuario {user.username}.')
             
-            # Actualizar las campañas del usuario
-            user.campanas.clear()
-            user.campanas.add(*nuevas_campanas)
-            
-            messages.success(request, f'Campañas actualizadas para el usuario {user.username}.')
             return redirect(request.path + f'?q={q}&grupo={grupo_filtro}&page={page_number}')
 
         if accion == 'toggle_activo' and user_id:
@@ -1713,6 +1734,7 @@ def admin_usuarios(request):
 
     # Preparar datos de campañas para la plantilla
     for usuario in page_obj:
+        # Obtener los IDs de las campañas del usuario como una lista de enteros
         usuario.campanas_usuario = list(usuario.campanas.values_list('id', flat=True))
 
     return render(request, 'core/admin_usuarios.html', {

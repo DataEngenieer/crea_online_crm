@@ -329,6 +329,13 @@
       <input type="hidden" id="selected_module" name="selected_module" value="core">
       
       <button type="submit" class="btn-submit">Ingresar</button>
+      
+      <div class="text-center mt-3">
+        <p class="text-muted mb-2">¿No tienes una cuenta?</p>
+        <a href="{% url 'core:registro' %}" class="btn btn-outline-primary w-100">
+          Crear cuenta
+        </a>
+      </div>
     </form>
   </div>
 </div>

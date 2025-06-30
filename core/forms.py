@@ -1,7 +1,9 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import get_user_model
-from .models import Cliente, Gestion, GESTION_OPCIONES, ESTADO_CONTACTO_CHOICES
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
+from .models import Cliente, Gestion, GESTION_OPCIONES, ESTADO_CONTACTO_CHOICES, Campana
 
 class EmailAuthenticationForm(AuthenticationForm):
     username = forms.EmailField(
@@ -17,16 +19,34 @@ class EmailAuthenticationForm(AuthenticationForm):
         email = self.cleaned_data.get('username')
         password = self.cleaned_data.get('password')
         UserModel = get_user_model()
+        
         try:
+            # Obtener el usuario por email
             user = UserModel.objects.get(email__iexact=email)
+            
             # Verificar si el usuario está activo
             if not user.is_active:
                 raise forms.ValidationError(
                     "Esta cuenta está inactiva. Por favor contacte al administrador."
                 )
+                
+            # Verificar la contraseña
+            if not user.check_password(password):
+                raise forms.ValidationError(
+                    "Por favor, introduzca un correo y contraseña correctos. "
+                    "Observe que ambos campos pueden ser sensibles a mayúsculas."
+                )
+                
+            # Si todo está bien, establecer el nombre de usuario para la autenticación
             self.cleaned_data['username'] = user.username
+            
         except UserModel.DoesNotExist:
-            pass  # El AuthenticationForm se encargará del error
+            # No revelar si el usuario existe o no
+            raise forms.ValidationError(
+                "Por favor, introduzca un correo y contraseña correctos. "
+                "Observe que ambos campos pueden ser sensibles a mayúsculas."
+            )
+            
         return super().clean()
 
 

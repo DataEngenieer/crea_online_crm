@@ -10,6 +10,33 @@
         .telefonica-content {
             padding: 20px;
         }
+        /* Estilos para el menú lateral con scroll */
+        .sidebar-menu-telefonica {
+            max-height: calc(100vh - 120px); /* Altura máxima menos el espacio del header */
+            overflow-y: auto; /* Habilita el scroll vertical */
+            scrollbar-width: thin; /* Para navegadores Firefox */
+            scrollbar-color: rgba(255, 255, 255, 0.2) transparent; /* Color del scroll */
+        }
+        /* Estilos para el scroll en navegadores WebKit (Chrome, Safari, etc) */
+        .sidebar-menu-telefonica::-webkit-scrollbar {
+            width: 6px;
+        }
+        .sidebar-menu-telefonica::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar-menu-telefonica::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        .sidebar-menu-telefonica::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        /* Asegurar que el menú ocupe todo el alto disponible */
+        .sidebar-menu-telefonica {
+            position: sticky;
+            top: 60px; /* Ajustar según la altura del header */
+            bottom: 0;
+        }
         .menu-section {
             color: rgba(255, 255, 255, 0.6);
             font-size: 0.8rem;
@@ -17,6 +44,10 @@
             margin: 1rem 0 0.5rem;
             padding: 0.5rem 1rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            background-color: #343a40; /* Color de fondo del menú */
+            z-index: 1;
         }
         .badge-notification {
             font-size: 0.7rem;
