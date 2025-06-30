@@ -297,10 +297,12 @@
     <form method="POST" id="loginForm" autocomplete="off">
       {% csrf_token %}
       
-      {% if form.errors %}
-        <div class="alert alert-danger" role="alert">
-          Usuario o contraseña incorrectos.
-        </div>
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}danger{% endif %}" role="alert">
+            {{ message }}
+          </div>
+        {% endfor %}
       {% endif %}
       
       <div class="form-group">

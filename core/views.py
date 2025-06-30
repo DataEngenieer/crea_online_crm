@@ -60,23 +60,28 @@ class LoginAuditoriaView(LoginView):
     redirect_authenticated_user = True
     
     def form_valid(self, form):
-        """Procesa un formulario de inicio de sesión válido."""
-        # Obtener el usuario
+        """Procesa un formulario de inicio de sesión válido, verificando la campaña."""
         user = form.get_user()
-        
-        # Registrar el inicio de sesión
+        selected_module = self.request.POST.get('selected_module', 'core')
+
+        # Si se selecciona un módulo específico, verificar el acceso del usuario
+        if selected_module != 'core':
+            try:
+                campana = Campana.objects.get(nombre__iexact=selected_module)
+                # Los superusuarios tienen acceso a todo
+                if not user.is_superuser and user not in campana.usuarios.all():
+                    messages.error(self.request, f"No tienes permiso para acceder al módulo '{campana.nombre}'.")
+                    return redirect('core:login')
+            except Campana.DoesNotExist:
+                messages.error(self.request, f"El módulo seleccionado ('{selected_module}') no existe.")
+                return redirect('core:login')
+
+        # Si el usuario tiene acceso, proceder con el login
         ip = self.request.META.get('REMOTE_ADDR')
         LoginUser.registrar(user, tipo='login', ip=ip)
-        
-        # Iniciar sesión
         login(self.request, user)
-        
-        # Determinar el módulo seleccionado (core por defecto)
-        selected_module = self.request.POST.get('selected_module', 'core')
-        
-        # Guardar el módulo en la sesión
         self.request.session['selected_module'] = selected_module
-        
+
         # Redirigir al dashboard correspondiente
         if selected_module == 'telefonica':
             return redirect('telefonica:dashboard')
