@@ -95,12 +95,13 @@ class GestionAsesorForm(forms.ModelForm):
 
 
 class GestionBackofficeForm(forms.ModelForm):
+    comentarios = forms.CharField(widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}), required=False)
+
     class Meta:
         model = GestionBackoffice
-        fields = ['estado', 'comentario', 'motivo_devolucion', 'campos_corregir']
+        fields = ['estado', 'comentarios', 'motivo_devolucion', 'campos_corregir']
         widgets = {
             'estado': forms.Select(attrs={'class': 'form-control'}),
-            'comentario': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'motivo_devolucion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'campos_corregir': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }

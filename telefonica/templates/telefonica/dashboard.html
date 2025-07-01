@@ -174,7 +174,7 @@
                             </td>
                             <td>
                                 <a href="{% url 'telefonica:venta_detalle' venta.id %}" class="btn btn-info btn-sm">
-                                    <i class="bi bi-eye"></i>
+                                    <i class="bi bi-search"></i>
                                 </a>
                             </td>
                         </tr>
@@ -184,7 +184,14 @@
             </div>
             {% else %}
             <div class="alert alert-info">
-                No hay ventas recientes para mostrar.
+                {% if es_asesor and not es_backoffice %}
+                    No tienes ventas recientes registradas. 
+                    <a href="{% url 'telefonica:venta_crear' %}" class="alert-link">¡Crea una nueva venta para empezar!</a>
+                {% elif es_backoffice %}
+                    No hay ventas pendientes de revisión en este momento.
+                {% else %}
+                    No hay ventas recientes para mostrar.
+                {% endif %}
             </div>
             {% endif %}
         </div>

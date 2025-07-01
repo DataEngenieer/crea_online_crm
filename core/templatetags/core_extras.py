@@ -151,3 +151,10 @@ def estilo_tipificacion(tipificacion):
     default = {'clase': 'bg-secondary', 'icono': 'bi-question-diamond'}
     
     return estilos.get(tipificacion, default)
+
+@register.filter(name='is_in_telefonica')
+def is_in_telefonica(user):
+    """Verifica si el usuario pertenece a los grupos del módulo Telefónica."""
+    if user.is_authenticated:
+        return user.groups.filter(name__in=['asesor', 'backoffice']).exists()
+    return False

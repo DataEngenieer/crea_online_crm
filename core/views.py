@@ -1629,16 +1629,19 @@ def solo_admin(view_func):
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 
-@login_required
 def perfil_usuario(request):
     user = request.user
     if request.method == 'POST':
         nombre = request.POST.get('nombre', '').strip()
+        apellidos = request.POST.get('apellidos', '').strip()
         password1 = request.POST.get('password1', '')
         password2 = request.POST.get('password2', '')
         errores = []
+
         if nombre:
             user.first_name = nombre
+        if apellidos:
+            user.last_name = apellidos
         if password1 or password2:
             if password1 != password2:
                 errores.append('Las contraseñas no coinciden.')
