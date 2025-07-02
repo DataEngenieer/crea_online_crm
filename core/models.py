@@ -20,6 +20,7 @@ GESTION_OPCIONES = {
             'PV': {'label': 'PV - Pendiente de validación'},
             'RN': {'label': 'RN - Rechaza negociación'},
             'ND': {'label': 'ND - Niega deuda'},
+            'CLIENTE_CUELGA': {'label': 'Cliente cuelga'},
             'REMITE_ABOGADO': {'label': 'Remite a abogado'},
             'SOLICITA_INFO': {'label': 'Solicita más información'},
             'SOLICITA_LLAMADA': {'label': 'Solicita llamada posterior'},
@@ -35,6 +36,7 @@ GESTION_OPCIONES = {
     'contacto_no_efectivo': {
         'label': 'Contacto No Efectivo',
         'nivel1': {
+            'ASEGURA QUE PAGO': {'label': 'Asegura que pago'},
             'TELEFONO_APAGADO': {'label': 'Teléfono apagado'},
             'FUERA_DE_SERVICIO': {'label': 'Fuera de servicio'},
             'NO_CONTESTA': {'label': 'No contesta'},

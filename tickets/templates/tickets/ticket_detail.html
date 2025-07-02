@@ -273,7 +273,37 @@
             <!-- Tarjeta del ticket -->
             <div class="card ticket-info-card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center py-3">
-                    <div class="d-flex align-items-center"> 
+                    <div class="d-flex align-items-center">
+                        <!-- Menú desplegable para cambiar el estado -->
+                        <div class="dropdown me-3">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="estadoDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-exchange-alt me-1"></i> Cambiar Estado
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="estadoDropdown">
+                                {% if ticket.estado != 'PE' %}
+                                <li>
+                                    <form method="post" action="{% url 'tickets:cambiar_estado' ticket.id 'PE' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item text-warning">
+                                            <i class="fas fa-clock me-2"></i>Marcar como Pendiente
+                                        </button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                                {% if ticket.estado != 'CE' %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" action="{% url 'tickets:cerrar_ticket' ticket.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item text-danger" 
+                                            onclick="return confirm('¿Estás seguro de que deseas cerrar este ticket?');">
+                                            <i class="fas fa-times-circle me-2"></i>Cerrar Ticket
+                                        </button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div> 
                         <div class="position-relative me-3">
                             <div class="status-indicator position-relative">
                                 <div class="pulse-animation bg-{{ ticket.get_estado_color }}"></div>

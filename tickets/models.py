@@ -7,6 +7,11 @@ class Ticket(models.Model):
     """
     Modelo para almacenar las solicitudes de soporte (tickets).
     """
+    class Aplicativo(models.TextChoices):
+        CARTERA = 'CARTERA', 'Cartera'
+        TELEFONICA = 'TELEFONICA', 'Telefónica'
+        VICIDIAL = 'VICIDIAL', 'Vicidial'
+
     class Tipo(models.TextChoices):
         INCONVENIENTE = 'IN', 'Inconveniente'
         REQUERIMIENTO = 'RQ', 'Requerimiento'
@@ -26,6 +31,13 @@ class Ticket(models.Model):
 
     titulo = models.CharField(max_length=255, help_text="Asunto o título principal del ticket.")
     descripcion = models.TextField(help_text="Descripción detallada del inconveniente o requerimiento.")
+    aplicativo = models.CharField(
+        max_length=20, 
+        choices=Aplicativo.choices, 
+        default=Aplicativo.CARTERA,
+        verbose_name='Aplicativo',
+        help_text='Seleccione el aplicativo relacionado con el ticket'
+    )
     tipo = models.CharField(max_length=2, choices=Tipo.choices, default=Tipo.INCONVENIENTE)
     estado = models.CharField(max_length=2, choices=Estado.choices, default=Estado.ABIERTO)
     prioridad = models.CharField(max_length=2, choices=Prioridad.choices, default=Prioridad.MEDIA)

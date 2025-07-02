@@ -165,7 +165,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Resueltos</div>
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Resueltos/Cerrados</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ tickets_resueltos|default:0 }}</div>
                         </div>
                         <div class="col-auto">
@@ -227,6 +227,16 @@
             <h6 class="m-0 font-weight-bold">
                 <i class="fas fa-list me-1"></i>
                 Listado de Tickets
+                <div class="btn-group btn-group-sm ms-3" role="group">
+                    <a href="?filtro=abiertos" class="btn {% if filtro_actual != 'cerrados' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        <i class="fas fa-folder-open me-1"></i> Abiertos
+                        <span class="badge bg-light text-dark ms-1">{{ tickets_abiertos|add:tickets_pendientes|default:0 }}</span>
+                    </a>
+                    <a href="?filtro=cerrados" class="btn {% if filtro_actual == 'cerrados' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        <i class="fas fa-archive me-1"></i> Cerrados
+                        <span class="badge bg-light text-dark ms-1">{{ tickets_cerrados|default:0 }}</span>
+                    </a>
+                </div>
             </h6>
             <button type="button" class="btn btn-primary btn-sm d-sm-none shadow-sm" data-bs-toggle="modal" data-bs-target="#createTicketModal">
                 <i class="fas fa-plus me-1"></i> Nuevo Ticket
@@ -346,21 +356,21 @@
         
         // Datos para gráficos
         // Estos valores son pasados desde el backend o usamos valores por defecto
-        const estadosLabels = ['Abierto', 'En Progreso', 'Pendiente', 'Resuelto', 'Cerrado'];
-        {% if estados_count %}
-        const estadosData = {{ estados_count|safe }};
-        {% else %}
-        const estadosData = [5, 3, 2, 8, 4]; // Valores por defecto para demostración
-        {% endif %}
-        const estadosColores = ['#4e73df', '#36b9cc', '#f6c23e', '#1cc88a', '#858796'];
+        const estadosData = JSON.parse('{{ estados_count|default:"[5, 3, 2, 8, 4]"|escapejs }}');
+        const prioridadesData = JSON.parse('{{ prioridades_count|default:"[6, 12, 3, 1]"|escapejs }}');
         
-        const prioridadLabels = ['Baja', 'Media', 'Alta', 'Urgente'];
-        {% if prioridades_count %}
-        const prioridadData = {{ prioridades_count|safe }};
-        {% else %}
-        const prioridadData = [6, 12, 3, 1]; // Valores por defecto para demostración
-        {% endif %}
-        const prioridadColores = ['#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'];
+        const chartConfig = {
+            estados: {
+                labels: ['Abierto', 'En Progreso', 'Pendiente', 'Resuelto', 'Cerrado'],
+                data: estadosData,
+                colors: ['#4e73df', '#36b9cc', '#f6c23e', '#1cc88a', '#858796']
+            },
+            prioridades: {
+                labels: ['Baja', 'Media', 'Alta', 'Urgente'],
+                data: prioridadesData,
+                colors: ['#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b']
+            }
+        };
         
         // Gráfico de estados
         const statusCtx = document.getElementById('ticketsByStatusChart');
@@ -368,12 +378,13 @@
             new Chart(statusCtx, {
                 type: 'bar',
                 data: {
-                    labels: estadosLabels,
+                    labels: chartConfig.estados.labels,
                     datasets: [{
                         label: 'Tickets',
-                        data: estadosData,
-                        backgroundColor: estadosColores,
-                        borderWidth: 0,
+                        data: chartConfig.estados.data,
+                        backgroundColor: chartConfig.estados.colors,
+                        borderColor: '#fff',
+                        borderWidth: 1,
                         borderRadius: 4
                     }]
                 },
@@ -424,10 +435,10 @@
             new Chart(priorityCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: prioridadLabels,
+                    labels: chartConfig.prioridades.labels,
                     datasets: [{
-                        data: prioridadData,
-                        backgroundColor: prioridadColores,
+                        data: chartConfig.prioridades.data,
+                        backgroundColor: chartConfig.prioridades.colors,
                         hoverOffset: 4,
                         borderWidth: 0
                     }]

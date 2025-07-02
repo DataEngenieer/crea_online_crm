@@ -15,9 +15,25 @@ class TicketListView(LoginRequiredMixin, ListView):
     context_object_name = 'tickets'
     paginate_by = 15
 
+    def get_queryset(self):
+        # Obtener el parámetro de filtro de la URL (si existe)
+        filtro = self.request.GET.get('filtro', 'abiertos')
+        
+        # Filtrar tickets según el parámetro
+        if filtro == 'cerrados':
+            queryset = Ticket.objects.filter(estado__in=[Ticket.Estado.CERRADO, Ticket.Estado.RESUELTO])
+        else:  # Por defecto mostrar tickets abiertos/en progreso/pendientes
+            queryset = Ticket.objects.exclude(estado__in=[Ticket.Estado.CERRADO, Ticket.Estado.RESUELTO])
+        
+        # Ordenar por fecha de creación (más recientes primero)
+        return queryset.order_by('-fecha_creacion')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['ticket_form'] = TicketForm()
+        
+        # Obtener el filtro actual
+        context['filtro_actual'] = self.request.GET.get('filtro', 'abiertos')
         
         # Añadir conteo de tickets por estado para gráficos
         estado_counts = {
@@ -36,7 +52,9 @@ class TicketListView(LoginRequiredMixin, ListView):
         # Contadores para tarjetas de estadísticas
         context['tickets_abiertos'] = estado_counts['AB'] + estado_counts['EP']
         context['tickets_pendientes'] = estado_counts['PE']
-        context['tickets_resueltos'] = estado_counts['RS']
+        # Incluir tanto resueltos como cerrados en el contador de resueltos
+        context['tickets_resueltos'] = estado_counts['RS'] + estado_counts['CE']
+        context['tickets_cerrados'] = estado_counts['CE']
         
         # Añadir conteo de tickets por prioridad para gráfico circular
         context['prioridades_count'] = [
@@ -152,22 +170,83 @@ def reabrir_ticket(request, pk):
     """
     ticket = get_object_or_404(Ticket, pk=pk)
     
-    if request.method == 'POST':
-        # Verificar si el usuario tiene permisos para reabrir el ticket
-        if not request.user.is_staff and ticket.asignado_a != request.user:
-            messages.error(request, 'No tienes permiso para reabrir este ticket.')
-            return redirect('tickets:ticket_detail', pk=ticket.pk)
-        
-        # Reabrir el ticket
-        if ticket.estado == Ticket.Estado.CERRADO:
-            ticket.estado = Ticket.Estado.ABIERTO  # o el estado por defecto que uses para tickets abiertos
-            ticket.fecha_resolucion = None
-            ticket.save()
-            messages.success(request, 'El ticket ha sido reabierto exitosamente.')
-        else:
-            messages.info(request, 'El ticket ya está abierto.')
-        
-        return redirect('tickets:ticket_detail', pk=ticket.pk)
+    # Verificar permisos
+    if not (request.user.is_staff or request.user == ticket.solicitante or request.user == ticket.asignado):
+        messages.error(request, 'No tienes permiso para reabrir este ticket.')
+        return redirect('tickets:detalle_ticket', pk=ticket.pk)
     
-    # Si no es una petición POST, redirigir al detalle del ticket
-    return redirect('tickets:ticket_detail', pk=ticket.pk)
+    if request.method == 'POST':
+        try:
+            # Cambiar el estado a ABIERTO si estaba CERRADO o RESUELTO
+            if ticket.estado in [Ticket.Estado.CERRADO, Ticket.Estado.RESUELTO]:
+                ticket.estado = Ticket.Estado.ABIERTO
+                ticket.fecha_cierre = None
+                ticket.save()
+                
+                # Registrar la acción en el historial
+                RespuestaTicket.objects.create(
+                    ticket=ticket,
+                    autor=request.user,
+                    contenido=f'Ticket reabierto por {request.user.get_full_name() or request.user.username}.'
+                )
+                
+                messages.success(request, 'El ticket ha sido reabierto correctamente.')
+            else:
+                messages.warning(request, 'El ticket ya está abierto o en progreso.')
+                
+        except Exception as e:
+            messages.error(request, f'Error al reabrir el ticket: {str(e)}')
+            
+        return redirect('tickets:detalle_ticket', pk=ticket.pk)
+    
+    # Si no es una solicitud POST, redirigir al detalle del ticket
+    return redirect('tickets:detalle_ticket', pk=ticket.pk)
+
+@login_required
+def cambiar_estado(request, pk, nuevo_estado):
+    """
+    Vista para cambiar el estado de un ticket.
+    """
+    ticket = get_object_or_404(Ticket, pk=pk)
+    
+    # Verificar permisos
+    if not (request.user.is_staff or request.user == ticket.asignado):
+        messages.error(request, 'No tienes permiso para cambiar el estado de este ticket.')
+        return redirect('tickets:detalle_ticket', pk=ticket.pk)
+    
+    if request.method == 'POST':
+        try:
+            estado_anterior = ticket.get_estado_display()
+            
+            # Cambiar el estado según el parámetro
+            if nuevo_estado == 'PE':  # Pendiente
+                ticket.estado = Ticket.Estado.PENDIENTE
+                mensaje = f'Estado cambiado a Pendiente por {request.user.get_full_name() or request.user.username}.'
+                mensaje_exito = 'El ticket ha sido marcado como Pendiente.'
+            elif nuevo_estado == 'CE':  # Cerrar
+                ticket.estado = Ticket.Estado.CERRADO
+                ticket.fecha_cierre = timezone.now()
+                mensaje = f'Ticket cerrado por {request.user.get_full_name() or request.user.username}.'
+                mensaje_exito = 'El ticket ha sido cerrado correctamente.'
+            else:
+                messages.error(request, 'Estado no válido.')
+                return redirect('tickets:detalle_ticket', pk=ticket.pk)
+            
+            ticket.save()
+            
+            # Registrar la acción en el historial
+            RespuestaTicket.objects.create(
+                ticket=ticket,
+                autor=request.user,
+                contenido=mensaje
+            )
+            
+            messages.success(request, mensaje_exito)
+            
+        except Exception as e:
+            messages.error(request, f'Error al cambiar el estado del ticket: {str(e)}')
+        
+        return redirect('tickets:detalle_ticket', pk=ticket.pk)
+    
+    # Si no es una solicitud POST, redirigir al detalle del ticket
+    return redirect('tickets:detalle_ticket', pk=ticket.pk)

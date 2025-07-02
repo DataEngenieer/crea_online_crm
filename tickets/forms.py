@@ -17,8 +17,13 @@ class TicketForm(forms.ModelForm):
     
     class Meta:
         model = Ticket
-        fields = ['titulo', 'descripcion', 'tipo', 'prioridad', 'asignado_a']
+        fields = ['aplicativo', 'titulo', 'descripcion', 'tipo', 'prioridad', 'asignado_a']
         widgets = {
+            'aplicativo': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True,
+                'id': 'aplicativo'
+            }),
             'titulo': forms.TextInput(attrs={
                 'class': 'form-control', 
                 'placeholder': 'Ej: Problema al generar reporte de ventas',
@@ -35,6 +40,7 @@ class TicketForm(forms.ModelForm):
             'asignado_a': forms.Select(attrs={'class': 'form-select'}),
         }
         labels = {
+            'aplicativo': 'Aplicativo',
             'titulo': 'Asunto',
             'descripcion': 'Descripción detallada',
             'tipo': 'Tipo de solicitud',

@@ -90,6 +90,7 @@ def estilo_tipificacion(tipificacion):
         # Contacto efectivo - Acuerdos y pagos (verde)
         'AP': {'clase': 'bg-success text-white', 'icono': 'bi-check-circle-fill'},
         'PAGADO': {'clase': 'bg-success text-white', 'icono': 'bi-cash-coin'},
+        'PAGADO ': {'clase': 'bg-success text-white', 'icono': 'bi-cash-coin'},
         'PAGADO - Pago formalizado': {'clase': 'bg-success text-white', 'icono': 'bi-cash-coin'},
         'SAP': {'clase': 'bg-success text-white', 'icono': 'bi-check-circle-fill'},
         'AP - Acuerdo de pago formalizado': {'clase': 'bg-success text-white', 'icono': 'bi-check-circle-fill'},
@@ -116,6 +117,7 @@ def estilo_tipificacion(tipificacion):
         'ND - Niega deuda': {'clase': 'bg-warning text-dark', 'icono': 'bi-question-circle'},
         'REMITE_ABOGADO': {'clase': 'bg-warning text-dark', 'icono': 'bi-briefcase'},
         'TRAMITE_RECLAMO': {'clase': 'bg-warning text-dark', 'icono': 'bi-exclamation-triangle'},
+        'CLIENTE_CUELGA': {'clase': 'bg-warning text-dark', 'icono': 'bi-x-circle'},
         
         # Contacto no efectivo (gris azulado)
         'TELEFONO_APAGADO': {'clase': 'bg-info text-white', 'icono': 'bi-phone-vibrate'},
@@ -127,6 +129,7 @@ def estilo_tipificacion(tipificacion):
         'BUZON_VOZ': {'clase': 'bg-info text-white', 'icono': 'bi-voicemail'},
         'Buzón de voz': {'clase': 'bg-info text-white', 'icono': 'bi-voicemail'},
         'SIN_RESPUESTA_WP': {'clase': 'bg-info text-white', 'icono': 'bi-whatsapp'},
+        'ASEGURA QUE PAGO': {'clase': 'bg-info text-white', 'icono': 'bi-whatsapp'},
         
         
         # Contacto fallido (rojo)
