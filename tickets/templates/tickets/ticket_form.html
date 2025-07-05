@@ -28,8 +28,8 @@
                                 Asunto
                             </label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light">
-                                    <i class="fas fa-heading"></i>
+                                <span class="input-group-text bg-light p-2">
+                                    <i class="fas fa-heading small"></i>
                                 </span>
                                 <input type="text" name="titulo" id="id_titulo" class="form-control" placeholder="Ej: Problema al generar reporte de ventas" required>
                             </div>
@@ -45,10 +45,17 @@
                                 Aplicativo
                             </label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light">
+                                <!-- Ícono a la izquierda -->
+                                <span class="input-group-text">
                                     <i class="fas fa-mobile-alt"></i>
                                 </span>
-                                {{ form.aplicativo }}
+                                <!-- Select en línea con el ícono -->
+                                <select name="aplicativo" id="id_aplicativo" class="form-select" required>
+                                    <option value="">---------</option>
+                                    <option value="CARTERA">Cartera</option>
+                                    <option value="TELEFONICA">Telefónica</option>
+                                    <option value="VICIDIAL">Vicidial</option>
+                                </select>
                             </div>
                             {% if form.aplicativo.errors %}
                                 <div class="invalid-feedback d-block">
@@ -61,13 +68,14 @@
                             </div>
                         </div>
                         
+                        
                         <div class="mb-3">
                             <label for="id_descripcion" class="form-label fw-bold required-field">
                                 Descripción detallada
                             </label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light align-items-start">
-                                    <i class="fas fa-align-left mt-1"></i>
+                                <span class="input-group-text bg-light p-2 align-items-start">
+                                    <i class="fas fa-align-left small mt-1"></i>
                                 </span>
                                 <textarea name="descripcion" id="id_descripcion" rows="5" class="form-control" placeholder="Describe el problema o requerimiento con el mayor detalle posible..." required></textarea>
                             </div>
@@ -214,6 +222,44 @@
 
 <style>
     /* Estilos para campos de formulario */
+    .input-group-text {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .input-group-text i {
+        font-size: 1.25em;
+        width: 1.5em;
+        height: 1.5em;
+        text-align: center;
+        line-height: 1.5em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Forzar estilos para el select */
+    select.form-select {
+        display: block !important;
+        width: 100% !important;
+        height: calc(1.5em + 1rem + 2px) !important;
+        padding: 0.5rem 0.75rem !important;
+        font-size: 1rem !important;
+        font-weight: 400 !important;
+        line-height: 1.5 !important;
+        color: #212529 !important;
+        background-color: #fff !important;
+        background-clip: padding-box !important;
+        border: 1px solid #ced4da !important;
+        border-radius: 0 0.25rem 0.25rem 0 !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        appearance: none !important;
+    }
+    
+    .form-select {
+        padding: 0.375rem 0.75rem;
+    }
+    
     .modal-content {
         border: none;
         border-radius: 0.5rem;
@@ -584,6 +630,14 @@
         font-size: 0.875em;
         color: #dc3545;
     }
+
+    .input-group .input-group-text {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: calc(1.5em + 0.75rem + 2px);
+    }
+
 </style>
 
 <script>
@@ -804,4 +858,5 @@ document.addEventListener('DOMContentLoaded', function() {
     // Manejo de la carga de archivos (usando la funcionalidad ya implementada)
     // El manejo de archivos ya está implementado en las funciones superiores
 });
+
 </script>

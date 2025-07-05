@@ -230,7 +230,7 @@ def cambiar_estado(request, pk, nuevo_estado):
                 mensaje_exito = 'El ticket ha sido cerrado correctamente.'
             else:
                 messages.error(request, 'Estado no válido.')
-                return redirect('tickets:detalle_ticket', pk=ticket.pk)
+                return redirect('tickets:ticket_detail', pk=ticket.pk)
             
             ticket.save()
             

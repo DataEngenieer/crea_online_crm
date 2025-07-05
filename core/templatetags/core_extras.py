@@ -18,14 +18,14 @@ def formato_numero(valor):
     try:
         # Convertir a float si es necesario
         if valor is None:
-            return '0,00'
+            return '0'
         
         valor_float = float(valor)
         # Formatear con separador de miles y dos decimales
         # Usamos el formato español: punto como separador de miles y coma para decimales
         return '{:,.2f}'.format(valor_float).replace(',', 'X').replace('.', ',').replace('X', '.')
     except (ValueError, TypeError):
-        return '0,00'
+        return '0'
 
 @register.filter
 def get_item(lista_o_dict, key):
