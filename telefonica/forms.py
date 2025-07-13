@@ -33,6 +33,8 @@ class VentaPortabilidadForm(forms.ModelForm):
     
     # Método para inicializar el formulario con valores por defecto o personalizados
     def __init__(self, *args, **kwargs):
+        # Extraer el parámetro user si existe
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         # Obtener solo los planes activos para el selector
         self.fields['plan_adquiere'].queryset = Planes_portabilidad.objects.filter(estado='activo')

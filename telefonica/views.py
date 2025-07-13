@@ -82,7 +82,7 @@ def dashboard(request):
 # Gestión de ventas
 @login_required
 def venta_crear_portabilidad(request, documento=None):
-    """Vista para crear una nueva venta de portabilidad
+    """Vista para crear una nueva venta de portabilidad.
     
     Si se proporciona un documento en la URL, intenta precargar los datos del cliente.
     Esto permite la integración con sistemas externos como marcadores telefónicos.
@@ -96,13 +96,7 @@ def venta_crear_portabilidad(request, documento=None):
             messages.success(request, 'Venta de portabilidad registrada exitosamente.')
             return redirect('telefonica:venta_detalle', venta_id=venta.id)
     else:
-        initial_data = {}
-        if documento:
-            # Intenta precargar datos del cliente si se proporciona un documento
-            initial_data = {
-                'documento': documento,
-                # Aquí podrías agregar lógica para precargar más datos
-            }
+        initial_data = {'documento': documento} if documento else {}
         form = VentaPortabilidadForm(initial=initial_data, user=request.user)
     
     context = {
@@ -111,7 +105,6 @@ def venta_crear_portabilidad(request, documento=None):
         'tipo_venta': 'portabilidad',
         'subtitulo': 'Complete el formulario para registrar una nueva venta de portabilidad.'
     }
-    
     return render(request, 'telefonica/venta_portabilidad_form.html', context)
 
 @login_required
@@ -124,7 +117,7 @@ def venta_crear_prepago(request, documento=None):
             venta.agente = request.user
             venta.estado_venta = 'pendiente_revision'
             venta.save()
-            messages.success(request, 'Venta de Prepago registrada exitosamente.')
+            messages.success(request, 'Venta de Pre a Pos registrada exitosamente.')
             return redirect('telefonica:venta_detalle', venta_id=venta.id)
     else:
         initial_data = {}
@@ -134,8 +127,8 @@ def venta_crear_prepago(request, documento=None):
     
     context = {
         'form': form,
-        'titulo': 'Nueva Venta de Prepago',
-        'subtitulo': 'Complete el formulario para registrar una nueva venta de Prepago.'
+        'titulo': 'Nueva Venta de Pre a Pos',
+        'subtitulo': 'Complete el formulario para registrar una nueva venta de Pre a Pos.'
     }
     return render(request, 'telefonica/venta_prepago_form.html', context)
 
