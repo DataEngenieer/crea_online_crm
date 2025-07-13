@@ -16,9 +16,22 @@
                 <!-- Sección para Asesores y Administradores -->
                 {% if user|has_group:"asesor" or user.is_superuser or user|has_group:"administrador" %}
                     <h6 class="text-muted small mt-3 mb-2 ps-2">GESTIÓN DE VENTAS</h6>
-                    <a class="list-group-item list-group-item-action bg-transparent text-white border-0 ps-3 py-2" href="{% url 'telefonica:venta_crear' %}" id="crearVentaLink">
-                        <i class="bi bi-plus-circle me-2"></i> Nueva Venta
-                    </a>
+                    <div class="dropdown">
+                        <a class="list-group-item list-group-item-action bg-transparent text-white border-0 ps-3 py-2 dropdown-toggle" href="#" role="button" id="nuevaVentaDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-plus-circle me-2"></i> Nueva Venta
+                        </a>
+                        <ul class="dropdown-menu bg-dark" aria-labelledby="nuevaVentaDropdown">
+                            <li><a class="dropdown-item text-white" href="{% url 'telefonica:venta_crear_portabilidad' %}">
+                                <i class="bi bi-arrow-left-right me-2"></i>Portabilidad
+                            </a></li>
+                            <li><a class="dropdown-item text-white" href="{% url 'telefonica:venta_crear_prepago' %}">
+                                <i class="bi bi-phone me-2"></i>Prepago
+                            </a></li>
+                            <li><a class="dropdown-item text-white" href="{% url 'telefonica:venta_crear_upgrade' %}">
+                                <i class="bi bi-arrow-up-circle me-2"></i>Upgrade
+                            </a></li>
+                        </ul>
+                    </div>
                     <a class="list-group-item list-group-item-action bg-transparent text-white border-0 ps-3 py-2" href="{% url 'telefonica:ventas_lista' %}" id="ventasListaLink">
                         <i class="bi bi-list-ul me-2"></i> Mis Ventas
                     </a>

@@ -11,10 +11,12 @@ from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.db.models import Q
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 
-from .models import VentaPortabilidad, GestionAsesor, GestionBackoffice, Planes_portabilidad
+from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, GestionAsesor, GestionBackoffice, Planes_portabilidad
 from .forms import (
-    VentaPortabilidadForm, GestionAsesorForm, GestionBackofficeForm, PlanesPortabilidadForm
+    VentaPortabilidadForm, VentaPrePosForm, VentaUpgradeForm, 
+    GestionAsesorForm, GestionBackofficeForm, PlanesPortabilidadForm
 )
 
 # Funciones auxiliares para verificar permisos
@@ -39,26 +41,26 @@ def dashboard(request):
     if es_asesor:
         context.update({
             'mis_ventas': VentaPortabilidad.objects.filter(agente=user).count(),
-            'mis_ventas_pendientes': VentaPortabilidad.objects.filter(agente=user, estado_revisado='pendiente_revision').count(),
-            'mis_ventas_devueltas': VentaPortabilidad.objects.filter(agente=user, estado_revisado='devuelta').count(),
-            'mis_comisiones_pendientes': Comision.objects.filter(agente=user, estado='pendiente').count(),
+            'mis_ventas_pendientes': VentaPortabilidad.objects.filter(agente=user, estado_venta='pendiente_revision').count(),
+            'mis_ventas_devueltas': VentaPortabilidad.objects.filter(agente=user, estado_venta='devuelta').count(),
+            'mis_comisiones_pendientes': 0,  # Temporalmente establecido a 0 hasta que se implemente Comision
             'titulo': 'Dashboard Asesor'
         })
         # La tabla principal para un asesor debe mostrar sus propias ventas recientes
-        context['ventas_recientes'] = VentaPortabilidad.objects.select_related('cliente').filter(agente=user).order_by('-fecha_creacion')[:10]
+        context['ventas_recientes'] = VentaPortabilidad.objects.filter(agente=user).order_by('-fecha_creacion')[:10]
 
     # --- Lógica para Backoffice ---
     # Esto anulará algunas variables de contexto si el usuario también es asesor, lo cual es correcto.
     if es_backoffice:
         context.update({
-            'ventas_pendientes': VentaPortabilidad.objects.filter(estado_revisado='pendiente_revision').count(),
-            'ventas_devueltas': VentaPortabilidad.objects.filter(estado_revisado='devuelta').count(),
-            'ventas_aprobadas': VentaPortabilidad.objects.filter(estado_revisado='aprobada').count(),
-            'ventas_digitadas': VentaPortabilidad.objects.filter(estado_revisado='digitada').count(),
+            'ventas_pendientes': VentaPortabilidad.objects.filter(estado_venta='pendiente_revision').count(),
+            'ventas_devueltas': VentaPortabilidad.objects.filter(estado_venta='devuelta').count(),
+            'ventas_aprobadas': VentaPortabilidad.objects.filter(estado_venta='aprobada').count(),
+            'ventas_digitadas': VentaPortabilidad.objects.filter(estado_venta='digitada').count(),
             'titulo': 'Dashboard Backoffice'
         })
         # La tabla principal de backoffice debe mostrar todas las ventas recientes pendientes de revisión
-        context['ventas_recientes'] = VentaPortabilidad.objects.select_related('cliente').filter(estado_revisado='pendiente_revision').order_by('-fecha_creacion')[:10]
+        context['ventas_recientes'] = VentaPortabilidad.objects.select_related('plan_adquiere').filter(estado_venta='pendiente_revision').order_by('-fecha_creacion')[:10]
 
     # --- Lógica para Superusuario (si no está en grupos o es ambos) ---
     if user.is_superuser:
@@ -67,63 +69,100 @@ def dashboard(request):
         elif not es_backoffice and not es_asesor:
             # Asignar vista de backoffice por defecto a superusuarios sin grupo
             context.update({
-                'ventas_pendientes': VentaPortabilidad.objects.filter(estado_revisado='pendiente_revision').count(),
-                'ventas_devueltas': VentaPortabilidad.objects.filter(estado_revisado='devuelta').count(),
-                'ventas_aprobadas': VentaPortabilidad.objects.filter(estado_revisado='aprobada').count(),
-                'ventas_digitadas': VentaPortabilidad.objects.filter(estado_revisado='digitada').count(),
+                'ventas_pendientes': VentaPortabilidad.objects.filter(estado_venta='pendiente_revision').count(),
+                'ventas_devueltas': VentaPortabilidad.objects.filter(estado_venta='devuelta').count(),
+                'ventas_aprobadas': VentaPortabilidad.objects.filter(estado_venta='aprobada').count(),
+                'ventas_digitadas': VentaPortabilidad.objects.filter(estado_venta='digitada').count(),
                 'titulo': 'Dashboard Superusuario',
-                'ventas_recientes': VentaPortabilidad.objects.select_related('cliente').all().order_by('-fecha_creacion')[:10]
+                'ventas_recientes': VentaPortabilidad.objects.select_related('plan_adquiere').all().order_by('-fecha_creacion')[:10]
             })
 
     return render(request, 'telefonica/dashboard.html', context)
 
 # Gestión de ventas
 @login_required
-def venta_crear(request, documento=None):
+def venta_crear_portabilidad(request, documento=None):
     """Vista para crear una nueva venta de portabilidad
     
     Si se proporciona un documento en la URL, intenta precargar los datos del cliente.
     Esto permite la integración con sistemas externos como marcadores telefónicos.
     """
-    initial_data = {}
-    if documento:
-        # Buscar si existe una venta previa con ese documento para precargar datos
-        venta_previa = VentaPortabilidad.objects.filter(documento=documento).order_by('-fecha_creacion').first()
-        if venta_previa:
-            # Precargar solo datos personales, no los de la venta
-            initial_data = {
-                'documento': venta_previa.documento,
-                'tipo_documento': venta_previa.tipo_documento,
-                'nombres': venta_previa.nombres,
-                'apellidos': venta_previa.apellidos,
-            }
-    
     if request.method == 'POST':
-        form = VentaPortabilidadForm(request.POST, request.FILES)
+        form = VentaPortabilidadForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
-            # Crear la venta pero no guardar aún
             venta = form.save(commit=False)
-            # Asignar el agente actual
             venta.agente = request.user
-            # Establecer estado inicial
-            venta.estado_venta = 'pendiente_revision'
-            # Guardar la venta
             venta.save()
-            
-            messages.success(request, "Venta de portabilidad creada correctamente. Pendiente de revisión.")
-            return redirect('telefonica:detalle_venta', pk=venta.id)
+            messages.success(request, 'Venta de portabilidad registrada exitosamente.')
+            return redirect('telefonica:venta_detalle', venta_id=venta.id)
     else:
-        # Usar initial_data para precargar el formulario si hay documento
-        form = VentaPortabilidadForm(initial=initial_data)
+        initial_data = {}
+        if documento:
+            # Intenta precargar datos del cliente si se proporciona un documento
+            initial_data = {
+                'documento': documento,
+                # Aquí podrías agregar lógica para precargar más datos
+            }
+        form = VentaPortabilidadForm(initial=initial_data, user=request.user)
     
     context = {
         'form': form,
         'titulo': 'Nueva Venta de Portabilidad',
-        'subtitulo': 'Ingrese los datos del cliente y la venta',
-        'boton': 'Crear Venta',
+        'tipo_venta': 'portabilidad',
+        'subtitulo': 'Complete el formulario para registrar una nueva venta de portabilidad.'
     }
     
     return render(request, 'telefonica/venta_portabilidad_form.html', context)
+
+@login_required
+def venta_crear_prepago(request, documento=None):
+    """Vista para crear una nueva venta de Prepago"""
+    if request.method == 'POST':
+        form = VentaPrePosForm(request.POST, request.FILES, user=request.user)
+        if form.is_valid():
+            venta = form.save(commit=False)
+            venta.agente = request.user
+            venta.estado_venta = 'pendiente_revision'
+            venta.save()
+            messages.success(request, 'Venta de Prepago registrada exitosamente.')
+            return redirect('telefonica:venta_detalle', venta_id=venta.id)
+    else:
+        initial_data = {}
+        if documento:
+            initial_data = {'documento': documento}
+        form = VentaPrePosForm(initial=initial_data, user=request.user)
+    
+    context = {
+        'form': form,
+        'titulo': 'Nueva Venta de Prepago',
+        'subtitulo': 'Complete el formulario para registrar una nueva venta de Prepago.'
+    }
+    return render(request, 'telefonica/venta_prepago_form.html', context)
+
+@login_required
+def venta_crear_upgrade(request, documento=None):
+    """Vista para crear una nueva venta de Upgrade"""
+    if request.method == 'POST':
+        form = VentaUpgradeForm(request.POST, request.FILES, user=request.user)
+        if form.is_valid():
+            venta = form.save(commit=False)
+            venta.agente = request.user
+            venta.estado_venta = 'pendiente_revision'
+            venta.save()
+            messages.success(request, 'Venta de Upgrade registrada exitosamente.')
+            return redirect('telefonica:venta_detalle', venta_id=venta.id)
+    else:
+        initial_data = {}
+        if documento:
+            initial_data = {'documento': documento}
+        form = VentaUpgradeForm(initial=initial_data, user=request.user)
+    
+    context = {
+        'form': form,
+        'titulo': 'Nueva Venta de Upgrade',
+        'subtitulo': 'Complete el formulario para registrar una nueva venta de Upgrade.'
+    }
+    return render(request, 'telefonica/venta_upgrade_form.html', context)
 
 @login_required
 def detalle_venta(request, pk):
@@ -277,6 +316,51 @@ def venta_corregir(request, venta_id):
     """Vista para corregir una venta devuelta"""
     venta = get_object_or_404(VentaPortabilidad, id=venta_id)
     
+    # Solo el asesor que creó la venta puede corregirla
+    if venta.agente != request.user:
+        return HttpResponseForbidden("No tienes permiso para corregir esta venta")
+    
+    # Solo se pueden corregir ventas devueltas
+    if venta.estado_venta != 'devuelta':
+        messages.error(request, 'Esta venta no está en estado de corrección')
+        return redirect('telefonica:venta_detalle', venta_id=venta.id)
+    
+    # Obtener la última gestión de backoffice (motivo de devolución)
+    ultima_gestion = GestionBackoffice.objects.filter(
+        venta=venta,
+        accion='devolver'
+    ).order_by('-fecha').first()
+    
+    if request.method == 'POST':
+        form = CorreccionVentaForm(request.POST, request.FILES, instance=venta)
+        if form.is_valid():
+            venta = form.save(commit=False)
+            venta.estado_venta = 'pendiente_revision'  # Vuelve a pendiente de revisión
+            venta.save()
+            
+            # Registrar gestión del asesor
+            gestion = GestionAsesor(
+                venta=venta,
+                asesor=request.user,
+                accion='corregir',
+                comentario='Venta corregida y reenviada a revisión'
+            )
+            gestion.save()
+            
+            messages.success(request, 'Venta corregida y reenviada a revisión')
+            return redirect('telefonica:ventas')
+    else:
+        form = CorreccionVentaForm(instance=venta)
+    
+    context = {
+        'venta': venta,
+        'form': form,
+        'ultima_gestion': ultima_gestion,
+        'titulo': 'Corregir Venta'
+    }
+    
+    return render(request, 'telefonica/venta_corregir.html', context)
+    
 
 # ----- CRUD para Planes de Portabilidad -----
 
@@ -364,6 +448,7 @@ def plan_portabilidad_eliminar(request, plan_id):
 
 @login_required
 @user_passes_test(lambda u: u.groups.filter(name='backoffice').exists() or u.is_superuser)
+@csrf_exempt  # Eximir de la protección CSRF para peticiones AJAX
 def plan_portabilidad_cambiar_estado(request, plan_id):
     """Cambia el estado de un plan de portabilidad (activar/desactivar)"""
     plan = get_object_or_404(Planes_portabilidad, id=plan_id)
@@ -384,51 +469,6 @@ def plan_portabilidad_cambiar_estado(request, plan_id):
         return JsonResponse({'success': True, 'mensaje': mensaje, 'estado': plan.estado})
     
     return redirect('telefonica:planes_portabilidad_lista')
-    
-    # Solo el asesor que creó la venta puede corregirla
-    if venta.agente != request.user:
-        return HttpResponseForbidden("No tienes permiso para corregir esta venta")
-    
-    # Solo se pueden corregir ventas devueltas
-    if venta.estado_revisado != 'devuelta':
-        messages.error(request, 'Esta venta no está en estado de corrección')
-        return redirect('telefonica:venta_detalle', venta_id=venta.id)
-    
-    # Obtener la última gestión de backoffice (motivo de devolución)
-    ultima_gestion = GestionBackoffice.objects.filter(
-        venta=venta,
-        accion='devolver'
-    ).order_by('-fecha').first()
-    
-    if request.method == 'POST':
-        form = CorreccionVentaForm(request.POST, request.FILES, instance=venta)
-        if form.is_valid():
-            venta = form.save(commit=False)
-            venta.estado_revisado = 'pendiente_revision'  # Vuelve a pendiente de revisión
-            venta.save()
-            
-            # Registrar gestión del asesor
-            gestion = GestionAsesor(
-                venta=venta,
-                asesor=request.user,
-                accion='corregir',
-                comentario='Venta corregida y reenviada a revisión'
-            )
-            gestion.save()
-            
-            messages.success(request, 'Venta corregida y reenviada a revisión')
-            return redirect('telefonica:ventas')
-    else:
-        form = CorreccionVentaForm(instance=venta)
-    
-    context = {
-        'venta': venta,
-        'form': form,
-        'ultima_gestion': ultima_gestion,
-        'titulo': 'Corregir Venta'
-    }
-    
-    return render(request, 'telefonica/venta_corregir.html', context)
 
 @login_required
 @user_passes_test(lambda u: u.groups.filter(name='backoffice').exists())
@@ -437,7 +477,7 @@ def venta_revisar(request, venta_id):
     venta = get_object_or_404(VentaPortabilidad, id=venta_id)
     
     # Solo se pueden revisar ventas pendientes
-    if venta.estado_revisado != 'pendiente_revision':
+    if venta.estado_venta != 'pendiente_revision':
         messages.error(request, 'Esta venta ya ha sido revisada')
         return redirect('telefonica:venta_detalle', venta_id=venta.id)
     
@@ -451,10 +491,10 @@ def venta_revisar(request, venta_id):
         
         # Actualizar estado de la venta
         if accion == 'aprobar':
-            venta.estado_revisado = 'aprobada'
+            venta.estado_venta = 'aprobada'
             mensaje = 'Venta aprobada correctamente'
         else:  # devolver
-            venta.estado_revisado = 'devuelta'
+            venta.estado_venta = 'devuelta'
             mensaje = 'Venta devuelta para corrección'
         
         venta.save()

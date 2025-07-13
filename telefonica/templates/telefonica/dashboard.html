@@ -168,8 +168,8 @@
                             <td>{{ venta.producto }}</td>
                             <td>{{ venta.fecha_creacion|date:"d/m/Y" }}</td>
                             <td>
-                                <span class="badge {% if venta.estado_revisado == 'pendiente_revision' %}bg-warning{% elif venta.estado_revisado == 'aprobada' %}bg-success{% elif venta.estado_revisado == 'devuelta' %}bg-danger{% elif venta.estado_revisado == 'digitada' %}bg-info{% endif %}">
-                                    {{ venta.get_estado_revisado_display }}
+                                <span class="badge {% if venta.estado_venta == 'pendiente_revision' %}bg-warning{% elif venta.estado_venta == 'aprobada' %}bg-success{% elif venta.estado_venta == 'devuelta' %}bg-danger{% elif venta.estado_venta == 'digitada' %}bg-info{% endif %}">
+                                    {{ venta.get_estado_venta_display }}
                                 </span>
                             </td>
                             <td>
@@ -186,7 +186,22 @@
             <div class="alert alert-info">
                 {% if es_asesor and not es_backoffice %}
                     No tienes ventas recientes registradas. 
-                    <a href="{% url 'telefonica:venta_crear' %}" class="alert-link">¡Crea una nueva venta para empezar!</a>
+                    <div class="dropdown d-inline-block">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="nuevaVentaDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-plus-circle me-2"></i>Nueva Venta
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="nuevaVentaDropdown">
+                            <li><a class="dropdown-item" href="{% url 'telefonica:venta_crear_portabilidad' %}">
+                                <i class="bi bi-arrow-left-right me-2"></i>Portabilidad
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'telefonica:venta_crear_prepago' %}">
+                                <i class="bi bi-phone me-2"></i>Prepago
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'telefonica:venta_crear_upgrade' %}">
+                                <i class="bi bi-arrow-up-circle me-2"></i>Upgrade
+                            </a></li>
+                        </ul>
+                    </div>
                 {% elif es_backoffice %}
                     No hay ventas pendientes de revisión en este momento.
                 {% else %}

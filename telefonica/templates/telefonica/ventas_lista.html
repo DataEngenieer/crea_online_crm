@@ -12,9 +12,28 @@
                     <h6 class="m-0 font-weight-bold text-primary">Listado de Ventas</h6>
                     <div>
                         {% if not es_backoffice %}
-                        <a href="{% url 'telefonica:venta_crear' %}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-plus mr-1"></i> Nueva Venta
-                        </a>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-plus me-1"></i> Nueva Venta
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'telefonica:venta_crear_portabilidad' %}">
+                                        <i class="bi bi-arrow-left-right me-2"></i>Portabilidad
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'telefonica:venta_crear_prepago' %}">
+                                        <i class="bi bi-phone me-2"></i>Prepago
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'telefonica:venta_crear_upgrade' %}">
+                                        <i class="bi bi-arrow-up-circle me-2"></i>Upgrade
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                         {% endif %}
                     </div>
                 </div>
@@ -78,18 +97,18 @@
                                     <td>{{ venta.plan_adquiere }}</td>
                                     <td>{{ venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
                                     <td>
-                                        {% if venta.estado_revisado == 'pendiente_revision' %}
-                                        <span class="badge badge-info">Pendiente</span>
-                                        {% elif venta.estado_revisado == 'devuelta' %}
-                                        <span class="badge badge-warning">Devuelta</span>
-                                        {% elif venta.estado_revisado == 'aprobada' %}
-                                        <span class="badge badge-success">Aprobada</span>
-                                        {% elif venta.estado_revisado == 'digitada' %}
-                                        <span class="badge badge-primary">Digitada</span>
-                                        {% elif venta.estado_revisado == 'rechazada' %}
-                                        <span class="badge badge-danger">Rechazada</span>
-                                        {% elif venta.estado_revisado == 'completada' %}
-                                        <span class="badge badge-dark">Completada</span>
+                                        {% if venta.estado_venta == 'pendiente_revision' %}
+                                        <span class="badge bg-warning">Pendiente</span>
+                                        {% elif venta.estado_venta == 'devuelta' %}
+                                        <span class="badge bg-danger">Devuelta</span>
+                                        {% elif venta.estado_venta == 'aprobada' %}
+                                        <span class="badge bg-success">Aprobada</span>
+                                        {% elif venta.estado_venta == 'digitada' %}
+                                        <span class="badge bg-info">Digitada</span>
+                                        {% elif venta.estado_venta == 'rechazada' %}
+                                        <span class="badge bg-secondary">Rechazada</span>
+                                        {% elif venta.estado_venta == 'completada' %}
+                                        <span class="badge bg-primary">Completada</span>
                                         {% endif %}
                                     </td>
                                     <td>{{ venta.agente.username }}</td>
@@ -100,7 +119,7 @@
                                         <a href="{% url 'telefonica:venta_detalle' venta.id %}" class="btn btn-sm btn-info">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        {% if not es_backoffice and venta.estado_revisado == 'devuelta' %}
+                                        {% if not es_backoffice and venta.estado_venta == 'devuelta' %}
                                         <a href="{% url 'telefonica:venta_corregir' venta.id %}" class="btn btn-sm btn-warning">
                                             <i class="fas fa-edit"></i>
                                         </a>

@@ -382,35 +382,13 @@
         // Activar elemento de menú correspondiente
         $("#sidebarTelefonica").addClass("active");
         
-        // Buscar cliente por documento
+        // Funcionalidad de búsqueda de cliente desactivada
         $("#buscarCliente").click(function() {
             var documento = $("#id_documento").val();
             if (documento) {
-                $.ajax({
-                    url: "{% url 'telefonica:buscar_cliente' %}",
-                    data: {
-                        'documento': documento
-                    },
-                    dataType: 'json',
-                    success: function(data) {
-                        if (data.found) {
-                            $("#id_nombres").val(data.nombres);
-                            $("#id_apellidos").val(data.apellidos);
-                            $("#id_correo").val(data.correo);
-                            $("#id_departamento").val(data.departamento);
-                            $("#id_ciudad").val(data.ciudad);
-                            $("#id_barrio").val(data.barrio);
-                            $("#id_direccion").val(data.direccion);
-                            $("#id_telefono").val(data.telefono);
-                            
-                            // Notificar al usuario
-                            toastr.success('Cliente encontrado y datos cargados');
-                        } else {
-                            // No se encontró el cliente, se dejan los campos vacíos para que se complete
-                            toastr.info('Cliente no encontrado. Por favor complete los datos');
-                        }
-                    }
-                });
+                // Mostrar mensaje de funcionalidad desactivada
+                alert("La funcionalidad de búsqueda de cliente está desactivada temporalmente.");
+                console.log("Búsqueda de cliente desactivada. Documento: " + documento);
             } else {
                 toastr.error('Por favor ingrese un documento para buscar');
             }

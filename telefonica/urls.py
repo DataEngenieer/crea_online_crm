@@ -11,8 +11,18 @@ urlpatterns = [
     path('perfil/', views.perfil_telefonica, name='perfil'),
     path('', views.dashboard, name='dashboard'),
     path('ventas/', views.ventas_lista, name='ventas_lista'),
-    path('ventas/nueva/', views.venta_crear, name='venta_crear'),
-    path('ventas/nueva/<str:documento>/', views.venta_crear, name='venta_crear_con_documento'),
+    
+    # Rutas para ventas de Portabilidad
+    path('ventas/portabilidad/nueva/', views.venta_crear_portabilidad, name='venta_crear_portabilidad'),
+    path('ventas/portabilidad/nueva/<str:documento>/', views.venta_crear_portabilidad, name='venta_crear_portabilidad_con_documento'),
+    
+    # Rutas para ventas de Prepago
+    path('ventas/prepago/nueva/', views.venta_crear_prepago, name='venta_crear_prepago'),
+    path('ventas/prepago/nueva/<str:documento>/', views.venta_crear_prepago, name='venta_crear_prepago_con_documento'),
+    
+    # Rutas para ventas de Upgrade
+    path('ventas/upgrade/nueva/', views.venta_crear_upgrade, name='venta_crear_upgrade'),
+    path('ventas/upgrade/nueva/<str:documento>/', views.venta_crear_upgrade, name='venta_crear_upgrade_con_documento'),
     path('ventas/<int:pk>/', views.detalle_venta, name='venta_detalle'),
     path('ventas/<int:pk>/corregir/', views.venta_corregir, name='venta_corregir'),
     
@@ -32,9 +42,4 @@ urlpatterns = [
     path('planes-portabilidad/<int:plan_id>/editar/', views.plan_portabilidad_editar, name='plan_portabilidad_editar'),
     path('planes-portabilidad/<int:plan_id>/eliminar/', views.plan_portabilidad_eliminar, name='plan_portabilidad_eliminar'),
     path('planes-portabilidad/<int:plan_id>/cambiar-estado/', views.plan_portabilidad_cambiar_estado, name='plan_portabilidad_cambiar_estado'),
-    path('planes/crear/', views.plan_crear, name='plan_crear'),
-    path('planes/<int:plan_id>/', views.plan_detalle, name='plan_detalle'),
-    path('planes/<int:plan_id>/editar/', views.plan_editar, name='plan_editar'),
-    path('planes/<int:plan_id>/eliminar/', views.plan_eliminar, name='plan_eliminar'),
-    path('planes/<int:plan_id>/cambiar-estado/', views.plan_cambiar_estado, name='plan_cambiar_estado'),
 ]

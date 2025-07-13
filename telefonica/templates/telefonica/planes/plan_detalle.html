@@ -114,8 +114,8 @@
                                     <td>{{ venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
                                     <td>{{ venta.agente.get_full_name|default:venta.agente.username }}</td>
                                     <td>
-                                        <span class="badge badge-{% if venta.estado_revisado == 'aprobada' %}success{% elif venta.estado_revisado == 'pendiente_revision' %}warning{% elif venta.estado_revisado == 'devuelta' %}danger{% else %}info{% endif %}">
-                                            {{ venta.get_estado_revisado_display }}
+                                        <span class="badge badge-{% if venta.estado_venta == 'aprobada' %}success{% elif venta.estado_venta == 'pendiente_revision' %}warning{% elif venta.estado_venta == 'devuelta' %}danger{% else %}info{% endif %}">
+                                            {{ venta.get_estado_venta_display }}
                                         </span>
                                     </td>
                                     <td>

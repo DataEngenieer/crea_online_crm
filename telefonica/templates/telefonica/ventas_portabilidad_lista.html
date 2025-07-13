@@ -29,9 +29,28 @@
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Ventas de Portabilidad</h5>
-            <a href="{% url 'telefonica:venta_crear' %}" class="btn btn-sm btn-light">
-                <i class="fas fa-plus me-1"></i> Nueva Venta
-            </a>
+            <div class="btn-group">
+                <button type="button" class="btn btn-light btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-plus me-1"></i> Nueva Venta
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a class="dropdown-item" href="{% url 'telefonica:venta_crear_portabilidad' %}">
+                            <i class="bi bi-arrow-left-right me-2"></i>Portabilidad
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'telefonica:venta_crear_prepago' %}">
+                            <i class="bi bi-phone me-2"></i>Prepago
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'telefonica:venta_crear_upgrade' %}">
+                            <i class="bi bi-arrow-up-circle me-2"></i>Upgrade
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
         <div class="card-body">
             <!-- Filtros -->

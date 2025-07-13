@@ -75,8 +75,9 @@ class VentaPortabilidad(models.Model):
         ('PP', 'Pasaporte'),
     ]
 
-    tipo_cliente = models.CharField(max_length=20, choices=TIPO_CLIENTE_CHOICES, verbose_name=_("Tipo de Cliente"))
     numero = models.IntegerField(verbose_name=_("Número"), null=False, blank=False)
+    tipo_cliente = models.CharField(max_length=20, choices=TIPO_CLIENTE_CHOICES, verbose_name=_("Tipo de Cliente"))
+
     tipo_documento = models.CharField(
         max_length=10, 
         choices=TIPO_DOCUMENTO_CHOICES,
@@ -89,7 +90,7 @@ class VentaPortabilidad(models.Model):
     nombres = models.CharField(max_length=100, verbose_name=_("Nombres"), null=False)
     apellidos = models.CharField(max_length=100, verbose_name=_("Apellidos"), null=False)
     telefono_legalizacion = models.CharField(max_length=10, verbose_name=_("Teléfono Legalización"), null=False)
-    plan_adquiere = models.ForeignKey(Planes_portabilidad, on_delete=models.PROTECT, related_name='ventas', verbose_name=_("Plan Adquirido"), null=False)
+    plan_adquiere = models.ForeignKey(Planes_portabilidad, on_delete=models.PROTECT, related_name='ventas_portabilidad', verbose_name=_("Plan Adquirido"), null=False)
     numero_a_portar = models.CharField(max_length=10, verbose_name=_("Número a Portar"), null=False)
     nip = models.IntegerField(verbose_name=_("NIP"), null=False, blank=False)
     fecha_entrega = models.DateField(verbose_name=_("Fecha de Entrega"), null=False, blank=False)
@@ -99,10 +100,10 @@ class VentaPortabilidad(models.Model):
     usuario_greta = models.CharField(max_length=100, verbose_name=_("Usuario Greta"), null=False)
     confronta = models.FileField(upload_to='confrontas/', verbose_name=_("Confronta"), null=True, blank=True)
     observacion = models.TextField(verbose_name=_("Observación"), null=True, blank=True)
-    agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_realizadas", verbose_name=_("Agente"))
-    backoffice = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_revisadas", verbose_name=_("Backoffice"))
+    agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_portabilidad_realizadas", verbose_name=_("Agente"))
+    backoffice = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_portabilidad_revisadas", verbose_name=_("Backoffice"))
 
-    estado_venta = models.CharField(max_length=20, choices=ESTADO_VENTA_CHOICES, default='pendiente_revision', verbose_name=_("Estado"))
+    estado_venta = models.CharField(max_length=30, choices=ESTADO_VENTA_CHOICES, default='pendiente_revision', verbose_name=_("Estado"))
     estado_logistica = models.CharField(max_length=20, choices=ESTADO_LOGISTICA_CHOICES, default='pendiente_revision', verbose_name=_("Estado Logística"))
     
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Creación"))
@@ -140,6 +141,7 @@ class VentaPrePos(models.Model):
 
     numero = models.IntegerField(verbose_name=_("Número"), null=False, blank=False)
     tipo_cliente = models.CharField(max_length=20, choices=TIPO_CLIENTE_CHOICES, verbose_name=_("Tipo de Cliente"))
+
     tipo_documento = models.CharField(
         max_length=10, 
         choices=TIPO_DOCUMENTO_CHOICES,
@@ -152,12 +154,12 @@ class VentaPrePos(models.Model):
     nombres = models.CharField(max_length=100, verbose_name=_("Nombres"), null=False)
     apellidos = models.CharField(max_length=100, verbose_name=_("Apellidos"), null=False)
     telefono_legalizacion = models.CharField(max_length=10, verbose_name=_("Teléfono Legalización"), null=False)
-    plan_adquiere = models.ForeignKey(Planes_portabilidad, on_delete=models.PROTECT, related_name='ventas', verbose_name=_("Plan Adquirido"), null=False)
+    plan_adquiere = models.ForeignKey(Planes_portabilidad, on_delete=models.PROTECT, related_name='ventas_prepos', verbose_name=_("Plan Adquirido"), null=False)
     numero_orden = models.IntegerField(verbose_name=_("Número de Orden"), null=False)
     base_origen = models.CharField(max_length=100, verbose_name=_("Base Origen"), null=False)
     usuario_greta = models.CharField(max_length=100, verbose_name=_("Usuario Greta"), null=False)
     observacion = models.TextField(verbose_name=_("Observación"), null=True, blank=True)
-    agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_realizadas", verbose_name=_("Agente"))
+    agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_prepos_realizadas", verbose_name=_("Agente"))
 
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Creación"))
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name=_("Fecha de Actualización"))
@@ -207,13 +209,13 @@ class VentaUpgrade(models.Model):
     apellidos = models.CharField(max_length=100, verbose_name=_("Apellidos"), null=False)
     telefono_legalizacion = models.CharField(max_length=10, verbose_name=_("Teléfono Legalización"), null=False)
     codigo_verificacion = models.CharField(max_length=6, verbose_name=_("Código de Verificación"), null=False, blank=False)
-    plan_adquiere = models.ForeignKey(Planes_portabilidad, on_delete=models.PROTECT, related_name='ventas', verbose_name=_("Plan Adquirido"), null=False)
+    plan_adquiere = models.ForeignKey(Planes_portabilidad, on_delete=models.PROTECT, related_name='ventas_upgrade', verbose_name=_("Plan Adquirido"), null=False)
     numero_orden = models.IntegerField(verbose_name=_("Número de Orden"), null=False)
     base_origen = models.CharField(max_length=100, verbose_name=_("Base Origen"), null=False)
     usuario_greta = models.CharField(max_length=100, verbose_name=_("Usuario Greta"), null=False)
     
     observacion = models.TextField(verbose_name=_("Observación"), null=True, blank=True)
-    agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_realizadas", verbose_name=_("Agente"))
+    agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_upgrade_realizadas", verbose_name=_("Agente"))
 
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Creación"))
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name=_("Fecha de Actualización"))
@@ -249,93 +251,91 @@ class agendamiento(models.Model):
     agente = models.ForeignKey(User, on_delete=models.CASCADE, related_name="agendamientos", verbose_name=_("Agente"))
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Creación"))
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name=_("Fecha de Actualización"))
-    
+
     class Meta:
         verbose_name = _("Agendamiento")
         verbose_name_plural = _("Agendamientos")
-        ordering = ['-fecha_creacion']
+        ordering = ['-fecha_volver_a_llamar']
     
     def __str__(self):
-        return f"Agendamiento {self.id} - {self.nombre_cliente} - {self.telefono_contacto}"
+        return f"Agendamiento {self.id} - {self.nombre_cliente} - {self.fecha_volver_a_llamar}"
+
 
 class GestionAsesor(models.Model):
+    """Modelo para registrar las gestiones realizadas por asesores en las ventas"""
     venta = models.ForeignKey(VentaPortabilidad, on_delete=models.CASCADE, related_name="gestiones_asesor", verbose_name=_("Venta"))
     agente = models.ForeignKey(User, on_delete=models.CASCADE, related_name="gestiones", verbose_name=_("Agente"))
-    fecha_gestion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Gestión"))
-    estado = models.CharField(max_length=20, choices=ESTADO_VENTA_CHOICES, verbose_name=_("Estado"))
     comentario = models.TextField(verbose_name=_("Comentario"))
+    fecha_gestion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Gestión"))
     
     class Meta:
-        verbose_name = _("Gestión de Asesor")
-        verbose_name_plural = _("Gestiones de Asesores")
+        verbose_name = _("Gestión Asesor")
+        verbose_name_plural = _("Gestiones Asesores")
         ordering = ['-fecha_gestion']
     
     def __str__(self):
-        return f"Gestión {self.id} - Venta {self.venta.id} - {self.agente.username}"
+        return f"Gestión {self.id} - {self.venta} - {self.fecha_gestion}"
 
 
 class GestionBackoffice(models.Model):
+    """Modelo para registrar las gestiones realizadas por backoffice en las ventas"""
     venta = models.ForeignKey(VentaPortabilidad, on_delete=models.CASCADE, related_name="gestiones_backoffice", verbose_name=_("Venta"))
     backoffice = models.ForeignKey(User, on_delete=models.CASCADE, related_name="validaciones", verbose_name=_("Backoffice"))
-    fecha_gestion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Gestión"))
-    estado = models.CharField(max_length=20, choices=ESTADO_VENTA_CHOICES, verbose_name=_("Estado"))
     comentario = models.TextField(verbose_name=_("Comentario"))
-    motivo_devolucion = models.TextField(verbose_name=_("Motivo de devolución"), null=True, blank=True)
-    campos_corregir = models.TextField(verbose_name=_("Campos a corregir"), null=True, blank=True)
+    fecha_gestion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Gestión"))
     
     class Meta:
-        verbose_name = _("Gestión de Backoffice")
-        verbose_name_plural = _("Gestiones de Backoffice")
+        verbose_name = _("Gestión Backoffice")
+        verbose_name_plural = _("Gestiones Backoffice")
         ordering = ['-fecha_gestion']
     
     def __str__(self):
-        return f"Validación {self.id} - Venta {self.venta.id} - {self.backoffice.username}"
-    
-    def save(self, *args, **kwargs):
-        # Si el estado es 'devuelta', actualizar el estado de la venta
-        if self.estado == 'devuelta' and self.venta.estado_revisado != 'devuelta':
-            self.venta.estado_revisado = 'devuelta'
-            self.venta.observacion_2 = self.motivo_devolucion
-            self.venta.save()
-        
-        # Si el estado es 'aprobada', actualizar el estado de la venta
-        elif self.estado == 'aprobada' and self.venta.estado_revisado != 'aprobada':
-            self.venta.estado_revisado = 'aprobada'
-            self.venta.save()
-            
-        # Si el estado es 'digitada', actualizar el estado de la venta
-        elif self.estado == 'digitada' and self.venta.estado_revisado != 'digitada':
-            self.venta.estado_revisado = 'digitada'
-            self.venta.save()
-            
-        # Si el estado es 'rechazada', actualizar el estado de la venta
-        elif self.estado == 'rechazada' and self.venta.estado_revisado != 'rechazada':
-            self.venta.estado_revisado = 'rechazada'
-            self.venta.save()
+        return f"Gestión {self.id} - {self.venta} - {self.fecha_gestion}"
 
-        super().save(*args, **kwargs)
+
+class Escalamiento(models.Model):
+    """Modelo para registrar los escalamientos de ventas"""
+    TIPO_ESCALAMIENTO_CHOICES = [
+        ('documentacion', 'Documentación'),
+        ('sistema', 'Sistema'),
+        ('otro', 'Otro'),
+    ]
+    
+    venta = models.ForeignKey(VentaPortabilidad, on_delete=models.CASCADE, related_name="escalamientos", verbose_name=_("Venta"))
+    tipo_escalamiento = models.CharField(max_length=20, choices=TIPO_ESCALAMIENTO_CHOICES, verbose_name=_("Tipo de Escalamiento"))
+    descripcion = models.TextField(verbose_name=_("Descripción"))
+    fecha_escalamiento = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Escalamiento"))
+    fecha_solucion = models.DateTimeField(null=True, blank=True, verbose_name=_("Fecha de Solución"))
+    solucionado = models.BooleanField(default=False, verbose_name=_("Solucionado"))
+    
+    class Meta:
+        verbose_name = _("Escalamiento")
+        verbose_name_plural = _("Escalamientos")
+        ordering = ['-fecha_escalamiento']
+    
+    def __str__(self):
+        return f"Escalamiento {self.id} - {self.venta} - {self.tipo_escalamiento}"
 
 
 class Comision(models.Model):
+    """Modelo para registrar las comisiones por ventas"""
     ESTADO_COMISION_CHOICES = [
         ('pendiente', 'Pendiente'),
-        ('calculada', 'Calculada'),
         ('pagada', 'Pagada'),
-        ('cancelada', 'Cancelada'),
+        ('rechazada', 'Rechazada'),
     ]
     
     venta = models.ForeignKey(VentaPortabilidad, on_delete=models.CASCADE, related_name="comisiones", verbose_name=_("Venta"))
     agente = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comisiones", verbose_name=_("Agente"))
-    valor = models.DecimalField(max_digits=12, decimal_places=2, verbose_name=_("Valor"))
-    fecha_calculo = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Cálculo"))
-    fecha_pago = models.DateField(null=True, blank=True, verbose_name=_("Fecha de Pago"))
+    monto = models.DecimalField(max_digits=10, decimal_places=2, default=0.0, verbose_name=_("Monto"))
     estado = models.CharField(max_length=20, choices=ESTADO_COMISION_CHOICES, default='pendiente', verbose_name=_("Estado"))
-    observaciones = models.TextField(verbose_name=_("Observaciones"), null=True, blank=True)
+    fecha_creacion = models.DateTimeField(default=timezone.now, verbose_name=_("Fecha de Creación"))
+    fecha_pago = models.DateField(null=True, blank=True, verbose_name=_("Fecha de Pago"))
     
     class Meta:
         verbose_name = _("Comisión")
         verbose_name_plural = _("Comisiones")
-        ordering = ['-fecha_calculo']
+        ordering = ['-fecha_creacion']
     
     def __str__(self):
-        return f"Comisión {self.id} - Venta {self.venta.id} - {self.agente.username}"
+        return f"Comisión {self.id} - {self.venta} - {self.monto}"

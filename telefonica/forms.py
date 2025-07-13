@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import VentaPortabilidad, GestionAsesor, GestionBackoffice, Planes_portabilidad
+from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, GestionAsesor, GestionBackoffice, Planes_portabilidad
 
 
 class VentaPortabilidadForm(forms.ModelForm):
@@ -48,27 +48,74 @@ class GestionAsesorForm(forms.ModelForm):
 
 
 class GestionBackofficeForm(forms.ModelForm):
-    comentarios = forms.CharField(widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}), required=False)
-
     class Meta:
         model = GestionBackoffice
-        fields = ['estado', 'comentarios', 'motivo_devolucion', 'campos_corregir']
+        fields = ['comentario']
         widgets = {
-            'estado': forms.Select(attrs={'class': 'form-control'}),
-            'motivo_devolucion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'campos_corregir': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'comentario': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Filtrar las opciones de estado para backoffice
-        self.fields['estado'].choices = [
-            ('pendiente_revision', 'Pendiente de Revisión'),
-            ('devuelta', 'Devuelta para Corrección'),
-            ('aprobada', 'Aprobada'),
-            ('digitada', 'Digitada'),
-            ('rechazada', 'Rechazada'),
+
+
+class VentaPrePosForm(forms.ModelForm):
+    class Meta:
+        model = VentaPrePos
+        fields = [
+            'tipo_cliente', 'tipo_documento', 'documento', 'fecha_expedicion', 'nombres', 'apellidos',
+            'telefono_legalizacion', 'plan_adquiere', 'numero_orden', 'base_origen', 'usuario_greta', 'observacion'
         ]
+        widgets = {
+            'tipo_cliente': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
+            'tipo_documento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
+            'documento': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'fecha_expedicion': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
+            'nombres': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'apellidos': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'telefono_legalizacion': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'plan_adquiere': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
+            'numero_orden': forms.NumberInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'base_origen': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'usuario_greta': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'observacion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'autocomplete': 'off'})
+        }
+    
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self.fields['plan_adquiere'].queryset = Planes_portabilidad.objects.filter(estado='activo')
+
+
+class VentaUpgradeForm(forms.ModelForm):
+    class Meta:
+        model = VentaUpgrade
+        fields = [
+            'tipo_cliente', 'tipo_documento', 'documento', 'fecha_expedicion', 'nombres', 'apellidos',
+            'telefono_legalizacion', 'codigo_verificacion', 'plan_adquiere', 'numero_orden', 
+            'base_origen', 'usuario_greta', 'observacion'
+        ]
+        widgets = {
+            'tipo_cliente': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
+            'tipo_documento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
+            'documento': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'fecha_expedicion': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
+            'nombres': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'apellidos': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'telefono_legalizacion': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'codigo_verificacion': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'plan_adquiere': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
+            'numero_orden': forms.NumberInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'base_origen': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'usuario_greta': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'observacion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'autocomplete': 'off'})
+        }
+    
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self.fields['plan_adquiere'].queryset = Planes_portabilidad.objects.filter(estado='activo')
 
 
 class PlanesPortabilidadForm(forms.ModelForm):
@@ -77,9 +124,9 @@ class PlanesPortabilidadForm(forms.ModelForm):
         model = Planes_portabilidad
         fields = ['nombre_plan', 'caracteristicas', 'CFM', 'CFM_sin_iva', 'estado']
         widgets = {
-            'nombre_plan': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre del plan'}),
-            'caracteristicas': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Características del plan'}),
-            'CFM': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Cargo Fijo Mensual'}),
-            'CFM_sin_iva': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Cargo Fijo Mensual sin IVA'}),
-            'estado': forms.Select(attrs={'class': 'form-control'}),
+            'nombre_plan': forms.TextInput(attrs={'class': 'form-control'}),
+            'caracteristicas': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'CFM': forms.NumberInput(attrs={'class': 'form-control'}),
+            'CFM_sin_iva': forms.NumberInput(attrs={'class': 'form-control'}),
+            'estado': forms.Select(attrs={'class': 'form-select'}),
         }
