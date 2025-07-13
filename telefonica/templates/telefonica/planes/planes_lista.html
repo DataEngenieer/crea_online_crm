@@ -1,0 +1,220 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">{{ titulo }}</h1>
+        <a href="{% url 'telefonica:plan_crear' %}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+            <i class="fas fa-plus fa-sm text-white-50"></i> Nuevo Plan
+        </a>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">{{ subtitulo }}</h6>
+            <span class="badge badge-info">Total: {{ total }}</span>
+        </div>
+        <div class="card-body">
+            {% if planes %}
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nombre</th>
+                                <th>CFM</th>
+                                <th>CFM sin IVA</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for plan in planes %}
+                                <tr>
+                                    <td>{{ plan.codigo }}</td>
+                                    <td>{{ plan.nombre_plan }}</td>
+                                    <td>${{ plan.CFM|floatformat:2 }}</td>
+                                    <td>${{ plan.CFM_sin_iva|floatformat:2 }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if plan.estado == 'activo' %}success{% else %}danger{% endif %}">
+                                            {{ plan.estado|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'telefonica:plan_detalle' plan_id=plan.id %}" class="btn btn-info btn-sm" title="Ver detalle">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'telefonica:plan_editar' plan_id=plan.id %}" class="btn btn-warning btn-sm" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-{% if plan.estado == 'activo' %}danger{% else %}success{% endif %} btn-sm cambiar-estado" 
+                                                    data-id="{{ plan.id }}" 
+                                                    data-estado="{{ plan.estado }}" 
+                                                    title="{% if plan.estado == 'activo' %}Desactivar{% else %}Activar{% endif %}">
+                                                <i class="fas fa-{% if plan.estado == 'activo' %}toggle-off{% else %}toggle-on{% endif %}"></i>
+                                            </button>
+                                            <a href="{% url 'telefonica:plan_eliminar' plan_id=plan.id %}" class="btn btn-danger btn-sm" title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Paginación -->
+                {% if planes.has_other_pages %}
+                <nav aria-label="Paginación de planes">
+                    <ul class="pagination justify-content-center">
+                        {% if planes.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1" aria-label="Primera">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ planes.previous_page_number }}" aria-label="Anterior">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" aria-label="Primera">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" aria-label="Anterior">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for i in planes.paginator.page_range %}
+                            {% if planes.number == i %}
+                                <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                            {% elif i > planes.number|add:'-3' and i < planes.number|add:'3' %}
+                                <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if planes.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ planes.next_page_number }}" aria-label="Siguiente">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ planes.paginator.num_pages }}" aria-label="Última">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" aria-label="Siguiente">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" aria-label="Última">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    No hay planes registrados. <a href="{% url 'telefonica:plan_crear' %}" class="alert-link">Crear el primer plan</a>.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Inicializar DataTable
+        $('#dataTable').DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
+            },
+            "paging": false,  // Desactivamos la paginación de DataTables porque usamos la de Django
+            "info": false     // Desactivamos la información de DataTables
+        });
+        
+        // Cambiar estado de plan (activo/inactivo)
+        $('.cambiar-estado').on('click', function() {
+            var btn = $(this);
+            var planId = btn.data('id');
+            var estadoActual = btn.data('estado');
+            
+            // Confirmar cambio de estado
+            if (confirm('¿Estás seguro de cambiar el estado del plan?')) {
+                $.ajax({
+                    url: '/telefonica/planes/' + planId + '/cambiar-estado/',
+                    type: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Actualizar la interfaz
+                            var nuevoEstado = response.nuevo_estado;
+                            btn.data('estado', nuevoEstado);
+                            
+                            // Cambiar el icono y color del botón
+                            if (nuevoEstado === 'activo') {
+                                btn.removeClass('btn-success').addClass('btn-danger');
+                                btn.find('i').removeClass('fa-toggle-on').addClass('fa-toggle-off');
+                                btn.attr('title', 'Desactivar');
+                            } else {
+                                btn.removeClass('btn-danger').addClass('btn-success');
+                                btn.find('i').removeClass('fa-toggle-off').addClass('fa-toggle-on');
+                                btn.attr('title', 'Activar');
+                            }
+                            
+                            // Actualizar la badge de estado en la fila
+                            var badge = btn.closest('tr').find('td:eq(4) .badge');
+                            badge.removeClass('badge-success badge-danger');
+                            badge.addClass(nuevoEstado === 'activo' ? 'badge-success' : 'badge-danger');
+                            badge.text(nuevoEstado.charAt(0).toUpperCase() + nuevoEstado.slice(1));
+                            
+                            // Mostrar mensaje de éxito
+                            toastr.success(response.mensaje);
+                        }
+                    },
+                    error: function() {
+                        toastr.error('Error al cambiar el estado del plan');
+                    }
+                });
+            }
+        });
+        
+        // Función para obtener el token CSRF
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+{% endblock %}

@@ -1,20 +1,30 @@
 from django.contrib import admin
 from .models import (
-    Cliente, 
-    Venta, 
+    VentaPortabilidad,
+    VentaPrePos,
+    VentaUpgrade,
     GestionAsesor, 
     GestionBackoffice,
     Comision
 )
 
-@admin.register(Cliente)
-class ClienteAdmin(admin.ModelAdmin):
-    list_display = ('documento', 'nombres', 'apellidos', 'correo', 'telefono')
-    search_fields = ('documento', 'nombres', 'apellidos', 'correo')
-    list_filter = ('ciudad', 'departamento')
 
-@admin.register(Venta)
-class VentaAdmin(admin.ModelAdmin):
+@admin.register(VentaPortabilidad)
+class VentaPortabilidadAdmin(admin.ModelAdmin):
+    list_display = ('id', 'cliente', 'plan_adquiere', 'estado_revisado', 'agente', 'backoffice', 'fecha_creacion')
+    search_fields = ('cliente__documento', 'cliente__nombres', 'cliente__apellidos', 'numero', 'imei')
+    list_filter = ('estado_revisado', 'agente', 'backoffice', 'tipo_cliente', 'segmento')
+    date_hierarchy = 'fecha_creacion'
+
+@admin.register(VentaPrePos)
+class VentaPrePosAdmin(admin.ModelAdmin):
+    list_display = ('id', 'cliente', 'plan_adquiere', 'estado_revisado', 'agente', 'backoffice', 'fecha_creacion')
+    search_fields = ('cliente__documento', 'cliente__nombres', 'cliente__apellidos', 'numero', 'imei')
+    list_filter = ('estado_revisado', 'agente', 'backoffice', 'tipo_cliente', 'segmento')
+    date_hierarchy = 'fecha_creacion'
+
+@admin.register(VentaUpgrade)
+class VentaUpgradeAdmin(admin.ModelAdmin):
     list_display = ('id', 'cliente', 'plan_adquiere', 'estado_revisado', 'agente', 'backoffice', 'fecha_creacion')
     search_fields = ('cliente__documento', 'cliente__nombres', 'cliente__apellidos', 'numero', 'imei')
     list_filter = ('estado_revisado', 'agente', 'backoffice', 'tipo_cliente', 'segmento')

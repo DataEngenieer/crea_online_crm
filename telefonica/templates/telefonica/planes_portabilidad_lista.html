@@ -1,0 +1,238 @@
+{% extends 'telefonica/base_telefonica.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+<style>
+    .badge.activo {
+        background-color: #28a745;
+        color: #fff;
+    }
+    .badge.inactivo {
+        background-color: #6c757d;
+        color: #fff;
+    }
+    .plan-card {
+        transition: transform 0.3s;
+    }
+    .plan-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .caracteristicas {
+        white-space: pre-line;
+    }
+</style>
+{% endblock %}
+
+{% block contenido_telefonica %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Planes de Portabilidad</h2>
+        <a href="{% url 'telefonica:plan_portabilidad_crear' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Nuevo Plan
+        </a>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Filtros</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="estado" class="form-label">Estado</label>
+                    <select name="estado" id="estado" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="activo" {% if request.GET.estado == 'activo' %}selected{% endif %}>Activo</option>
+                        <option value="inactivo" {% if request.GET.estado == 'inactivo' %}selected{% endif %}>Inactivo</option>
+                    </select>
+                </div>
+                <div class="col-md-12 text-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i> Filtrar
+                    </button>
+                    <a href="{% url 'telefonica:planes_portabilidad_lista' %}" class="btn btn-secondary">
+                        <i class="fas fa-sync-alt me-1"></i> Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Lista de planes en tarjetas -->
+    <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
+        {% for plan in planes %}
+        <div class="col">
+            <div class="card h-100 plan-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ plan.nombre_plan }}</h5>
+                    <span class="badge {{ plan.estado }}">{{ plan.get_estado_display }}</span>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Código: {{ plan.codigo }}</h6>
+                    <div class="mb-3">
+                        <strong>Cargo Fijo Mensual:</strong> 
+                        <span class="fs-5 fw-bold text-primary">${{ plan.CFM }}</span>
+                        <small class="text-muted d-block">Sin IVA: ${{ plan.CFM_sin_iva }}</small>
+                    </div>
+                    <h6>Características:</h6>
+                    <p class="card-text caracteristicas">{{ plan.caracteristicas }}</p>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">Creado: {{ plan.fecha_creacion|date:"d/m/Y" }}</small>
+                        <div class="btn-group">
+                            <a href="{% url 'telefonica:plan_portabilidad_editar' plan.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                            <a href="{% url 'telefonica:plan_portabilidad_eliminar' plan.id %}" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-secondary cambiar-estado" data-plan-id="{{ plan.id }}" data-estado="{{ plan.estado }}">
+                                {% if plan.estado == 'activo' %}
+                                <i class="fas fa-toggle-off"></i> Desactivar
+                                {% else %}
+                                <i class="fas fa-toggle-on"></i> Activar
+                                {% endif %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> No se encontraron planes de portabilidad.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Paginación -->
+    {% if planes.has_other_pages %}
+    <nav aria-label="Paginación de planes" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if planes.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}" aria-label="Primera">
+                    <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ planes.previous_page_number }}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}" aria-label="Anterior">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a class="page-link" href="#" aria-label="Primera">
+                    <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item disabled">
+                <a class="page-link" href="#" aria-label="Anterior">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for i in planes.paginator.page_range %}
+                {% if planes.number == i %}
+                <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                {% elif i > planes.number|add:'-3' and i < planes.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ i }}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}">{{ i }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if planes.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ planes.next_page_number }}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}" aria-label="Siguiente">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ planes.paginator.num_pages }}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}" aria-label="Última">
+                    <span aria-hidden="true">&raquo;&raquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a class="page-link" href="#" aria-label="Siguiente">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            <li class="page-item disabled">
+                <a class="page-link" href="#" aria-label="Última">
+                    <span aria-hidden="true">&raquo;&raquo;</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    $(document).ready(function() {
+        // Cambiar estado mediante AJAX
+        $('.cambiar-estado').click(function() {
+            const planId = $(this).data('plan-id');
+            const button = $(this);
+            
+            $.ajax({
+                url: `/telefonica/planes-portabilidad/${planId}/cambiar-estado/`,
+                type: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Actualizar la interfaz
+                        const card = button.closest('.card');
+                        const badge = card.find('.badge');
+                        
+                        badge.removeClass('activo inactivo').addClass(response.estado);
+                        badge.text(response.estado === 'activo' ? 'Activo' : 'Inactivo');
+                        
+                        if (response.estado === 'activo') {
+                            button.html('<i class="fas fa-toggle-off"></i> Desactivar');
+                        } else {
+                            button.html('<i class="fas fa-toggle-on"></i> Activar');
+                        }
+                        
+                        button.data('estado', response.estado);
+                        
+                        // Mostrar mensaje
+                        const alertHtml = `
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                ${response.mensaje}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        `;
+                        $('.container-fluid').prepend(alertHtml);
+                    }
+                },
+                error: function() {
+                    const alertHtml = `
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            Ha ocurrido un error al cambiar el estado del plan.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                    $('.container-fluid').prepend(alertHtml);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

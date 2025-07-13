@@ -1,0 +1,191 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">{{ titulo }}</h1>
+        <div>
+            <a href="{% url 'telefonica:plan_editar' plan_id=plan.id %}" class="d-none d-sm-inline-block btn btn-sm btn-warning shadow-sm">
+                <i class="fas fa-edit fa-sm text-white-50"></i> Editar Plan
+            </a>
+            <a href="{% url 'telefonica:planes_lista' %}" class="d-none d-sm-inline-block btn btn-sm btn-secondary shadow-sm ml-2">
+                <i class="fas fa-arrow-left fa-sm text-white-50"></i> Volver a la lista
+            </a>
+        </div>
+    </div>
+
+    <!-- Información del Plan -->
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Información del Plan</h6>
+                    <span class="badge badge-{% if plan.estado == 'activo' %}success{% else %}danger{% endif %}">
+                        {{ plan.estado|title }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>Código:</strong> {{ plan.codigo }}</p>
+                            <p><strong>Nombre:</strong> {{ plan.nombre_plan }}</p>
+                            <p><strong>Cargo Fijo Mensual:</strong> ${{ plan.CFM|floatformat:2 }}</p>
+                            <p><strong>Cargo Fijo Mensual sin IVA:</strong> ${{ plan.CFM_sin_iva|floatformat:2 }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Fecha de Creación:</strong> {{ plan.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                            <p><strong>Última Actualización:</strong> {{ plan.fecha_actualizacion|date:"d/m/Y H:i" }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <h5 class="font-weight-bold">Características</h5>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <p class="mb-0">{{ plan.caracteristicas|linebreaks }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Acciones</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'telefonica:plan_editar' plan_id=plan.id %}" class="btn btn-warning btn-block mb-2">
+                            <i class="fas fa-edit"></i> Editar Plan
+                        </a>
+                        <button id="cambiarEstado" class="btn btn-{% if plan.estado == 'activo' %}danger{% else %}success{% endif %} btn-block mb-2">
+                            <i class="fas fa-{% if plan.estado == 'activo' %}toggle-off{% else %}toggle-on{% endif %}"></i> 
+                            {% if plan.estado == 'activo' %}Desactivar{% else %}Activar{% endif %} Plan
+                        </button>
+                        {% if not plan.ventas.exists %}
+                            <a href="{% url 'telefonica:plan_eliminar' plan_id=plan.id %}" class="btn btn-danger btn-block">
+                                <i class="fas fa-trash"></i> Eliminar Plan
+                            </a>
+                        {% else %}
+                            <button class="btn btn-danger btn-block" disabled title="No se puede eliminar porque tiene ventas asociadas">
+                                <i class="fas fa-trash"></i> Eliminar Plan
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ventas asociadas al Plan -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Ventas asociadas a este plan</h6>
+            <span class="badge badge-info">Total: {{ total_ventas }}</span>
+        </div>
+        <div class="card-body">
+            {% if ventas %}
+                <div class="table-responsive">
+                    <table class="table table-bordered" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cliente</th>
+                                <th>Documento</th>
+                                <th>Fecha</th>
+                                <th>Asesor</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for venta in ventas %}
+                                <tr>
+                                    <td>{{ venta.id }}</td>
+                                    <td>{{ venta.nombres }} {{ venta.apellidos }}</td>
+                                    <td>{{ venta.tipo_documento }} {{ venta.documento }}</td>
+                                    <td>{{ venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ venta.agente.get_full_name|default:venta.agente.username }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if venta.estado_revisado == 'aprobada' %}success{% elif venta.estado_revisado == 'pendiente_revision' %}warning{% elif venta.estado_revisado == 'devuelta' %}danger{% else %}info{% endif %}">
+                                            {{ venta.get_estado_revisado_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'telefonica:venta_detalle' venta_id=venta.id %}" class="btn btn-info btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if total_ventas > 10 %}
+                    <div class="text-center mt-3">
+                        <a href="#" class="btn btn-primary">Ver todas las ventas</a>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    Este plan aún no tiene ventas asociadas.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Cambiar estado del plan
+        $('#cambiarEstado').on('click', function() {
+            var btn = $(this);
+            
+            // Confirmar cambio de estado
+            if (confirm('¿Estás seguro de cambiar el estado del plan?')) {
+                $.ajax({
+                    url: '{% url "telefonica:plan_cambiar_estado" plan_id=plan.id %}',
+                    type: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Recargar la página para mostrar los cambios
+                            location.reload();
+                        }
+                    },
+                    error: function() {
+                        toastr.error('Error al cambiar el estado del plan');
+                    }
+                });
+            }
+        });
+        
+        // Función para obtener el token CSRF
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">{{ titulo }}</h1>
+        <a href="{% url 'telefonica:planes_lista' %}" class="d-none d-sm-inline-block btn btn-sm btn-secondary shadow-sm">
+            <i class="fas fa-arrow-left fa-sm text-white-50"></i> Volver a la lista
+        </a>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">{{ subtitulo }}</h6>
+        </div>
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.nombre_plan.id_for_label }}">Nombre del Plan</label>
+                        {{ form.nombre_plan }}
+                        {% if form.nombre_plan.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.nombre_plan.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.estado.id_for_label }}">Estado</label>
+                        {{ form.estado }}
+                        {% if form.estado.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.estado.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.CFM.id_for_label }}">Cargo Fijo Mensual</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">$</span>
+                            </div>
+                            {{ form.CFM }}
+                        </div>
+                        {% if form.CFM.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.CFM.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.CFM_sin_iva.id_for_label }}">Cargo Fijo Mensual sin IVA</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">$</span>
+                            </div>
+                            {{ form.CFM_sin_iva }}
+                        </div>
+                        {% if form.CFM_sin_iva.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.CFM_sin_iva.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="{{ form.caracteristicas.id_for_label }}">Características</label>
+                        {{ form.caracteristicas }}
+                        {% if form.caracteristicas.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.caracteristicas.errors }}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Describe las características del plan (minutos, datos, servicios adicionales, etc.)
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> {{ boton }}
+                        </button>
+                        <a href="{% url 'telefonica:planes_lista' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Formatear los campos numéricos
+        $('#id_CFM, #id_CFM_sin_iva').on('input', function() {
+            // Permitir solo números y punto decimal
+            this.value = this.value.replace(/[^0-9.]/g, '');
+            
+            // Permitir solo un punto decimal
+            if (this.value.split('.').length > 2) {
+                this.value = this.value.replace(/\.+$/, '');
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends 'telefonica/base_telefonica.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .badge.activo {
+        background-color: #28a745;
+        color: #fff;
+    }
+    .badge.inactivo {
+        background-color: #6c757d;
+        color: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block contenido_telefonica %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Confirmar Eliminación</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i> 
+                        <strong>¡Atención!</strong> Esta acción no se puede deshacer.
+                    </div>
+                    
+                    <p class="mb-4">¿Estás seguro de que deseas eliminar el siguiente plan de portabilidad?</p>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Detalles del Plan</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Código:</strong> {{ plan.codigo }}</p>
+                                    <p><strong>Nombre:</strong> {{ plan.nombre_plan }}</p>
+                                    <p><strong>Estado:</strong> <span class="badge {{ plan.estado }}">{{ plan.get_estado_display }}</span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Cargo Fijo Mensual:</strong> ${{ plan.CFM }}</p>
+                                    <p><strong>CFM sin IVA:</strong> ${{ plan.CFM_sin_iva }}</p>
+                                    <p><strong>Fecha de Creación:</strong> {{ plan.fecha_creacion|date:"d/m/Y" }}</p>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <p><strong>Características:</strong></p>
+                                <div class="p-3 bg-light rounded">
+                                    <pre class="mb-0">{{ plan.caracteristicas }}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-end">
+                            <a href="{% url 'telefonica:planes_portabilidad_lista' %}" class="btn btn-secondary me-2">
+                                <i class="fas fa-arrow-left me-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-1"></i> Eliminar Plan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

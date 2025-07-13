@@ -26,6 +26,15 @@ urlpatterns = [
     path('comisiones/', views.comisiones_lista, name='comisiones_lista'),
     path('comisiones/calcular/', views.comisiones_calcular, name='comisiones_calcular'),
     
-    # APIs
-    path('api/cliente/', views.buscar_cliente, name='buscar_cliente'),
+    # Gestión de planes de portabilidad
+    path('planes-portabilidad/', views.planes_portabilidad_lista, name='planes_portabilidad_lista'),
+    path('planes-portabilidad/crear/', views.plan_portabilidad_crear, name='plan_portabilidad_crear'),
+    path('planes-portabilidad/<int:plan_id>/editar/', views.plan_portabilidad_editar, name='plan_portabilidad_editar'),
+    path('planes-portabilidad/<int:plan_id>/eliminar/', views.plan_portabilidad_eliminar, name='plan_portabilidad_eliminar'),
+    path('planes-portabilidad/<int:plan_id>/cambiar-estado/', views.plan_portabilidad_cambiar_estado, name='plan_portabilidad_cambiar_estado'),
+    path('planes/crear/', views.plan_crear, name='plan_crear'),
+    path('planes/<int:plan_id>/', views.plan_detalle, name='plan_detalle'),
+    path('planes/<int:plan_id>/editar/', views.plan_editar, name='plan_editar'),
+    path('planes/<int:plan_id>/eliminar/', views.plan_eliminar, name='plan_eliminar'),
+    path('planes/<int:plan_id>/cambiar-estado/', views.plan_cambiar_estado, name='plan_cambiar_estado'),
 ]

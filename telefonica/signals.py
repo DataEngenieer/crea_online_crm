@@ -1,6 +1,6 @@
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-from .models import Venta, Comision
+from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, Comision
 from django.utils import timezone
 
 """
@@ -8,7 +8,7 @@ Archivo de señales para la aplicación Telefónica.
 Maneja eventos automáticos cuando se crean o modifican registros.
 """
 
-@receiver(post_save, sender=Venta)
+@receiver(post_save, sender=VentaPortabilidad)
 def crear_comision_venta(sender, instance, created, **kwargs):
     """
     Crea una comisión automáticamente cuando una venta cambia a estado 'aprobada'.
@@ -29,7 +29,7 @@ def crear_comision_venta(sender, instance, created, **kwargs):
             observaciones=f"Comisión generada automáticamente para la venta #{instance.id}"
         )
 
-@receiver(pre_save, sender=Venta)
+@receiver(pre_save, sender=VentaPortabilidad)
 def actualizar_fechas_estados(sender, instance, **kwargs):
     """
     Actualiza fechas automáticamente según los cambios de estado.
@@ -38,7 +38,7 @@ def actualizar_fechas_estados(sender, instance, **kwargs):
     if instance.id:
         try:
             # Obtener versión anterior de la venta
-            venta_antigua = Venta.objects.get(id=instance.id)
+            venta_antigua = VentaPortabilidad.objects.get(id=instance.id)
             
             # Si cambió el estado revisado, actualizar la fecha de actualización
             # El modelo Venta tiene auto_now=True en fecha_actualizacion, por lo que se actualiza automáticamente
@@ -47,6 +47,6 @@ def actualizar_fechas_estados(sender, instance, **kwargs):
                 # Estos logs pueden ser implementados posteriormente en un sistema de auditoría
                 print(f"Venta {instance.id}: Estado cambiado de {venta_antigua.estado_revisado} a {instance.estado_revisado}")
                     
-        except Venta.DoesNotExist:
+        except VentaPortabilidad.DoesNotExist:
             # Si es nuevo, no hacer nada (el post_save se encargará)
             pass

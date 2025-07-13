@@ -3,7 +3,7 @@ from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import Group
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.template.loader import render_to_string
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse
@@ -12,10 +12,9 @@ from django.contrib.auth import update_session_auth_hash
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import Cliente, Venta, GestionAsesor, GestionBackoffice, Comision
+from .models import VentaPortabilidad, GestionAsesor, GestionBackoffice, Planes_portabilidad
 from .forms import (
-    ClienteForm, VentaForm, VentaClienteForm, 
-    GestionAsesorForm, GestionBackofficeForm, CorreccionVentaForm
+    VentaPortabilidadForm, GestionAsesorForm, GestionBackofficeForm, PlanesPortabilidadForm
 )
 
 # Funciones auxiliares para verificar permisos
@@ -33,33 +32,33 @@ def dashboard(request):
     context = {
         'es_asesor': es_asesor,
         'es_backoffice': es_backoffice,
-        'ventas_recientes': Venta.objects.none() # Default empty queryset
+        'ventas_recientes': VentaPortabilidad.objects.none() # Default empty queryset
     }
 
     # --- Lógica para Asesores ---
     if es_asesor:
         context.update({
-            'mis_ventas': Venta.objects.filter(agente=user).count(),
-            'mis_ventas_pendientes': Venta.objects.filter(agente=user, estado_revisado='pendiente_revision').count(),
-            'mis_ventas_devueltas': Venta.objects.filter(agente=user, estado_revisado='devuelta').count(),
+            'mis_ventas': VentaPortabilidad.objects.filter(agente=user).count(),
+            'mis_ventas_pendientes': VentaPortabilidad.objects.filter(agente=user, estado_revisado='pendiente_revision').count(),
+            'mis_ventas_devueltas': VentaPortabilidad.objects.filter(agente=user, estado_revisado='devuelta').count(),
             'mis_comisiones_pendientes': Comision.objects.filter(agente=user, estado='pendiente').count(),
             'titulo': 'Dashboard Asesor'
         })
         # La tabla principal para un asesor debe mostrar sus propias ventas recientes
-        context['ventas_recientes'] = Venta.objects.select_related('cliente').filter(agente=user).order_by('-fecha_creacion')[:10]
+        context['ventas_recientes'] = VentaPortabilidad.objects.select_related('cliente').filter(agente=user).order_by('-fecha_creacion')[:10]
 
     # --- Lógica para Backoffice ---
     # Esto anulará algunas variables de contexto si el usuario también es asesor, lo cual es correcto.
     if es_backoffice:
         context.update({
-            'ventas_pendientes': Venta.objects.filter(estado_revisado='pendiente_revision').count(),
-            'ventas_devueltas': Venta.objects.filter(estado_revisado='devuelta').count(),
-            'ventas_aprobadas': Venta.objects.filter(estado_revisado='aprobada').count(),
-            'ventas_digitadas': Venta.objects.filter(estado_revisado='digitada').count(),
+            'ventas_pendientes': VentaPortabilidad.objects.filter(estado_revisado='pendiente_revision').count(),
+            'ventas_devueltas': VentaPortabilidad.objects.filter(estado_revisado='devuelta').count(),
+            'ventas_aprobadas': VentaPortabilidad.objects.filter(estado_revisado='aprobada').count(),
+            'ventas_digitadas': VentaPortabilidad.objects.filter(estado_revisado='digitada').count(),
             'titulo': 'Dashboard Backoffice'
         })
         # La tabla principal de backoffice debe mostrar todas las ventas recientes pendientes de revisión
-        context['ventas_recientes'] = Venta.objects.select_related('cliente').filter(estado_revisado='pendiente_revision').order_by('-fecha_creacion')[:10]
+        context['ventas_recientes'] = VentaPortabilidad.objects.select_related('cliente').filter(estado_revisado='pendiente_revision').order_by('-fecha_creacion')[:10]
 
     # --- Lógica para Superusuario (si no está en grupos o es ambos) ---
     if user.is_superuser:
@@ -68,12 +67,12 @@ def dashboard(request):
         elif not es_backoffice and not es_asesor:
             # Asignar vista de backoffice por defecto a superusuarios sin grupo
             context.update({
-                'ventas_pendientes': Venta.objects.filter(estado_revisado='pendiente_revision').count(),
-                'ventas_devueltas': Venta.objects.filter(estado_revisado='devuelta').count(),
-                'ventas_aprobadas': Venta.objects.filter(estado_revisado='aprobada').count(),
-                'ventas_digitadas': Venta.objects.filter(estado_revisado='digitada').count(),
+                'ventas_pendientes': VentaPortabilidad.objects.filter(estado_revisado='pendiente_revision').count(),
+                'ventas_devueltas': VentaPortabilidad.objects.filter(estado_revisado='devuelta').count(),
+                'ventas_aprobadas': VentaPortabilidad.objects.filter(estado_revisado='aprobada').count(),
+                'ventas_digitadas': VentaPortabilidad.objects.filter(estado_revisado='digitada').count(),
                 'titulo': 'Dashboard Superusuario',
-                'ventas_recientes': Venta.objects.select_related('cliente').all().order_by('-fecha_creacion')[:10]
+                'ventas_recientes': VentaPortabilidad.objects.select_related('cliente').all().order_by('-fecha_creacion')[:10]
             })
 
     return render(request, 'telefonica/dashboard.html', context)
@@ -81,119 +80,50 @@ def dashboard(request):
 # Gestión de ventas
 @login_required
 def venta_crear(request, documento=None):
-    """Vista para crear una nueva venta
+    """Vista para crear una nueva venta de portabilidad
     
     Si se proporciona un documento en la URL, intenta precargar los datos del cliente.
     Esto permite la integración con sistemas externos como marcadores telefónicos.
     """
+    initial_data = {}
     if documento:
-        try:
-            cliente = Cliente.objects.get(documento=documento)
+        # Buscar si existe una venta previa con ese documento para precargar datos
+        venta_previa = VentaPortabilidad.objects.filter(documento=documento).order_by('-fecha_creacion').first()
+        if venta_previa:
+            # Precargar solo datos personales, no los de la venta
             initial_data = {
-                'documento': cliente.documento,
-                'tipo_documento': cliente.tipo_documento,
-                'nombres': cliente.nombres,
-                'apellidos': cliente.apellidos,
-                'correo': cliente.correo,
-                'departamento': cliente.departamento,
-                'ciudad': cliente.ciudad,
-                'barrio': cliente.barrio,
-                'direccion': cliente.direccion,
-                'telefono': cliente.telefono,
+                'documento': venta_previa.documento,
+                'tipo_documento': venta_previa.tipo_documento,
+                'nombres': venta_previa.nombres,
+                'apellidos': venta_previa.apellidos,
             }
-        except Cliente.DoesNotExist:
-            initial_data = {}
-    else:
-        initial_data = {}
     
     if request.method == 'POST':
-        form = VentaClienteForm(request.POST, request.FILES)
+        form = VentaPortabilidadForm(request.POST, request.FILES)
         if form.is_valid():
-            # Procesar los datos del cliente primero
-            cliente_data = {
-                'documento': form.cleaned_data['documento'],
-                'tipo_documento': form.cleaned_data['tipo_documento'],
-                'nombres': form.cleaned_data['nombres'],
-                'apellidos': form.cleaned_data['apellidos'],
-                'correo': form.cleaned_data['correo'],
-                'departamento': form.cleaned_data['departamento'],
-                'ciudad': form.cleaned_data['ciudad'],
-                'barrio': form.cleaned_data['barrio'],
-                'direccion': form.cleaned_data['direccion'],
-                'telefono': form.cleaned_data['telefono'],
-            }
+            # Crear la venta pero no guardar aún
+            venta = form.save(commit=False)
+            # Asignar el agente actual
+            venta.agente = request.user
+            # Establecer estado inicial
+            venta.estado_venta = 'pendiente_revision'
+            # Guardar la venta
+            venta.save()
             
-            # Buscar si el cliente ya existe por tipo y documento
-            try:
-                cliente = Cliente.objects.filter(
-                    tipo_documento=cliente_data['tipo_documento'],
-                    documento=cliente_data['documento']
-                ).first()
-                
-                # Si el cliente no existe, crearlo
-                if not cliente:
-                    cliente = Cliente(**cliente_data)
-                    cliente.save()
-                    
-                # IMPORTANTE: No actualizamos los datos del cliente si ya existe
-                # Esto permite que un cliente tenga varias ventas independientes
-                
-            except Exception as e:
-                messages.error(request, f'Error al procesar el cliente: {str(e)}')
-                return redirect('telefonica:venta_crear')
-            
-            try:
-                # Crear nueva venta - NO podemos usar form.save() porque el modelo del form es Cliente
-                venta = Venta(
-                    cliente=cliente,
-                    agente=request.user,
-                    estado_revisado='pendiente_revision',
-                    tipo_cliente=form.cleaned_data['tipo_cliente'],
-                    plan_adquiere=form.cleaned_data['plan_adquiere'],
-                    segmento=form.cleaned_data['segmento'],
-                    numero_contacto=form.cleaned_data['numero_contacto'],
-                    imei=form.cleaned_data['imei'],
-                    fvc=form.cleaned_data['fvc'],
-                    fecha_entrega=form.cleaned_data['fecha_entrega'],
-                    fecha_expedicion=form.cleaned_data['fecha_expedicion'],
-                    origen=form.cleaned_data['origen'],
-                    numero_grabacion=form.cleaned_data['numero_grabacion'],
-                    selector=form.cleaned_data['selector'],
-                    orden=form.cleaned_data['orden'],
-                    observacion=form.cleaned_data['observacion'],
-                    nip=form.cleaned_data['nip']
-                )
-                
-                # Manejar el archivo de confronta si existe
-                if 'confronta' in request.FILES:
-                    venta.confronta = request.FILES['confronta']
-                    
-                venta.save()
-                
-                # Crear una gestión del asesor para esta venta
-                gestion_asesor = GestionAsesor(
-                    venta=venta,
-                    agente=request.user,
-                    estado='pendiente_revision',
-                    comentario="Venta creada correctamente."
-                )
-                gestion_asesor.save()
-                
-                messages.success(request, 'Venta registrada correctamente, pendiente de revisión')
-                return redirect('telefonica:ventas_lista')
-                
-            except Exception as e:
-                messages.error(request, f'Error al guardar la venta: {str(e)}')
-                return redirect('telefonica:venta_crear')
+            messages.success(request, "Venta de portabilidad creada correctamente. Pendiente de revisión.")
+            return redirect('telefonica:detalle_venta', pk=venta.id)
     else:
         # Usar initial_data para precargar el formulario si hay documento
-        form = VentaClienteForm(initial=initial_data)
+        form = VentaPortabilidadForm(initial=initial_data)
     
-    return render(request, 'telefonica/venta_crear.html', {
+    context = {
         'form': form,
-        'titulo': 'Registrar Nueva Venta',
-        'cliente_precargado': True if documento else False
-    })
+        'titulo': 'Nueva Venta de Portabilidad',
+        'subtitulo': 'Ingrese los datos del cliente y la venta',
+        'boton': 'Crear Venta',
+    }
+    
+    return render(request, 'telefonica/venta_portabilidad_form.html', context)
 
 @login_required
 def detalle_venta(request, pk):
@@ -201,7 +131,7 @@ def detalle_venta(request, pk):
     Muestra el detalle de una venta y permite su gestión por backoffice.
     Unifica la vista de detalle y gestión.
     """
-    venta = get_object_or_404(Venta.objects.select_related('cliente', 'agente', 'backoffice'), pk=pk)
+    venta = get_object_or_404(VentaPortabilidad.objects.select_related('agente', 'backoffice'), pk=pk)
     
     # Determinar roles y permisos
     is_backoffice = request.user.groups.filter(name='backoffice').exists()
@@ -234,7 +164,7 @@ def detalle_venta(request, pk):
                 gestion.save()
                 
                 messages.success(request, f"La venta #{venta.numero} ha sido actualizada a '{venta.get_estado_revisado_display()}'.")
-                return redirect('telefonica:venta_detalle', pk=venta.pk)
+                return redirect('telefonica:detalle_venta', pk=venta.pk)
         else:
             # En GET, se muestra un formulario vacío para la gestión
             form = GestionBackofficeForm()
@@ -249,92 +179,211 @@ def detalle_venta(request, pk):
         'gestiones_asesor': venta.gestiones_asesor.all().order_by('-fecha_gestion'),
         'gestiones_backoffice': venta.gestiones_backoffice.all().order_by('-fecha_gestion'),
     }
-
-    return render(request, 'telefonica/venta_detalle.html', context)
+    
+    return render(request, 'telefonica/venta_portabilidad_detalle.html', context)
 
 
 @login_required
 def ventas_lista(request):
-    """Lista de ventas con filtrado según el rol del usuario"""
+    """Lista de ventas de portabilidad con filtrado según el rol del usuario"""
     is_backoffice_user = request.user.groups.filter(name='backoffice').exists()
 
     # Filtrar ventas según el rol del usuario
     if is_backoffice_user:
         # Backoffice puede ver todas las ventas
-        ventas = Venta.objects.all().order_by('-fecha_creacion')
+        ventas = VentaPortabilidad.objects.all().order_by('-fecha_creacion')
     else:
         # Asesores solo ven sus propias ventas
-        ventas = Venta.objects.filter(agente=request.user).order_by('-fecha_creacion')
+        ventas = VentaPortabilidad.objects.filter(agente=request.user).order_by('-fecha_creacion')
     
     # Filtrar por estado si se especifica
     estado = request.GET.get('estado')
     if estado:
-        ventas = ventas.filter(estado_revisado=estado)
+        ventas = ventas.filter(estado_venta=estado)
     
-    paginator = Paginator(ventas, 25)  # 25 ventas por página
+    # Filtrar por documento si se especifica
+    documento = request.GET.get('documento')
+    if documento:
+        ventas = ventas.filter(documento__icontains=documento)
+    
+    # Filtrar por fechas
+    fecha_desde = request.GET.get('fecha_desde')
+    if fecha_desde:
+        ventas = ventas.filter(fecha_creacion__gte=fecha_desde)
+    
+    fecha_hasta = request.GET.get('fecha_hasta')
+    if fecha_hasta:
+        from datetime import datetime, timedelta
+        fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d') + timedelta(days=1)
+        ventas = ventas.filter(fecha_creacion__lt=fecha_hasta_dt)
+    
+    paginator = Paginator(ventas, 10)  # 10 ventas por página
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
     
-    return render(request, 'telefonica/ventas_lista.html', {
-        'page_obj': page_obj,
-        'titulo': 'Listado de Ventas',
+    return render(request, 'telefonica/ventas_portabilidad_lista.html', {
+        'ventas': page_obj,
+        'titulo': 'Listado de Ventas de Portabilidad',
         'es_backoffice': is_backoffice_user
     })
 
 @login_required
 def venta_detalle(request, venta_id):
     """Vista detallada de una venta específica"""
-    venta = get_object_or_404(Venta, id=venta_id)
+    venta = get_object_or_404(VentaPortabilidad, id=venta_id)
     
     # Verificar permisos (backoffice puede ver todas, asesores solo las propias)
-    if not es_backoffice(request.user) and venta.agente != request.user:
-        return HttpResponseForbidden("No tienes permiso para ver esta venta")
+    if not request.user.groups.filter(name='backoffice').exists() and venta.agente != request.user:
+        return HttpResponseForbidden("No tienes permiso para ver esta venta.")
     
     # Obtener gestiones asociadas
-    gestiones_asesor = GestionAsesor.objects.filter(venta=venta).order_by('-fecha')
-    gestiones_backoffice = GestionBackoffice.objects.filter(venta=venta).order_by('-fecha')
+    gestiones_asesor = GestionAsesor.objects.filter(venta=venta).order_by('-fecha_gestion')
     
     # Crear formulario para nueva gestión según el rol
-    if es_backoffice(request.user):
-        if request.method == 'POST' and 'gestion_backoffice' in request.POST:
-            gestion_form = GestionBackofficeForm(request.POST)
-            if gestion_form.is_valid():
-                gestion = gestion_form.save(commit=False)
+    form = None
+    puede_corregir = False
+    
+    if request.user.groups.filter(name='backoffice').exists():
+        if request.method == 'POST':
+            form = GestionBackofficeForm(request.POST)
+            if form.is_valid():
+                gestion = form.save(commit=False)
                 gestion.venta = venta
-                gestion.usuario = request.user
+                gestion.backoffice = request.user
                 gestion.save()
-                messages.success(request, 'Gestión registrada correctamente')
-                return redirect('telefonica:venta_detalle', venta_id=venta.id)
+                
+                # Actualizar el estado de la venta
+                venta.estado_venta = form.cleaned_data['nuevo_estado']
+                venta.save()
+                
+                messages.success(request, 'Gestión registrada correctamente.')
+                return redirect('telefonica:detalle_venta', venta_id=venta.id)
         else:
-            gestion_form = GestionBackofficeForm()
-    else:
-        if request.method == 'POST' and 'gestion_asesor' in request.POST:
-            gestion_form = GestionAsesorForm(request.POST)
-            if gestion_form.is_valid():
-                gestion = gestion_form.save(commit=False)
-                gestion.venta = venta
-                gestion.asesor = request.user
-                gestion.save()
-                messages.success(request, 'Seguimiento registrado correctamente')
-                return redirect('telefonica:venta_detalle', venta_id=venta.id)
-        else:
-            gestion_form = GestionAsesorForm()
+            form = GestionBackofficeForm()
+    elif venta.agente == request.user and venta.estado_venta == 'devuelta':
+        puede_corregir = True
     
     context = {
         'venta': venta,
+        'form': form,
+        'puede_corregir': puede_corregir,
         'gestiones_asesor': gestiones_asesor,
-        'gestiones_backoffice': gestiones_backoffice,
-        'gestion_form': gestion_form,
-        'es_backoffice': es_backoffice(request.user),
-        'titulo': f'Detalle de Venta #{venta.id}'
     }
     
-    return render(request, 'telefonica/venta_detalle.html', context)
+    return render(request, 'telefonica/venta_portabilidad_detalle.html', context)
 
 @login_required
 def venta_corregir(request, venta_id):
     """Vista para corregir una venta devuelta"""
-    venta = get_object_or_404(Venta, id=venta_id)
+    venta = get_object_or_404(VentaPortabilidad, id=venta_id)
+    
+
+# ----- CRUD para Planes de Portabilidad -----
+
+@login_required
+@user_passes_test(lambda u: u.groups.filter(name='backoffice').exists() or u.is_superuser)
+def planes_portabilidad_lista(request):
+    """Lista todos los planes de portabilidad disponibles"""
+    # Filtrar planes según estado si se especifica
+    estado = request.GET.get('estado')
+    if estado:
+        planes = Planes_portabilidad.objects.filter(estado=estado).order_by('-fecha_creacion')
+    else:
+        planes = Planes_portabilidad.objects.all().order_by('-fecha_creacion')
+    
+    paginator = Paginator(planes, 10)  # 10 planes por página
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'telefonica/planes_portabilidad_lista.html', {
+        'planes': page_obj,
+        'titulo': 'Planes de Portabilidad',
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.groups.filter(name='backoffice').exists() or u.is_superuser)
+def plan_portabilidad_crear(request):
+    """Crea un nuevo plan de portabilidad"""
+    if request.method == 'POST':
+        form = PlanesPortabilidadForm(request.POST)
+        if form.is_valid():
+            plan = form.save()
+            messages.success(request, f'Plan {plan.nombre_plan} creado correctamente.')
+            return redirect('telefonica:planes_portabilidad_lista')
+    else:
+        form = PlanesPortabilidadForm()
+    
+    return render(request, 'telefonica/plan_portabilidad_form.html', {
+        'form': form,
+        'titulo': 'Crear Plan de Portabilidad',
+        'accion': 'Crear'
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.groups.filter(name='backoffice').exists() or u.is_superuser)
+def plan_portabilidad_editar(request, plan_id):
+    """Edita un plan de portabilidad existente"""
+    plan = get_object_or_404(Planes_portabilidad, id=plan_id)
+    
+    if request.method == 'POST':
+        form = PlanesPortabilidadForm(request.POST, instance=plan)
+        if form.is_valid():
+            plan = form.save()
+            messages.success(request, f'Plan {plan.nombre_plan} actualizado correctamente.')
+            return redirect('telefonica:planes_portabilidad_lista')
+    else:
+        form = PlanesPortabilidadForm(instance=plan)
+    
+    return render(request, 'telefonica/plan_portabilidad_form.html', {
+        'form': form,
+        'plan': plan,
+        'titulo': 'Editar Plan de Portabilidad',
+        'accion': 'Actualizar'
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.groups.filter(name='backoffice').exists() or u.is_superuser)
+def plan_portabilidad_eliminar(request, plan_id):
+    """Elimina un plan de portabilidad"""
+    plan = get_object_or_404(Planes_portabilidad, id=plan_id)
+    
+    if request.method == 'POST':
+        nombre_plan = plan.nombre_plan
+        plan.delete()
+        messages.success(request, f'Plan {nombre_plan} eliminado correctamente.')
+        return redirect('telefonica:planes_portabilidad_lista')
+    
+    return render(request, 'telefonica/plan_portabilidad_confirmar_eliminar.html', {
+        'plan': plan,
+        'titulo': 'Eliminar Plan de Portabilidad'
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.groups.filter(name='backoffice').exists() or u.is_superuser)
+def plan_portabilidad_cambiar_estado(request, plan_id):
+    """Cambia el estado de un plan de portabilidad (activar/desactivar)"""
+    plan = get_object_or_404(Planes_portabilidad, id=plan_id)
+    
+    # Cambiar el estado del plan
+    if plan.estado == 'activo':
+        plan.estado = 'inactivo'
+        mensaje = f'Plan {plan.nombre_plan} desactivado correctamente.'
+    else:
+        plan.estado = 'activo'
+        mensaje = f'Plan {plan.nombre_plan} activado correctamente.'
+    
+    plan.save()
+    messages.success(request, mensaje)
+    
+    # Si es una solicitud AJAX, devolver respuesta JSON
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': True, 'mensaje': mensaje, 'estado': plan.estado})
+    
+    return redirect('telefonica:planes_portabilidad_lista')
     
     # Solo el asesor que creó la venta puede corregirla
     if venta.agente != request.user:
@@ -385,7 +434,7 @@ def venta_corregir(request, venta_id):
 @user_passes_test(lambda u: u.groups.filter(name='backoffice').exists())
 def venta_revisar(request, venta_id):
     """Vista para que backoffice revise una venta"""
-    venta = get_object_or_404(Venta, id=venta_id)
+    venta = get_object_or_404(VentaPortabilidad, id=venta_id)
     
     # Solo se pueden revisar ventas pendientes
     if venta.estado_revisado != 'pendiente_revision':
@@ -431,7 +480,7 @@ def venta_revisar(request, venta_id):
 @user_passes_test(lambda u: u.groups.filter(name='backoffice').exists())
 def ventas_pendientes(request):
     """Bandeja de ventas pendientes de revisión"""
-    ventas = Venta.objects.filter(estado_revisado='pendiente_revision').order_by('-fecha_creacion')
+    ventas = VentaPortabilidad.objects.filter(estado_revisado='pendiente_revision').order_by('-fecha_creacion')
     
     paginator = Paginator(ventas, 25)
     page_number = request.GET.get('page', 1)
@@ -450,7 +499,7 @@ def bandeja_digitacion(request):
         messages.error(request, "No tienes permiso para acceder a esta sección")
         return redirect('telefonica:dashboard')
     
-    ventas = Venta.objects.filter(estado_revisado='aprobada').order_by('-fecha_creacion')
+    ventas = VentaPortabilidad.objects.filter(estado_revisado='aprobada').order_by('-fecha_creacion')
     
     # Paginación
     paginator = Paginator(ventas, 10)  # 10 ventas por página
@@ -482,10 +531,10 @@ def bandeja_seguimiento(request):
     # Obtener ventas según el rol
     if is_backoffice:
         # Backoffice puede ver todas las ventas
-        ventas = Venta.objects.all().order_by('-fecha_creacion')
+        ventas = VentaPortabilidad.objects.all().order_by('-fecha_creacion')
     else: # is_asesor
         # Asesor solo puede ver sus ventas
-        ventas = Venta.objects.filter(agente=request.user).order_by('-fecha_creacion')
+        ventas = VentaPortabilidad.objects.filter(agente=request.user).order_by('-fecha_creacion')
     
     # Paginación
     paginator = Paginator(ventas, 10)
@@ -512,10 +561,10 @@ def bandeja_devueltas(request):
     # Verificar permisos según rol
     if is_backoffice:
         # Backoffice ve todas las ventas devueltas
-        ventas = Venta.objects.filter(estado_revisado='devuelta').order_by('-fecha_creacion')
+        ventas = VentaPortabilidad.objects.filter(estado_revisado='devuelta').order_by('-fecha_creacion')
     elif is_asesor:
         # Asesor solo ve sus ventas devueltas
-        ventas = Venta.objects.filter(
+        ventas = VentaPortabilidad.objects.filter(
             agente=request.user,
             estado_revisado='devuelta'
         ).order_by('-fecha_creacion')
@@ -540,10 +589,10 @@ def bandeja_devueltas(request):
 @login_required
 def bandeja_asesores(request):
     """Bandeja de ventas en seguimiento"""
-    if es_backoffice(request.user):
-        ventas = Venta.objects.filter(estado_revisado__in=['digitada', 'completada']).order_by('-fecha_creacion')
+    if es_backoffice(request.user): 
+        ventas = VentaPortabilidad.objects.filter(estado_revisado__in=['digitada', 'completada']).order_by('-fecha_creacion')
     else:
-        ventas = Venta.objects.filter(
+        ventas = VentaPortabilidad.objects.filter(
             agente=request.user, 
             estado_revisado__in=['digitada', 'completada']
         ).order_by('-fecha_creacion')
@@ -562,9 +611,9 @@ def bandeja_asesores(request):
 def bandeja_devueltas(request):
     """Bandeja de ventas devueltas para corrección"""
     if es_backoffice(request.user):
-        ventas = Venta.objects.filter(estado_revisado='devuelta').order_by('-fecha_creacion')
+        ventas = VentaPortabilidad.objects.filter(estado_revisado='devuelta').order_by('-fecha_creacion')
     else:
-        ventas = Venta.objects.filter(
+        ventas = VentaPortabilidad.objects.filter(
             agente=request.user,
             estado_revisado='devuelta'
         ).order_by('-fecha_creacion')
@@ -580,55 +629,12 @@ def bandeja_devueltas(request):
     })
 
 @login_required
-def buscar_cliente(request):
-    """API para buscar cliente por tipo y número de documento"""
-    tipo_documento = request.GET.get('tipo_documento')
-    documento = request.GET.get('documento')
-    
-    # Validar que se proporcionen los parámetros necesarios
-    if not documento:
-        return JsonResponse({'found': False, 'error': 'Se requiere número de documento'})
-    
-    try:
-        # Si se proporciona tipo_documento, buscar por ambos campos
-        if tipo_documento:
-            cliente = Cliente.objects.filter(
-                tipo_documento=tipo_documento,
-                documento=documento
-            ).first()
-        # Si no se proporciona tipo_documento, buscar solo por documento
-        else:
-            cliente = Cliente.objects.filter(documento=documento).first()
-        
-        if cliente:
-            # Cliente encontrado, devolver sus datos
-            return JsonResponse({
-                'found': True,
-                'tipo_documento': cliente.tipo_documento,
-                'documento': cliente.documento,
-                'nombres': cliente.nombres,
-                'apellidos': cliente.apellidos,
-                'correo': cliente.correo or '',
-                'departamento': cliente.departamento,
-                'ciudad': cliente.ciudad,
-                'barrio': cliente.barrio or '',
-                'direccion': cliente.direccion,
-                'telefono': cliente.telefono
-            })
-        else:
-            # Cliente no encontrado
-            return JsonResponse({'found': False})
-    except Exception as e:
-        # Error en la búsqueda
-        return JsonResponse({'found': False, 'error': str(e)})
-
-@login_required
 @user_passes_test(lambda u: u.groups.filter(name='backoffice').exists())
 def comisiones_calcular(request):
     """Vista para calcular comisiones de ventas aprobadas"""
     if request.method == 'POST':
         ventas_ids = request.POST.getlist('ventas_ids')
-        ventas = Venta.objects.filter(id__in=ventas_ids, estado_revisado='aprobada')
+        ventas = VentaPortabilidad.objects.filter(id__in=ventas_ids, estado_revisado='aprobada')
         
         contador = 0
         for venta in ventas:
@@ -652,7 +658,7 @@ def comisiones_calcular(request):
         return redirect('telefonica:comisiones')
     
     # Obtener ventas aprobadas sin comisión calculada
-    ventas = Venta.objects.filter(
+    ventas = VentaPortabilidad.objects.filter(
         estado_revisado='aprobada'
     ).exclude(
         id__in=Comision.objects.values_list('venta_id', flat=True)
@@ -797,3 +803,317 @@ def perfil_telefonica(request):
         return redirect('telefonica:perfil')
 
     return render(request, 'telefonica/perfil_telefonica.html', {'user': user})
+
+
+# Vistas para la gestión de planes de portabilidad
+@login_required
+def planes_lista(request):
+    """
+    Vista que muestra la lista de planes de portabilidad disponibles.
+    Solo accesible para administradores.
+    """
+    # Verificar que el usuario es administrador
+    if not request.user.is_superuser:
+        messages.warning(request, "No tienes permiso para acceder a esta sección")
+        return redirect('telefonica:dashboard')
+    
+    # Obtener todos los planes ordenados por nombre
+    planes = Planes_portabilidad.objects.all().order_by('nombre_plan')
+    
+    # Paginación
+    paginator = Paginator(planes, 10)  # 10 planes por página
+    page = request.GET.get('page')
+    planes_paginados = paginator.get_page(page)
+    
+    context = {
+        'planes': planes_paginados,
+        'titulo': 'Gestión de Planes',
+        'subtitulo': 'Planes disponibles para ventas',
+        'total': planes.count(),
+    }
+    
+    return render(request, 'telefonica/planes/planes_lista.html', context)
+
+
+@login_required
+def plan_crear(request):
+    """
+    Vista para crear un nuevo plan de portabilidad.
+    Solo accesible para administradores.
+    """
+    # Verificar que el usuario es administrador
+    if not request.user.is_superuser:
+        messages.warning(request, "No tienes permiso para acceder a esta sección")
+        return redirect('telefonica:dashboard')
+    
+    if request.method == 'POST':
+        form = PlanesPortabilidadForm(request.POST)
+        if form.is_valid():
+            plan = form.save()
+            messages.success(request, f'Plan {plan.nombre_plan} creado correctamente')
+            return redirect('telefonica:planes_lista')
+    else:
+        form = PlanesPortabilidadForm()
+    
+    context = {
+        'form': form,
+        'titulo': 'Crear Plan',
+        'subtitulo': 'Añadir nuevo plan de portabilidad',
+        'boton': 'Crear Plan',
+    }
+    
+    return render(request, 'telefonica/planes/plan_form.html', context)
+
+
+@login_required
+def plan_editar(request, plan_id):
+    """
+    Vista para editar un plan de portabilidad existente.
+    Solo accesible para administradores.
+    """
+    # Verificar que el usuario es administrador
+    if not request.user.is_superuser:
+        messages.warning(request, "No tienes permiso para acceder a esta sección")
+        return redirect('telefonica:dashboard')
+    
+    # Obtener el plan o devolver 404
+    plan = get_object_or_404(Planes_portabilidad, id=plan_id)
+    
+    if request.method == 'POST':
+        form = PlanesPortabilidadForm(request.POST, instance=plan)
+        if form.is_valid():
+            plan = form.save()
+            messages.success(request, f'Plan {plan.nombre_plan} actualizado correctamente')
+            return redirect('telefonica:planes_lista')
+    else:
+        form = PlanesPortabilidadForm(instance=plan)
+    
+    context = {
+        'form': form,
+        'plan': plan,
+        'titulo': 'Editar Plan',
+        'subtitulo': f'Modificar plan: {plan.nombre_plan}',
+        'boton': 'Guardar Cambios',
+    }
+    
+    return render(request, 'telefonica/planes/plan_form.html', context)
+
+
+@login_required
+def plan_detalle(request, plan_id):
+    """
+    Vista para ver el detalle de un plan de portabilidad.
+    Solo accesible para administradores.
+    """
+    # Verificar que el usuario es administrador
+    if not request.user.is_superuser:
+        messages.warning(request, "No tienes permiso para acceder a esta sección")
+        return redirect('telefonica:dashboard')
+    
+    # Obtener el plan o devolver 404
+    plan = get_object_or_404(Planes_portabilidad, id=plan_id)
+    
+    # Obtener las ventas asociadas a este plan
+    ventas = plan.ventas.all().order_by('-fecha_creacion')[:10]  # Mostrar solo las 10 más recientes
+    
+    context = {
+        'plan': plan,
+        'ventas': ventas,
+        'titulo': 'Detalle de Plan',
+        'subtitulo': f'Plan: {plan.nombre_plan}',
+        'total_ventas': plan.ventas.count(),
+    }
+    
+    return render(request, 'telefonica/planes/plan_detalle.html', context)
+
+
+@login_required
+def plan_eliminar(request, plan_id):
+    """
+    Vista para eliminar un plan de portabilidad.
+    Solo accesible para administradores.
+    Utiliza confirmación por POST para evitar eliminaciones accidentales.
+    """
+    # Verificar que el usuario es administrador
+    if not request.user.is_superuser:
+        messages.warning(request, "No tienes permiso para acceder a esta sección")
+        return redirect('telefonica:dashboard')
+    
+    # Obtener el plan o devolver 404
+    plan = get_object_or_404(Planes_portabilidad, id=plan_id)
+    
+    # Verificar si el plan tiene ventas asociadas
+    if plan.ventas.exists():
+        messages.error(request, f'No se puede eliminar el plan {plan.nombre_plan} porque tiene ventas asociadas')
+        return redirect('telefonica:plan_detalle', plan_id=plan.id)
+    
+    if request.method == 'POST':
+        nombre_plan = plan.nombre_plan
+        plan.delete()
+        messages.success(request, f'Plan {nombre_plan} eliminado correctamente')
+        return redirect('telefonica:planes_lista')
+    
+    context = {
+        'plan': plan,
+        'titulo': 'Eliminar Plan',
+        'subtitulo': f'¿Estás seguro de eliminar el plan {plan.nombre_plan}?',
+    }
+    
+    return render(request, 'telefonica/planes/plan_confirmar_eliminacion.html', context)
+
+
+@login_required
+def plan_cambiar_estado(request, plan_id):
+    """
+    Vista para cambiar rápidamente el estado de un plan (activo/inactivo).
+    Solo accesible para administradores.
+    Requiere petición POST.
+    """
+    # Verificar que el usuario es administrador
+    if not request.user.is_superuser:
+        messages.warning(request, "No tienes permiso para acceder a esta sección")
+        return redirect('telefonica:dashboard')
+    
+    # Verificar que sea una petición POST
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    # Obtener el plan o devolver 404
+    plan = get_object_or_404(Planes_portabilidad, id=plan_id)
+    
+    # Cambiar el estado
+    nuevo_estado = 'inactivo' if plan.estado == 'activo' else 'activo'
+    plan.estado = nuevo_estado
+    plan.save()
+    
+    return JsonResponse({
+        'success': True,
+        'nuevo_estado': nuevo_estado,
+        'mensaje': f'Estado del plan {plan.nombre_plan} cambiado a {nuevo_estado}'
+    })
+
+
+# CRUD para Planes de Portabilidad
+@login_required
+@user_passes_test(lambda u: u.is_superuser or u.groups.filter(name='backoffice').exists())
+def planes_portabilidad_lista(request):
+    """
+    Vista para listar los planes de portabilidad con filtros y paginación.
+    Solo accesible para usuarios con rol backoffice o superusuarios.
+    """
+    # Filtrar por estado si se especifica
+    estado = request.GET.get('estado', '')
+    planes = Planes_portabilidad.objects.all().order_by('-fecha_creacion')
+    
+    if estado:
+        planes = planes.filter(estado=estado)
+    
+    # Paginación
+    paginator = Paginator(planes, 9)  # 9 planes por página para mostrar en grid de 3x3
+    page = request.GET.get('page')
+    try:
+        planes = paginator.page(page)
+    except PageNotAnInteger:
+        planes = paginator.page(1)
+    except EmptyPage:
+        planes = paginator.page(paginator.num_pages)
+    
+    return render(request, 'telefonica/planes_portabilidad_lista.html', {
+        'planes': planes,
+        'titulo': 'Planes de Portabilidad',
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser or u.groups.filter(name='backoffice').exists())
+def plan_portabilidad_crear(request):
+    """
+    Vista para crear un nuevo plan de portabilidad.
+    Solo accesible para usuarios con rol backoffice o superusuarios.
+    """
+    if request.method == 'POST':
+        form = PlanesPortabilidadForm(request.POST)
+        if form.is_valid():
+            plan = form.save()
+            messages.success(request, f'Plan de portabilidad "{plan.nombre_plan}" creado correctamente.')
+            return redirect('telefonica:planes_portabilidad_lista')
+    else:
+        form = PlanesPortabilidadForm()
+    
+    return render(request, 'telefonica/plan_portabilidad_form.html', {
+        'form': form,
+        'titulo': 'Crear Plan de Portabilidad',
+        'accion': 'Crear Plan'
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser or u.groups.filter(name='backoffice').exists())
+def plan_portabilidad_editar(request, plan_id):
+    """
+    Vista para editar un plan de portabilidad existente.
+    Solo accesible para usuarios con rol backoffice o superusuarios.
+    """
+    plan = get_object_or_404(Planes_portabilidad, pk=plan_id)
+    
+    if request.method == 'POST':
+        form = PlanesPortabilidadForm(request.POST, instance=plan)
+        if form.is_valid():
+            plan = form.save()
+            messages.success(request, f'Plan de portabilidad "{plan.nombre_plan}" actualizado correctamente.')
+            return redirect('telefonica:planes_portabilidad_lista')
+    else:
+        form = PlanesPortabilidadForm(instance=plan)
+    
+    return render(request, 'telefonica/plan_portabilidad_form.html', {
+        'form': form,
+        'plan': plan,
+        'titulo': 'Editar Plan de Portabilidad',
+        'accion': 'Guardar Cambios'
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser or u.groups.filter(name='backoffice').exists())
+def plan_portabilidad_eliminar(request, plan_id):
+    """
+    Vista para eliminar un plan de portabilidad.
+    Solo accesible para usuarios con rol backoffice o superusuarios.
+    """
+    plan = get_object_or_404(Planes_portabilidad, pk=plan_id)
+    
+    if request.method == 'POST':
+        nombre_plan = plan.nombre_plan
+        plan.delete()
+        messages.success(request, f'Plan de portabilidad "{nombre_plan}" eliminado correctamente.')
+        return redirect('telefonica:planes_portabilidad_lista')
+    
+    return render(request, 'telefonica/plan_portabilidad_confirmar_eliminar.html', {
+        'plan': plan
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser or u.groups.filter(name='backoffice').exists())
+def plan_portabilidad_cambiar_estado(request, plan_id):
+    """
+    Vista para cambiar el estado de un plan de portabilidad mediante AJAX.
+    Solo accesible para usuarios con rol backoffice o superusuarios.
+    """
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        plan = get_object_or_404(Planes_portabilidad, pk=plan_id)
+        
+        # Cambiar el estado (alternar entre activo e inactivo)
+        nuevo_estado = 'inactivo' if plan.estado == 'activo' else 'activo'
+        plan.estado = nuevo_estado
+        plan.save()
+        
+        mensaje = f'Plan "{plan.nombre_plan}" {"activado" if nuevo_estado == "activo" else "desactivado"} correctamente.'
+        
+        return JsonResponse({
+            'success': True,
+            'estado': nuevo_estado,
+            'mensaje': mensaje
+        })
+    
+    return JsonResponse({'success': False}, status=400)

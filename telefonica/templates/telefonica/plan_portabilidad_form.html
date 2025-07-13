@@ -1,0 +1,203 @@
+{% extends 'telefonica/base_telefonica.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    .form-label {
+        font-weight: 500;
+    }
+    .help-text {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    .card-header {
+        background-color: #f8f9fa;
+    }
+    .required-field::after {
+        content: "*";
+        color: #dc3545;
+        margin-left: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block contenido_telefonica %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ titulo }}</h5>
+                    <a href="{% url 'telefonica:planes_portabilidad_lista' %}" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Volver al listado
+                    </a>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <!-- Nombre del plan -->
+                            <div class="col-md-6 form-group">
+                                <label for="{{ form.nombre_plan.id_for_label }}" class="form-label required-field">Nombre del Plan</label>
+                                {{ form.nombre_plan }}
+                                {% if form.nombre_plan.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.nombre_plan.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                {% if form.nombre_plan.help_text %}
+                                <div class="help-text">{{ form.nombre_plan.help_text }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Estado -->
+                            <div class="col-md-6 form-group">
+                                <label for="{{ form.estado.id_for_label }}" class="form-label required-field">Estado</label>
+                                {{ form.estado }}
+                                {% if form.estado.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.estado.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                {% if form.estado.help_text %}
+                                <div class="help-text">{{ form.estado.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- CFM -->
+                            <div class="col-md-6 form-group">
+                                <label for="{{ form.CFM.id_for_label }}" class="form-label required-field">Cargo Fijo Mensual</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    {{ form.CFM }}
+                                </div>
+                                {% if form.CFM.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.CFM.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                {% if form.CFM.help_text %}
+                                <div class="help-text">{{ form.CFM.help_text }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- CFM sin IVA -->
+                            <div class="col-md-6 form-group">
+                                <label for="{{ form.CFM_sin_iva.id_for_label }}" class="form-label required-field">Cargo Fijo Mensual sin IVA</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    {{ form.CFM_sin_iva }}
+                                </div>
+                                {% if form.CFM_sin_iva.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.CFM_sin_iva.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                {% if form.CFM_sin_iva.help_text %}
+                                <div class="help-text">{{ form.CFM_sin_iva.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Características -->
+                        <div class="form-group">
+                            <label for="{{ form.caracteristicas.id_for_label }}" class="form-label required-field">Características</label>
+                            {{ form.caracteristicas }}
+                            {% if form.caracteristicas.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.caracteristicas.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            {% if form.caracteristicas.help_text %}
+                            <div class="help-text">{{ form.caracteristicas.help_text }}</div>
+                            {% else %}
+                            <div class="help-text">Ingresa cada característica en una línea separada para mejor visualización.</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Código (solo visible en modo edición) -->
+                        {% if plan %}
+                        <div class="form-group">
+                            <label class="form-label">Código</label>
+                            <input type="text" class="form-control" value="{{ plan.codigo }}" readonly>
+                            <div class="help-text">El código se genera automáticamente y no puede ser modificado.</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Fecha de Creación</label>
+                                    <input type="text" class="form-control" value="{{ plan.fecha_creacion|date:'d/m/Y H:i' }}" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Última Actualización</label>
+                                    <input type="text" class="form-control" value="{{ plan.fecha_actualizacion|date:'d/m/Y H:i' }}" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{% url 'telefonica:planes_portabilidad_lista' %}" class="btn btn-secondary me-2">
+                                <i class="fas fa-times me-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> {{ accion }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    $(document).ready(function() {
+        // Calcular automáticamente el CFM sin IVA (19%)
+        $('#{{ form.CFM.id_for_label }}').on('input', function() {
+            const cfm = parseFloat($(this).val()) || 0;
+            const cfmSinIva = (cfm / 1.19).toFixed(2);
+            $('#{{ form.CFM_sin_iva.id_for_label }}').val(cfmSinIva);
+        });
+        
+        // También permitir calcular el CFM desde el CFM sin IVA
+        $('#{{ form.CFM_sin_iva.id_for_label }}').on('input', function() {
+            const cfmSinIva = parseFloat($(this).val()) || 0;
+            const cfm = (cfmSinIva * 1.19).toFixed(2);
+            $('#{{ form.CFM.id_for_label }}').val(cfm);
+        });
+    });
+</script>
+{% endblock %}
