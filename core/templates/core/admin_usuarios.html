@@ -33,6 +33,7 @@
                 <tr class="align-middle">
                     <th>Usuario</th>
                     <th>Nombre completo</th>
+                    <th>Usuario Greta</th>
                     <th>Grupo</th>
                     <th class="text-center">Cambiar grupo</th>
                     <th class="text-center">Estado</th>
@@ -44,6 +45,13 @@
                 <tr>
                     <td>{{ user.username }}</td>
                     <td>{{ user.fullname }}</td>
+                    <td>
+                        {% if user.plataformas.usuario_greta %}
+                            {{ user.plataformas.usuario_greta }}
+                        {% else %}
+                            <span class="text-muted">No asignado</span>
+                        {% endif %}
+                    </td>
                     <td>
                         {% for grupo in user.groups.all %}
                             <span class="badge bg-info">{{ grupo.name }}</span>

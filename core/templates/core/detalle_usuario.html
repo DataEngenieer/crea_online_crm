@@ -15,6 +15,9 @@
                     <h4 class="mb-3">{{ usuario.get_full_name|default:usuario.username }}</h4>
                     <p class="mb-1"><strong>Usuario:</strong> {{ usuario.username }}</p>
                     <p class="mb-1"><strong>Email:</strong> {{ usuario.email }}</p>
+                    {% if usuario_plataformas.usuario_greta %}
+                    <p class="mb-1"><strong>Usuario Greta:</strong> {{ usuario_plataformas.usuario_greta }}</p>
+                    {% endif %}
                     <p class="mb-1">
                         <strong>Estado:</strong>
                         {% if usuario.is_active %}

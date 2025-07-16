@@ -53,25 +53,103 @@ GESTION_OPCIONES = {
 }
 
 
-# La definición antigua del modelo LoginUser se ha eliminado para evitar duplicidades.
-# Ahora se utiliza la versión actualizada que se encuentra más adelante en este archivo.
+class UsuariosPlataformas(models.Model):
+    """Modelo para gestionar los diferentes usuarios de plataformas externas."""
+    usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='plataformas', verbose_name=_('Usuario'))
+    usuario_greta = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('User Greta'))
+    
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_('Fecha de creación'))
+    fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name=_('Fecha de actualización'))
+    
+    class Meta:
+        verbose_name = _('Usuario Plataformas')
+        verbose_name_plural = _('Usuarios Plataformas')
+        ordering = ['usuario__username']
+        
+    def __str__(self):
+        return f"{self.usuario.username} - Greta: {self.usuario_greta or 'No asignado'}"
 
-
+        
 class Empleado(models.Model):
+    ESTADO_CHOICES = (
+        ('activo', 'Activo'),
+        ('inactivo', 'Inactivo')
+    )
+
+    MOTIVO_RETIRO_CHOICES = (
+        ('retiro_voluntario', 'Retiro Voluntario'),
+        ('periodo_prueba', 'No Supera Período de Prueba'),
+        ('despido_justo_causa', 'Despido Con Justo Causa'),
+        ('terminacion_contrato', 'Terminación del Contrato'),
+        ('finaliza_aprendiz', 'Finaliza Periodo de Aprendiz'),
+    )
+
     id_empleado = models.AutoField(primary_key=True)
     nombre_empleado = models.CharField(max_length=50, null=True, blank=True)
     apellido_empleado = models.CharField(max_length=50, null=True, blank=True)
-    sexo_empleado = models.IntegerField(null=True, blank=True)
+    sexo_empleado = models.IntegerField(choices=[(1, 'Masculino'), (2, 'Femenino')], null=True, blank=True)
     telefono_empleado = models.CharField(max_length=50, null=True, blank=True)
-    email_empleado = models.CharField(max_length=50, null=True, blank=True)
-    profesion_empleado = models.CharField(max_length=50, null=True, blank=True)
-    foto_empleado = models.TextField(null=True, blank=True)
-    salario_empleado = models.BigIntegerField(null=True, blank=True)
+    email_empleado = models.EmailField(max_length=100, null=True, blank=True)
+    profesion_empleado = models.CharField(max_length=100, null=True, blank=True)
+    foto_empleado = models.ImageField(upload_to='empleados/fotos/', null=True, blank=True)
+    salario_empleado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     fecha_registro = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    documento = models.BigIntegerField()
+    documento = models.BigIntegerField(unique=True)
+    fecha_ingreso = models.DateField(null=True, blank=True)
+    fecha_finalizacion = models.DateField(null=True, blank=True)
+    motivo_finalizacion = models.CharField(max_length=20, choices=MOTIVO_RETIRO_CHOICES, null=True, blank=True)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='activo')
+    campana = models.CharField(max_length=20, null=True, blank=True)
+    supervisor = models.CharField(max_length=250, null=True, blank=True)
 
     class Meta:
-        db_table = 'tbl_empleados'
+        db_table = 'empleados'
+        verbose_name = 'Empleado'
+        verbose_name_plural = 'Empleados'
+
+    def __str__(self):
+        return f"{self.nombre_empleado} {self.apellido_empleado} - {self.documento}"
+    
+    @classmethod
+    def get_empleado_por_usuario(cls, user):
+        """
+        Obtiene el empleado relacionado con un usuario basado en el username (documento)
+        """
+        try:
+            documento = int(user.username)
+            return cls.objects.get(documento=documento)
+        except (ValueError, cls.DoesNotExist):
+            return None
+    
+    def get_usuario_relacionado(self):
+        """
+        Obtiene el usuario de Django relacionado con este empleado
+        """
+        try:
+            return User.objects.get(username=str(self.documento))
+        except User.DoesNotExist:
+            return None
+    
+    def get_email_generado(self):
+        """
+        Retorna el email que se usaría para crear el usuario automáticamente
+        (siempre el formato estándar, independientemente del email del empleado)
+        """
+        return f"{self.documento}@qmas.com.co"
+    
+    def get_password_generado(self):
+        """
+        Retorna la contraseña que se genera automáticamente para el usuario
+        NOTA: Solo para referencia administrativa, no para autenticación
+        """
+        return f"Quemas{self.documento}"
+    
+    def tiene_usuario_activo(self):
+        """
+        Verifica si el empleado tiene un usuario activo en el sistema
+        """
+        usuario = self.get_usuario_relacionado()
+        return usuario is not None and usuario.is_active
 
 
 class Cliente(models.Model):

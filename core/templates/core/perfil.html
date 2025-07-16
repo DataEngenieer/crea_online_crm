@@ -21,6 +21,9 @@
                 <i class="bi bi-person-circle display-1 text-primary mb-3"></i>
                 <h5 class="my-3">{{ user.get_full_name|default:user.username }}</h5>
                 <p class="text-muted mb-1">{{ user.email }}</p>
+                {% if usuario_plataformas.usuario_greta %}
+                <p class="text-muted mb-1"><i class="bi bi-person-badge me-1"></i> Usuario Greta: <span class="fw-bold">{{ usuario_plataformas.usuario_greta }}</span></p>
+                {% endif %}
                 <div class="my-3">
                     {% for group in user.groups.all %}
                         <span class="badge rounded-pill bg-info text-dark">{{ group.name|capfirst }}</span>
@@ -63,6 +66,14 @@
                             <span class="input-group-text"><i class="bi bi-person-lines-fill"></i></span>
                             <input type="text" class="form-control" id="apellidos" name="apellidos" value="{{ user.last_name }}" placeholder="Apellidos">
                         </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="usuario_greta" class="form-label">Usuario Greta</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+                            <input type="text" class="form-control" id="usuario_greta" name="usuario_greta" value="{{ usuario_plataformas.usuario_greta }}" placeholder="Usuario en plataforma Greta">
+                        </div>
+                        <div class="form-text">Identificador de usuario en la plataforma Greta.</div>
                     </div>
 
                     <h5 class="mt-4 mb-3">Cambiar Contraseña</h5>

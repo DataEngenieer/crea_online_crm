@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from .models import LoginUser, Empleado, Cliente, Gestion, AcuerdoPago, CuotaAcuerdo, Campana
+from .models import LoginUser, Empleado, Cliente, Gestion, AcuerdoPago, CuotaAcuerdo, Campana, UsuariosPlataformas
 
 # Personalizar el panel de administración
 class ClienteAdmin(admin.ModelAdmin):
@@ -50,6 +50,13 @@ class CampanaAdmin(admin.ModelAdmin):
     date_hierarchy = 'fecha_creacion'
     filter_horizontal = ('usuarios',)  # Permite seleccionar múltiples usuarios de manera más amigable
 
+# Clase para administrar UsuariosPlataformas
+class UsuariosPlataformasAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'usuario_greta', 'fecha_creacion', 'fecha_actualizacion')
+    search_fields = ('usuario__username', 'usuario__email', 'usuario_greta')
+    list_filter = ('fecha_creacion', 'fecha_actualizacion')
+    date_hierarchy = 'fecha_creacion'
+
 # Registrar modelos con sus configuraciones personalizadas
 admin.site.register(LoginUser, LoginUserAdmin)
 admin.site.register(Cliente, ClienteAdmin)
@@ -58,6 +65,7 @@ admin.site.register(Gestion, GestionAdmin)
 admin.site.register(AcuerdoPago, AcuerdoPagoAdmin)
 admin.site.register(CuotaAcuerdo, CuotaAcuerdoAdmin)
 admin.site.register(Campana, CampanaAdmin)
+admin.site.register(UsuariosPlataformas, UsuariosPlataformasAdmin)
 
 # Personalizar el título del panel de administración
 admin.site.site_header = 'CREA CRM - Panel de Administración'

@@ -160,10 +160,19 @@ class RegistroUsuarioForm(UserCreationForm):
             'autocomplete': 'username',
         })
     )
+    usuario_greta = forms.CharField(
+        required=False,
+        label="Usuario Greta",
+        max_length=50,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control form-control-lg',
+            'placeholder': 'Usuario de Greta (opcional)',
+        })
+    )
     
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', 'email', 'username', 'password1', 'password2')
+        fields = ('first_name', 'last_name', 'email', 'username', 'usuario_greta', 'password1', 'password2')
     password1 = forms.CharField(
         label="Contraseña",
         widget=forms.PasswordInput(attrs={
@@ -180,9 +189,6 @@ class RegistroUsuarioForm(UserCreationForm):
             'autocomplete': 'new-password',
         })
     )
-    class Meta:
-        model = User
-        fields = ("username", "email", "password1", "password2")
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -199,10 +205,21 @@ def registro_usuario(request):
             user.first_name = form.cleaned_data.get('first_name')
             user.last_name = form.cleaned_data.get('last_name')
             user.save()
+            
+            # Crear registro en UsuariosPlataformas
+            from .models import UsuariosPlataformas
+            usuario_greta = form.cleaned_data.get('usuario_greta')
+            # Siempre crear el registro, incluso si usuario_greta está vacío
+            UsuariosPlataformas.objects.create(
+                usuario=user,
+                usuario_greta=usuario_greta
+            )
+            
             # Asignar al grupo 'asesor' automáticamente
             from django.contrib.auth.models import Group
             grupo, creado = Group.objects.get_or_create(name='asesor')
             user.groups.add(grupo)
+            
             messages.success(request, 'Registro exitoso. Ahora puedes iniciar sesión.')
             return redirect('core:login')
     else:
@@ -1631,9 +1648,14 @@ def solo_admin(view_func):
 
 def perfil_usuario(request):
     user = request.user
+    # Obtener o crear el registro de UsuariosPlataformas para el usuario
+    from .models import UsuariosPlataformas
+    usuario_plataformas, created = UsuariosPlataformas.objects.get_or_create(usuario=user)
+    
     if request.method == 'POST':
         nombre = request.POST.get('nombre', '').strip()
         apellidos = request.POST.get('apellidos', '').strip()
+        usuario_greta = request.POST.get('usuario_greta', '').strip()
         password1 = request.POST.get('password1', '')
         password2 = request.POST.get('password2', '')
         errores = []
@@ -1642,6 +1664,8 @@ def perfil_usuario(request):
             user.first_name = nombre
         if apellidos:
             user.last_name = apellidos
+        if usuario_greta:
+            usuario_plataformas.usuario_greta = usuario_greta
         if password1 or password2:
             if password1 != password2:
                 errores.append('Las contraseñas no coinciden.')
@@ -1651,16 +1675,17 @@ def perfil_usuario(request):
                 user.set_password(password1)
         if not errores:
             user.save()
+            usuario_plataformas.save()
             if password1:
                 update_session_auth_hash(request, user)
-                messages.success(request, 'Datos y contraseña actualizados correctamente.')
+                messages.success(request, 'Datos, usuario Greta y contraseña actualizados correctamente.')
             else:
-                messages.success(request, 'Datos actualizados correctamente.')
+                messages.success(request, 'Datos y usuario Greta actualizados correctamente.')
             return redirect('core:perfil')
         else:
             for err in errores:
                 messages.error(request, err)
-    return render(request, 'core/perfil.html', {'user': user})
+    return render(request, 'core/perfil.html', {'user': user, 'usuario_plataformas': usuario_plataformas})
 
 
 
@@ -1671,9 +1696,15 @@ def es_admin(user):
 def admin_usuarios(request):
     q = request.GET.get('q', '').strip()
     grupo_filtro = request.GET.get('grupo', '').strip()
+    
+    # Importar el modelo UsuariosPlataformas
+    from .models import UsuariosPlataformas
+    
+    # Obtener usuarios con sus datos de plataformas
     usuarios = User.objects.annotate(
         fullname=Concat('first_name', Value(' '), 'last_name')
-    ).order_by('username')
+    ).prefetch_related('plataformas').order_by('username')
+    
     grupos = Group.objects.all().order_by('name')
     campanas = Campana.objects.filter(activa=True).order_by('nombre')
 
@@ -1759,6 +1790,9 @@ def detalle_usuario(request, user_id):
     """
     try:
         user = User.objects.get(id=user_id)
+        # Obtener o crear el registro de UsuariosPlataformas para el usuario
+        from .models import UsuariosPlataformas
+        usuario_plataformas, created = UsuariosPlataformas.objects.get_or_create(usuario=user)
     except User.DoesNotExist:
         messages.error(request, 'El usuario solicitado no existe.')
         return redirect('core:admin_usuarios')
@@ -1774,6 +1808,7 @@ def detalle_usuario(request, user_id):
 
     return render(request, 'core/detalle_usuario.html', {
         'usuario': user,
+        'usuario_plataformas': usuario_plataformas,
     })
 
 @login_required

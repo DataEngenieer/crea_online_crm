@@ -332,6 +332,19 @@
         {% endfor %}
       </div>
       
+      <!-- Usuario Greta -->
+      <div class="form-group">
+        <label for="id_usuario_greta">Usuario Greta</label>
+        <div class="input-wrapper">
+          <i class="bi bi-person-badge-fill"></i>
+          {{ form.usuario_greta }}
+        </div>
+        <small class="form-text">Ingrese su usuario de la plataforma Greta (si lo tiene)</small>
+        {% for error in form.usuario_greta.errors %}
+          <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+      </div>
+      
       <!-- Contraseña -->
       <div class="form-group">
         <label for="id_password1">Contraseña</label>
