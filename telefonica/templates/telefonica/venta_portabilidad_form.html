@@ -8,57 +8,17 @@
 
 {% block contenido_telefonica %}
 <div class="card shadow-sm">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <div class="card-header bg-primary text-white">
         <h5 class="mb-0">{{ titulo }}</h5>
-        <div class="steps-indicator">
-            <div class="step-dots">
-                <span class="step-dot active" data-step="1"></span>
-                <span class="step-dot" data-step="2"></span>
-                <span class="step-dot" data-step="3"></span>
-            </div>
-            <div class="step-text text-white">Paso <span id="current-step">1</span> de 3</div>
-        </div>
     </div>
     <div class="card-body">
         <form method="post" enctype="multipart/form-data" id="ventaPortabilidadForm">
             {% csrf_token %}
             
-            <!-- Navegación de pestañas -->
-            <ul class="nav nav-tabs" id="ventaTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link active" id="cliente-tab" data-bs-toggle="tab" data-bs-target="#cliente" role="tab" aria-controls="cliente" aria-selected="true">
-                        <i class="fas fa-user me-2"></i>Datos del Cliente
-                    </a>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link" id="portabilidad-tab" data-bs-toggle="tab" data-bs-target="#portabilidad" role="tab" aria-controls="portabilidad" aria-selected="false">
-                        <i class="fas fa-exchange-alt me-2"></i>Datos de Portabilidad
-                    </a>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link" id="confirmar-tab" data-bs-toggle="tab" data-bs-target="#confirmar" role="tab" aria-controls="confirmar" aria-selected="false">
-                        <i class="fas fa-check-circle me-2"></i>Confirmación
-                    </a>
-                </li>
-            </ul>
-            
-            <!-- Contenido de pestañas -->
-            <div class="tab-content pt-4" id="ventaTabsContent">
-                <!-- Pestaña: Datos del Cliente -->
-                <div class="tab-pane fade show active" id="cliente" role="tabpanel" aria-labelledby="cliente-tab">
-                    <div class="card-body px-0">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i> Complete los datos del cliente para la portabilidad.
-                        </div>
+            <!-- Datos del Cliente -->
+            <h5 class="mb-3"><i class="fas fa-user me-2"></i>Datos del Cliente</h5>
                         
                         <div class="row mb-3">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="{{ form.tipo_cliente.id_for_label }}">Tipo de Cliente:</label>
-                                    {{ form.tipo_cliente }}
-                                    <div class="invalid-feedback" id="tipo-cliente-error"></div>
-                                </div>
-                            </div>
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="{{ form.tipo_documento.id_for_label }}">Tipo de Documento:</label>
@@ -73,9 +33,6 @@
                                     <div class="invalid-feedback" id="documento-error"></div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div class="row mb-3">
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="{{ form.fecha_expedicion.id_for_label }}">Fecha de Expedición:</label>
@@ -83,54 +40,51 @@
                                     <div class="invalid-feedback" id="fecha-expedicion-error"></div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-5">
                                 <div class="form-group">
                                     <label for="{{ form.nombres.id_for_label }}">Nombres:</label>
                                     {{ form.nombres }}
                                     <div class="invalid-feedback" id="nombres-error"></div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-5">
                                 <div class="form-group">
                                     <label for="{{ form.apellidos.id_for_label }}">Apellidos:</label>
                                     {{ form.apellidos }}
                                     <div class="invalid-feedback" id="apellidos-error"></div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-4">
+                            <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="{{ form.telefono_legalizacion.id_for_label }}">Teléfono de Legalización:</label>
+                                    <label for="{{ form.telefono_legalizacion.id_for_label }}">Teléfono:</label>
                                     {{ form.telefono_legalizacion }}
                                     <div class="invalid-feedback" id="telefono-legalizacion-error"></div>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="d-flex justify-content-between mt-4">
-                            <div></div>
-                            <button type="button" class="btn btn-primary next-step" data-next="portabilidad">
-                                Siguiente <i class="fas fa-arrow-right ms-2"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Pestaña: Datos de Portabilidad -->
-                <div class="tab-pane fade" id="portabilidad" role="tabpanel" aria-labelledby="portabilidad-tab">
-                    <div class="card-body px-0">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i> Complete los datos de la portabilidad.
-                        </div>
+
+                        
+                        <hr class="my-4">
+                        
+                        <!-- Datos de Portabilidad -->
+                        <h5 class="mb-3"><i class="fas fa-exchange-alt me-2"></i>Datos de Portabilidad</h5>
                         
                         <div class="row mb-3">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="{{ form.plan_adquiere.id_for_label }}">Plan a Adquirir:</label>
                                     {{ form.plan_adquiere }}
                                     <div class="invalid-feedback" id="plan-adquiere-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>CFM:</label>
+                                    <input type="text" class="form-control" id="cfm-display" readonly placeholder="Seleccione un plan">
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -210,77 +164,8 @@
                             </div>
                         </div>
                         
-                        <div class="d-flex justify-content-between mt-4">
-                            <button type="button" class="btn btn-secondary prev-step" data-prev="cliente">
-                                <i class="fas fa-arrow-left me-2"></i> Anterior
-                            </button>
-                            <button type="button" class="btn btn-primary next-step" data-next="confirmar">
-                                Siguiente <i class="fas fa-arrow-right ms-2"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Pestaña: Confirmación -->
-                <div class="tab-pane fade" id="confirmar" role="tabpanel" aria-labelledby="confirmar-tab">
-                    <div class="card-body px-0">
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle me-2"></i> Por favor revise todos los datos antes de confirmar la venta.
-                        </div>
                         
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="card mb-4">
-                                    <div class="card-header bg-light">
-                                        <h6 class="mb-0">Resumen de la Venta</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <!-- Datos del cliente -->
-                                        <h6 class="font-weight-bold text-primary mb-3">Datos del Cliente</h6>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <p><strong>Tipo de Cliente:</strong> <span id="resumen-tipo-cliente"></span></p>
-                                                <p><strong>Documento:</strong> <span id="resumen-tipo-documento"></span> <span id="resumen-documento"></span></p>
-                                                <p><strong>Nombres:</strong> <span id="resumen-nombres"></span></p>
-                                                <p><strong>Apellidos:</strong> <span id="resumen-apellidos"></span></p>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <p><strong>Fecha de Expedición:</strong> <span id="resumen-fecha-expedicion"></span></p>
-                                                <p><strong>Teléfono de Legalización:</strong> <span id="resumen-telefono-legalizacion"></span></p>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Datos de la portabilidad -->
-                                        <h6 class="font-weight-bold text-primary mb-3 mt-4">Datos de la Portabilidad</h6>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <p><strong>Plan a Adquirir:</strong> <span id="resumen-plan-adquiere"></span></p>
-                                                <p><strong>Número a Portar:</strong> <span id="resumen-numero-a-portar"></span></p>
-                                                <p><strong>NIP:</strong> <span id="resumen-nip"></span></p>
-                                                <p><strong>Fecha de Entrega:</strong> <span id="resumen-fecha-entrega"></span></p>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <p><strong>Fecha Ventana de Cambio:</strong> <span id="resumen-fecha-ventana-cambio"></span></p>
-                                                <p><strong>Número de Orden:</strong> <span id="resumen-numero-orden"></span></p>
-                                                <p><strong>Base de Origen:</strong> <span id="resumen-base-origen"></span></p>
-                                                <p><strong>Usuario Greta:</strong> <span id="resumen-usuario-greta"></span></p>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Confronta y observaciones -->
-                                        <h6 class="font-weight-bold text-primary mb-3 mt-4">Documentación y Observaciones</h6>
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <p><strong>Confronta:</strong> <span id="resumen-confronta">No cargado</span></p>
-                                                <p><strong>Observaciones:</strong> <span id="resumen-observacion"></span></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
+                        <div class="form-group mb-4 mt-4">
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="confirmo_venta" required>
                                 <label class="form-check-label" for="confirmo_venta">
@@ -289,16 +174,11 @@
                             </div>
                         </div>
                         
-                        <div class="d-flex justify-content-between mt-4">
-                            <button type="button" class="btn btn-secondary prev-step" data-prev="portabilidad">
-                                <i class="fas fa-arrow-left me-2"></i> Anterior
-                            </button>
-                            <button type="submit" class="btn btn-success" id="btn-guardar-venta" disabled>
-                                <i class="fas fa-save me-1"></i> {{ boton }}
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-2"></i>{{ boton }}
                             </button>
                         </div>
-                    </div>
-                </div>
             </div>
         </form>
     </div>
@@ -309,133 +189,60 @@
 {{ block.super }}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Referencias a elementos
-        const tabs = document.querySelectorAll('.nav-link');
-        const tabPanes = document.querySelectorAll('.tab-pane');
-        const nextButtons = document.querySelectorAll('.next-step');
-        const prevButtons = document.querySelectorAll('.prev-step');
-        const stepDots = document.querySelectorAll('.step-dot');
-        const currentStepText = document.getElementById('current-step');
-        const confirmCheckbox = document.getElementById('confirmo_venta');
-        const submitButton = document.getElementById('btn-guardar-venta');
+        // Elementos del DOM
+        const form = document.getElementById('ventaPortabilidadForm');
+        const planSelect = document.getElementById('id_plan_adquiere');
+        const cfmDisplay = document.getElementById('cfm-display');
         
-        // Función para actualizar el paso actual
-        function updateStep(stepNumber) {
-            currentStepText.textContent = stepNumber;
-            stepDots.forEach((dot, index) => {
-                if (index + 1 <= stepNumber) {
-                    dot.classList.add('active');
-                } else {
-                    dot.classList.remove('active');
-                }
-            });
-        }
+        // Verificar que los elementos existen
+        console.log('Plan select element:', planSelect);
+        console.log('CFM display element:', cfmDisplay);
         
-        // Función para activar una pestaña
-        function activateTab(tabId) {
-            tabs.forEach(tab => {
-                if (tab.id === tabId + '-tab') {
-                    tab.classList.add('active');
-                    tab.setAttribute('aria-selected', 'true');
-                } else {
-                    tab.classList.remove('active');
-                    tab.setAttribute('aria-selected', 'false');
-                }
-            });
+        // Datos de los planes desde el contexto de Django
+        const planesData = {{ planes_data|safe }};
+        console.log('Planes data:', planesData);
+        console.log('Type of planes data:', typeof planesData);
+        
+        // Crear un mapa de planes para acceso rápido
+        const planesMap = {};
+        planesData.forEach(plan => {
+            planesMap[plan.id] = plan;
+        });
+        console.log('Planes map:', planesMap);
+        
+        // Función para actualizar el CFM cuando se selecciona un plan
+        function actualizarCFM() {
+            const planId = planSelect.value;
+            console.log('Plan ID seleccionado:', planId);
             
-            tabPanes.forEach(pane => {
-                if (pane.id === tabId) {
-                    pane.classList.add('show', 'active');
-                } else {
-                    pane.classList.remove('show', 'active');
-                }
-            });
-            
-            // Actualizar el paso basado en la pestaña activa
-            if (tabId === 'cliente') updateStep(1);
-            else if (tabId === 'portabilidad') updateStep(2);
-            else if (tabId === 'confirmar') {
-                updateStep(3);
-                // Actualizar el resumen con los datos del formulario
-                updateResumen();
+            if (planId && planesMap[planId]) {
+                const cfm = planesMap[planId].CFM;
+                console.log('CFM encontrado:', cfm);
+                cfmDisplay.value = `$${parseFloat(cfm).toLocaleString('es-CO')}`;
+            } else {
+                cfmDisplay.value = '';
+                cfmDisplay.placeholder = 'Seleccione un plan';
             }
         }
         
-        // Función para actualizar el resumen
-        function updateResumen() {
-            // Datos del cliente
-            document.getElementById('resumen-tipo-cliente').textContent = 
-                document.getElementById('{{ form.tipo_cliente.id_for_label }}').options[
-                    document.getElementById('{{ form.tipo_cliente.id_for_label }}').selectedIndex
-                ].text;
-            document.getElementById('resumen-tipo-documento').textContent = 
-                document.getElementById('{{ form.tipo_documento.id_for_label }}').options[
-                    document.getElementById('{{ form.tipo_documento.id_for_label }}').selectedIndex
-                ].text;
-            document.getElementById('resumen-documento').textContent = 
-                document.getElementById('{{ form.documento.id_for_label }}').value;
-            document.getElementById('resumen-nombres').textContent = 
-                document.getElementById('{{ form.nombres.id_for_label }}').value;
-            document.getElementById('resumen-apellidos').textContent = 
-                document.getElementById('{{ form.apellidos.id_for_label }}').value;
-            document.getElementById('resumen-fecha-expedicion').textContent = 
-                document.getElementById('{{ form.fecha_expedicion.id_for_label }}').value;
-            document.getElementById('resumen-telefono-legalizacion').textContent = 
-                document.getElementById('{{ form.telefono_legalizacion.id_for_label }}').value;
+        // Event listener para el cambio de plan
+        if (planSelect) {
+            planSelect.addEventListener('change', actualizarCFM);
             
-            // Datos de portabilidad
-            const planSelect = document.getElementById('{{ form.plan_adquiere.id_for_label }}');
-            document.getElementById('resumen-plan-adquiere').textContent = 
-                planSelect.options[planSelect.selectedIndex].text;
-            document.getElementById('resumen-numero-a-portar').textContent = 
-                document.getElementById('{{ form.numero_a_portar.id_for_label }}').value;
-            document.getElementById('resumen-nip').textContent = 
-                document.getElementById('{{ form.nip.id_for_label }}').value;
-            document.getElementById('resumen-fecha-entrega').textContent = 
-                document.getElementById('{{ form.fecha_entrega.id_for_label }}').value;
-            document.getElementById('resumen-fecha-ventana-cambio').textContent = 
-                document.getElementById('{{ form.fecha_ventana_cambio.id_for_label }}').value;
-            document.getElementById('resumen-numero-orden').textContent = 
-                document.getElementById('{{ form.numero_orden.id_for_label }}').value;
-            document.getElementById('resumen-base-origen').textContent = 
-                document.getElementById('{{ form.base_origen.id_for_label }}').value;
-            document.getElementById('resumen-usuario-greta').textContent = 
-                document.getElementById('{{ form.usuario_greta.id_for_label }}').value;
-            
-            // Confronta y observaciones
-            const confrontaInput = document.getElementById('{{ form.confronta.id_for_label }}');
-            document.getElementById('resumen-confronta').textContent = 
-                confrontaInput.files.length > 0 ? confrontaInput.files[0].name : 'No cargado';
-            document.getElementById('resumen-observacion').textContent = 
-                document.getElementById('{{ form.observacion.id_for_label }}').value;
+            // Actualizar CFM al cargar la página si ya hay un plan seleccionado
+            actualizarCFM();
+        } else {
+            console.error('No se encontró el elemento select del plan');
         }
         
-        // Event listeners para botones de navegación
-        nextButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const nextTab = this.getAttribute('data-next');
-                activateTab(nextTab);
-            });
-        });
-        
-        prevButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const prevTab = this.getAttribute('data-prev');
-                activateTab(prevTab);
-            });
-        });
-        
-        // Event listener para el checkbox de confirmación
-        confirmCheckbox.addEventListener('change', function() {
-            submitButton.disabled = !this.checked;
-        });
-        
-        // Event listeners para las pestañas
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                const tabId = this.getAttribute('data-bs-target').substring(1);
-                activateTab(tabId);
-            });
+        // Validación del formulario antes de enviar
+        form.addEventListener('submit', function(e) {
+            if (!document.getElementById('confirmo_venta').checked) {
+                e.preventDefault();
+                alert('Debe confirmar que todos los datos son correctos antes de continuar.');
+                return false;
+            }
+            return true;
         });
     });
 </script>

@@ -8,214 +8,132 @@
 
 {% block contenido_telefonica %}
 <div class="card shadow-sm">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <div class="card-header bg-primary text-white">
         <h5 class="mb-0">{{ titulo }}</h5>
-        <div class="steps-indicator">
-            <div class="step-dots">
-                <span class="step-dot active" data-step="1"></span>
-                <span class="step-dot" data-step="2"></span>
-                <span class="step-dot" data-step="3"></span>
-            </div>
-            <div class="step-text text-white">Paso <span id="current-step">1</span> de 3</div>
-        </div>
     </div>
     <div class="card-body">
         <form method="post" enctype="multipart/form-data" id="ventaUpgradeForm">
             {% csrf_token %}
             
-            <!-- Navegación de pestañas -->
-            <ul class="nav nav-tabs" id="ventaTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link active" id="cliente-tab" data-bs-toggle="tab" data-bs-target="#cliente" role="tab" aria-controls="cliente" aria-selected="true">
-                        <i class="fas fa-user me-2"></i>Datos del Cliente
-                    </a>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link" id="upgrade-tab" data-bs-toggle="tab" data-bs-target="#upgrade" role="tab" aria-controls="upgrade" aria-selected="false">
-                        <i class="fas fa-sync-alt me-2"></i>Datos del Upgrade
-                    </a>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link" id="confirmar-tab" data-bs-toggle="tab" data-bs-target="#confirmar" role="tab" aria-controls="confirmar" aria-selected="false">
-                        <i class="fas fa-check-circle me-2"></i>Confirmación
-                    </a>
-                </li>
-            </ul>
-            
-            <div class="tab-content pt-4" id="ventaTabsContent">
-                <!-- Pestaña: Datos del Cliente -->
-                <div class="tab-pane fade show active" id="cliente" role="tabpanel" aria-labelledby="cliente-tab">
-                    <div class="card-body px-0">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i> Complete los datos del cliente. Si ya existe, puede buscarlo por documento.
-                        </div>
+            <!-- Datos del Cliente -->
+            <h5 class="mb-3"><i class="fas fa-user me-2"></i>Datos del Cliente</h5>
                         
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="form-group">
                                     <label for="{{ form.tipo_documento.id_for_label }}">Tipo de Documento:</label>
                                     {{ form.tipo_documento }}
+                                    <div class="invalid-feedback" id="tipo-documento-error"></div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
+                            <div class="col-md-4">
+                                <div class="form-group">
                                     <label for="{{ form.documento.id_for_label }}">Número de Documento:</label>
                                     {{ form.documento }}
+                                    <div class="invalid-feedback" id="documento-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.fecha_expedicion.id_for_label }}">Fecha de Expedición:</label>
+                                    {{ form.fecha_expedicion }}
+                                    <div class="invalid-feedback" id="fecha-expedicion-error"></div>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
+                        <div class="row mb-3">
+                            <div class="col-md-5">
+                                <div class="form-group">
                                     <label for="{{ form.nombres.id_for_label }}">Nombres:</label>
                                     {{ form.nombres }}
+                                    <div class="invalid-feedback" id="nombres-error"></div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
+                            <div class="col-md-5">
+                                <div class="form-group">
                                     <label for="{{ form.apellidos.id_for_label }}">Apellidos:</label>
                                     {{ form.apellidos }}
+                                    <div class="invalid-feedback" id="apellidos-error"></div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label for="{{ form.telefono_legalizacion.id_for_label }}">Teléfono de Contacto:</label>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="{{ form.telefono_legalizacion.id_for_label }}">Teléfono:</label>
                                     {{ form.telefono_legalizacion }}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label for="{{ form.fecha_expedicion.id_for_label }}">Fecha de Expedición del Documento:</label>
-                                    {{ form.fecha_expedicion }}
+                                    <div class="invalid-feedback" id="telefono-legalizacion-error"></div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="d-flex justify-content-between mt-4">
-                            <button type="button" class="btn btn-secondary" disabled>Anterior</button>
-                            <button type="button" class="btn btn-primary" data-next="upgrade">Siguiente</button>
+                
+                <hr class="my-4">
+                
+                <!-- Datos del Upgrade -->
+                <h5 class="mb-3"><i class="fas fa-sync-alt me-2"></i>Datos del Upgrade</h5>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="{{ form.plan_adquiere.id_for_label }}">Plan Adquirido:</label>
+                            {{ form.plan_adquiere }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="cfm_display">CFM:</label>
+                            <input type="text" id="cfm_display" class="form-control" readonly placeholder="Seleccione un plan">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="{{ form.codigo_verificacion.id_for_label }}">Código de Verificación:</label>
+                            {{ form.codigo_verificacion }}
                         </div>
                     </div>
                 </div>
                 
-                <!-- Pestaña: Datos del Upgrade -->
-                <div class="tab-pane fade" id="upgrade" role="tabpanel" aria-labelledby="upgrade-tab">
-                    <div class="card-body px-0">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i> Complete los datos del servicio de Upgrade.
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="{{ form.numero_orden.id_for_label }}">Número de Orden:</label>
+                            {{ form.numero_orden }}
                         </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label for="{{ form.plan_adquiere.id_for_label }}">Plan Adquirido:</label>
-                                    {{ form.plan_adquiere }}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label for="{{ form.codigo_verificacion.id_for_label }}">Código de Verificación:</label>
-                                    {{ form.codigo_verificacion }}
-                                </div>
-                            </div>
+                    </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="{{ form.base_origen.id_for_label }}">Base Origen:</label>
+                            {{ form.base_origen }}
                         </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label for="{{ form.numero_orden.id_for_label }}">Número de Orden:</label>
-                                    {{ form.numero_orden }}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label for="{{ form.base_origen.id_for_label }}">Base Origen:</label>
-                                    {{ form.base_origen }}
-                                </div>
-                            </div>
-                        </div>
-                        
+                    </div>
+                    <div class="col-md-4">
                         <div class="form-group mb-3">
                             <label for="{{ form.usuario_greta.id_for_label }}">Usuario Greta:</label>
                             {{ form.usuario_greta }}
                         </div>
-                        
+                    </div>
+                    <div class="col-md-4">
                         <div class="form-group mb-3">
                             <label for="{{ form.observacion.id_for_label }}">Observaciones:</label>
                             {{ form.observacion }}
                         </div>
-                        
-                        <div class="d-flex justify-content-between mt-4">
-                            <button type="button" class="btn btn-secondary" data-prev="cliente">Anterior</button>
-                            <button type="button" class="btn btn-primary" data-next="confirmar">Siguiente</button>
-                        </div>
                     </div>
                 </div>
                 
-                <!-- Pestaña: Confirmación -->
-                <div class="tab-pane fade" id="confirmar" role="tabpanel" aria-labelledby="confirmar-tab">
-                    <div class="card-body px-0">
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle me-2"></i> Por favor revise todos los datos antes de confirmar la venta.
-                        </div>
-                        
-                        <div class="card mb-4">
-                            <div class="card-header bg-light">
-                                <h5 class="mb-0">Resumen de la Venta</h5>
-                            </div>
-                            <div class="card-body">
-                                <h6 class="card-subtitle mb-3 text-muted">Datos del Cliente</h6>
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <p class="mb-1"><strong>Nombre Completo:</strong> <span id="resumen-nombre"></span></p>
-                                        <p class="mb-1"><strong>Documento:</strong> <span id="resumen-documento"></span></p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <p class="mb-1"><strong>Teléfono:</strong> <span id="resumen-telefono"></span></p>
-                                    </div>
-                                </div>
-                                
-                                <hr>
-                                <h6 class="card-subtitle mb-3 text-muted">Datos del Upgrade</h6>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <p class="mb-1"><strong>Plan:</strong> <span id="resumen-plan"></span></p>
-                                        <p class="mb-1"><strong>Código de Verificación:</strong> <span id="resumen-codigo"></span></p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <p class="mb-1"><strong>Número de Orden:</strong> <span id="resumen-orden"></span></p>
-                                        <p class="mb-1"><strong>Base Origen:</strong> <span id="resumen-base"></span></p>
-                                        <p class="mb-1"><strong>Usuario Greta:</strong> <span id="resumen-greta"></span></p>
-                                    </div>
-                                </div>
-                                
-                                <div class="mt-3" id="resumen-observaciones-container">
-                                    <p class="mb-1"><strong>Observaciones:</strong></p>
-                                    <p id="resumen-observaciones" class="text-muted">Ninguna</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group mb-4">
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="confirmo_venta" required>
-                                <label class="form-check-label" for="confirmo_venta">
-                                    Confirmo que todos los datos son correctos y la venta puede ser registrada
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between mt-4">
-                            <button type="button" class="btn btn-secondary" data-prev="upgrade">Anterior</button>
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-save me-2"></i>Guardar Venta
-                            </button>
-                        </div>
+                <div class="form-group mb-4 mt-4">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="confirmo_venta" required>
+                        <label class="form-check-label" for="confirmo_venta">
+                            Confirmo que todos los datos son correctos y la venta puede ser registrada
+                        </label>
                     </div>
+                </div>
+                
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-2"></i>Guardar Venta
+                    </button>
                 </div>
             </div>
         </form>
@@ -229,111 +147,40 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Elementos del DOM
         const form = document.getElementById('ventaUpgradeForm');
-        const tabs = document.querySelectorAll('.nav-tabs .nav-link');
-        const tabPanes = document.querySelectorAll('.tab-pane');
-        const nextButtons = document.querySelectorAll('[data-next]');
-        const prevButtons = document.querySelectorAll('[data-prev]');
-        const stepDots = document.querySelectorAll('.step-dot');
-        const currentStepText = document.getElementById('current-step');
+        const planSelect = document.getElementById('{{ form.plan_adquiere.id_for_label }}');
+        const cfmDisplay = document.getElementById('cfm_display');
         
-        // Función para actualizar el paso actual
-        function updateStep(stepNumber) {
-            // Actualizar indicador de pasos
-            stepDots.forEach((dot, index) => {
-                if (index + 1 === stepNumber) {
-                    dot.classList.add('active');
-                } else if (index + 1 < stepNumber) {
-                    dot.classList.add('completed');
-                    dot.classList.remove('active');
+        // Datos de planes desde el backend
+        const planesData = {{ planes_data|safe }};
+        console.log('Datos de planes:', planesData);
+        console.log('Tipo de planesData:', typeof planesData);
+        
+        // Función para actualizar el CFM
+        function actualizarCFM() {
+            const planId = planSelect.value;
+            if (planId) {
+                const planSeleccionado = planesData.find(plan => plan.id == planId);
+                if (planSeleccionado) {
+                    // Formatear como moneda colombiana
+                    const cfmFormateado = new Intl.NumberFormat('es-CO', {
+                        style: 'currency',
+                        currency: 'COP',
+                        minimumFractionDigits: 0
+                    }).format(planSeleccionado.CFM);
+                    cfmDisplay.value = cfmFormateado;
                 } else {
-                    dot.classList.remove('active', 'completed');
+                    cfmDisplay.value = '';
                 }
-            });
-            
-            // Actualizar texto del paso actual
-            currentStepText.textContent = stepNumber;
-        }
-        
-        // Función para activar una pestaña
-        function activateTab(tabId) {
-            // Ocultar todos los paneles
-            tabPanes.forEach(pane => {
-                pane.classList.remove('show', 'active');
-            });
-            
-            // Desactivar todas las pestañas
-            tabs.forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Activar la pestaña y panel correspondientes
-            const tab = document.querySelector(`[data-bs-target="#${tabId}"]`);
-            const pane = document.getElementById(tabId);
-            
-            if (tab && pane) {
-                tab.classList.add('active');
-                pane.classList.add('show', 'active');
-                
-                // Actualizar el paso actual según la pestaña activa
-                switch(tabId) {
-                    case 'cliente':
-                        updateStep(1);
-                        break;
-                    case 'upgrade':
-                        updateStep(2);
-                        break;
-                    case 'confirmar':
-                        updateStep(3);
-                        updateResumen();
-                        break;
-                }
-            }
-        }
-        
-        // Función para actualizar el resumen
-        function updateResumen() {
-            // Datos del cliente
-            document.getElementById('resumen-nombre').textContent = 
-                `${form.nombres.value} ${form.apellidos.value}`;
-            document.getElementById('resumen-documento').textContent = 
-                `${form.tipo_documento.options[form.tipo_documento.selectedIndex].text}: ${form.documento.value}`;
-            document.getElementById('resumen-telefono').textContent = form.telefono_legalizacion.value;
-            
-            // Datos del upgrade
-            document.getElementById('resumen-plan').textContent = 
-                form.plan_adquiere.options[form.plan_adquiere.selectedIndex].text;
-            document.getElementById('resumen-codigo').textContent = form.codigo_verificacion.value;
-            document.getElementById('resumen-orden').textContent = form.numero_orden.value;
-            document.getElementById('resumen-base').textContent = form.base_origen.value;
-            document.getElementById('resumen-greta').textContent = form.usuario_greta.value;
-            
-            // Observaciones
-            const observaciones = form.observacion.value.trim();
-            const observacionesElement = document.getElementById('resumen-observaciones');
-            const container = document.getElementById('resumen-observaciones-container');
-            
-            if (observaciones) {
-                observacionesElement.textContent = observaciones;
-                container.style.display = 'block';
             } else {
-                container.style.display = 'none';
+                cfmDisplay.value = '';
             }
         }
         
-        // Event listeners para botones de navegación
-        nextButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const nextTab = this.getAttribute('data-next');
-                activateTab(nextTab);
-            });
-        });
+        // Escuchar cambios en el selector de plan
+        planSelect.addEventListener('change', actualizarCFM);
         
-        prevButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const prevTab = this.getAttribute('data-prev');
-                activateTab(prevTab);
-            });
-        });
+        // Actualizar CFM al cargar la página si ya hay un plan seleccionado
+        actualizarCFM();
         
         // Validación del formulario antes de enviar
         form.addEventListener('submit', function(e) {
@@ -344,9 +191,6 @@
             }
             return true;
         });
-        
-        // Inicializar el primer paso
-        updateStep(1);
     });
 </script>
 {% endblock %}

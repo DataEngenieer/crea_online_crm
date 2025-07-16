@@ -15,55 +15,56 @@
         <form method="post" enctype="multipart/form-data" id="ventaPrePosForm">
             {% csrf_token %}
             
+            <!-- Datos del Cliente -->
             <h5 class="mb-3"><i class="fas fa-user me-2"></i>Datos del Cliente</h5>
-            
-            <div class="card-body px-0">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i> Complete los datos del cliente. Si ya existe, puede buscarlo por documento.
-                </div>
-                
-                <!-- Datos del Cliente en 3 columnas -->
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label for="{{ form.tipo_documento.id_for_label }}">Tipo de Documento:</label>
-                            {{ form.tipo_documento }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.tipo_documento.id_for_label }}">Tipo de Documento:</label>
+                                    {{ form.tipo_documento }}
+                                    <div class="invalid-feedback" id="tipo-documento-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.documento.id_for_label }}">Número de Documento:</label>
+                                    {{ form.documento }}
+                                    <div class="invalid-feedback" id="documento-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.fecha_expedicion.id_for_label }}">Fecha de Expedición:</label>
+                                    {{ form.fecha_expedicion }}
+                                    <div class="invalid-feedback" id="fecha-expedicion-error"></div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label for="{{ form.documento.id_for_label }}">Número de Documento:</label>
-                            {{ form.documento }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-5">
+                                <div class="form-group">
+                                    <label for="{{ form.nombres.id_for_label }}">Nombres:</label>
+                                    {{ form.nombres }}
+                                    <div class="invalid-feedback" id="nombres-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="form-group">
+                                    <label for="{{ form.apellidos.id_for_label }}">Apellidos:</label>
+                                    {{ form.apellidos }}
+                                    <div class="invalid-feedback" id="apellidos-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="{{ form.telefono_legalizacion.id_for_label }}">Teléfono:</label>
+                                    {{ form.telefono_legalizacion }}
+                                    <div class="invalid-feedback" id="telefono-legalizacion-error"></div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label for="{{ form.fecha_expedicion.id_for_label }}">Fecha de Expedición:</label>
-                            {{ form.fecha_expedicion }}
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label for="{{ form.nombres.id_for_label }}">Nombres:</label>
-                            {{ form.nombres }}
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label for="{{ form.apellidos.id_for_label }}">Apellidos:</label>
-                            {{ form.apellidos }}
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label for="{{ form.telefono_legalizacion.id_for_label }}">Teléfono de Contacto:</label>
-                            {{ form.telefono_legalizacion }}
-                        </div>
-                    </div>
-                </div>
                 
                 <hr class="my-4">
                 
@@ -79,17 +80,25 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-group mb-3">
+                            <label for="cfm_display">CFM:</label>
+                            <input type="text" id="cfm_display" class="form-control" readonly placeholder="Seleccione un plan">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
                             <label for="{{ form.numero_orden.id_for_label }}">Número de Orden:</label>
                             {{ form.numero_orden }}
                         </div>
                     </div>
+                </div>
+                
+                <div class="row">
                     <div class="col-md-4">
                         <div class="form-group mb-3">
                             <label for="{{ form.usuario_greta.id_for_label }}">Usuario Greta:</label>
                             {{ form.usuario_greta }}
                         </div>
                     </div>
-                </div>
                 
                 <div class="row">
                     <div class="col-md-4">
@@ -132,6 +141,40 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Elementos del DOM
         const form = document.getElementById('ventaPrePosForm');
+        const planSelect = document.getElementById('{{ form.plan_adquiere.id_for_label }}');
+        const cfmDisplay = document.getElementById('cfm_display');
+        
+        // Datos de planes desde el backend
+        const planesData = {{ planes_data|safe }};
+        console.log('Datos de planes:', planesData);
+        console.log('Tipo de planesData:', typeof planesData);
+        
+        // Función para actualizar el CFM
+        function actualizarCFM() {
+            const planId = planSelect.value;
+            if (planId) {
+                const planSeleccionado = planesData.find(plan => plan.id == planId);
+                if (planSeleccionado) {
+                    // Formatear como moneda colombiana
+                    const cfmFormateado = new Intl.NumberFormat('es-CO', {
+                        style: 'currency',
+                        currency: 'COP',
+                        minimumFractionDigits: 0
+                    }).format(planSeleccionado.CFM);
+                    cfmDisplay.value = cfmFormateado;
+                } else {
+                    cfmDisplay.value = '';
+                }
+            } else {
+                cfmDisplay.value = '';
+            }
+        }
+        
+        // Escuchar cambios en el selector de plan
+        planSelect.addEventListener('change', actualizarCFM);
+        
+        // Actualizar CFM al cargar la página si ya hay un plan seleccionado
+        actualizarCFM();
         
         // Validación del formulario antes de enviar
         form.addEventListener('submit', function(e) {

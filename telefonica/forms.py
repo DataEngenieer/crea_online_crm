@@ -7,12 +7,11 @@ class VentaPortabilidadForm(forms.ModelForm):
     class Meta:
         model = VentaPortabilidad
         fields = [
-            'tipo_cliente', 'tipo_documento', 'documento', 'fecha_expedicion', 'nombres', 'apellidos',
+            'tipo_documento', 'documento', 'fecha_expedicion', 'nombres', 'apellidos',
             'telefono_legalizacion', 'plan_adquiere', 'numero_a_portar', 'nip', 'fecha_entrega',
             'fecha_ventana_cambio', 'numero_orden', 'base_origen', 'usuario_greta', 'confronta', 'observacion'
         ]
         widgets = {
-            'tipo_cliente': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'tipo_documento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'documento': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'fecha_expedicion': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
@@ -36,8 +35,8 @@ class VentaPortabilidadForm(forms.ModelForm):
         # Extraer el parámetro user si existe
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        # Obtener solo los planes activos para el selector
-        self.fields['plan_adquiere'].queryset = Planes_portabilidad.objects.filter(estado='activo')
+        # Obtener solo los planes activos de tipo portabilidad para el selector
+        self.fields['plan_adquiere'].queryset = Planes_portabilidad.objects.filter(estado='activo', tipo_plan='portabilidad')
 
 
 class GestionAsesorForm(forms.ModelForm):
@@ -87,7 +86,8 @@ class VentaPrePosForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        self.fields['plan_adquiere'].queryset = Planes_portabilidad.objects.filter(estado='activo')
+        # Filtrar solo planes activos de tipo prepos
+        self.fields['plan_adquiere'].queryset = Planes_portabilidad.objects.filter(estado='activo', tipo_plan='prepos')
 
 
 class VentaUpgradeForm(forms.ModelForm):
@@ -117,7 +117,8 @@ class VentaUpgradeForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        self.fields['plan_adquiere'].queryset = Planes_portabilidad.objects.filter(estado='activo')
+        # Filtrar solo planes activos de tipo upgrade
+        self.fields['plan_adquiere'].queryset = Planes_portabilidad.objects.filter(estado='activo', tipo_plan='upgrade')
 
 
 class PlanesPortabilidadForm(forms.ModelForm):

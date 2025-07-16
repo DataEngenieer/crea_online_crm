@@ -93,6 +93,7 @@ def venta_crear_portabilidad(request, documento=None):
         if form.is_valid():
             venta = form.save(commit=False)
             venta.agente = request.user
+            venta.tipo_cliente = 'dentro_base'  # Establecer valor por defecto
             venta.save()
             messages.success(request, 'Venta de portabilidad registrada exitosamente.')
             return redirect('telefonica:detalle_venta_portabilidad', pk=venta.id)
@@ -100,11 +101,22 @@ def venta_crear_portabilidad(request, documento=None):
         initial_data = {'documento': documento} if documento else {}
         form = VentaPortabilidadForm(initial=initial_data, user=request.user)
     
+    # Obtener todos los planes activos de tipo portabilidad para el JavaScript
+    planes = Planes_portabilidad.objects.filter(estado='activo', tipo_plan='portabilidad')
+    planes_data = []
+    for plan in planes:
+        planes_data.append({
+            'id': plan.id,
+            'nombre_plan': plan.nombre_plan,
+            'CFM': float(plan.CFM)
+        })
+    
     context = {
         'form': form,
         'titulo': 'Nueva Venta de Portabilidad',
         'tipo_venta': 'portabilidad',
-        'subtitulo': 'Complete el formulario para registrar una nueva venta de portabilidad.'
+        'subtitulo': 'Complete el formulario para registrar una nueva venta de portabilidad.',
+        'planes_data': planes_data
     }
     return render(request, 'telefonica/venta_portabilidad_form.html', context)
 
@@ -126,10 +138,21 @@ def venta_crear_prepago(request, documento=None):
             initial_data = {'documento': documento}
         form = VentaPrePosForm(initial=initial_data, user=request.user)
     
+    # Obtener planes activos de tipo prepos para JavaScript
+    planes = Planes_portabilidad.objects.filter(estado='activo', tipo_plan='prepos').values('id', 'nombre_plan', 'CFM')
+    planes_data = []
+    for plan in planes:
+        planes_data.append({
+            'id': plan['id'],
+            'nombre_plan': plan['nombre_plan'],
+            'CFM': float(plan['CFM'])  # Convertir Decimal a float para JSON
+        })
+    
     context = {
         'form': form,
         'titulo': 'Nueva Venta de Pre a Pos',
-        'subtitulo': 'Complete el formulario para registrar una nueva venta de Pre a Pos.'
+        'subtitulo': 'Complete el formulario para registrar una nueva venta de Pre a Pos.',
+        'planes_data': planes_data
     }
     return render(request, 'telefonica/venta_prepago_form.html', context)
 
@@ -151,10 +174,21 @@ def venta_crear_upgrade(request, documento=None):
             initial_data = {'documento': documento}
         form = VentaUpgradeForm(initial=initial_data, user=request.user)
     
+    # Obtener planes activos de tipo upgrade para JavaScript
+    planes = Planes_portabilidad.objects.filter(estado='activo', tipo_plan='upgrade').values('id', 'nombre_plan', 'CFM')
+    planes_data = []
+    for plan in planes:
+        planes_data.append({
+            'id': plan['id'],
+            'nombre_plan': plan['nombre_plan'],
+            'CFM': float(plan['CFM'])  # Convertir Decimal a float para JSON
+        })
+    
     context = {
         'form': form,
         'titulo': 'Nueva Venta de Upgrade',
-        'subtitulo': 'Complete el formulario para registrar una nueva venta de Upgrade.'
+        'subtitulo': 'Complete el formulario para registrar una nueva venta de Upgrade.',
+        'planes_data': planes_data
     }
     return render(request, 'telefonica/venta_upgrade_form.html', context)
 
