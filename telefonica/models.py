@@ -162,6 +162,9 @@ class VentaPrePos(models.Model):
     observacion = models.TextField(verbose_name=_("Observación"), null=True, blank=True)
     agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_prepos_realizadas", verbose_name=_("Agente"))
 
+    estado_venta = models.CharField(max_length=30, choices=ESTADO_VENTA_CHOICES, default='pendiente_revision', verbose_name=_("Estado Venta"))
+    estado_logistica = models.CharField(max_length=21, choices=ESTADO_LOGISTICA_CHOICES, default='pendiente_seguimiento', verbose_name=_("Estado Logística"))
+    
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Creación"))
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name=_("Fecha de Actualización"))
     
@@ -218,6 +221,9 @@ class VentaUpgrade(models.Model):
     observacion = models.TextField(verbose_name=_("Observación"), null=True, blank=True)
     agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_upgrade_realizadas", verbose_name=_("Agente"))
 
+    estado_venta = models.CharField(max_length=30, choices=ESTADO_VENTA_CHOICES, default='pendiente_revision', verbose_name=_("Estado Venta"))
+    estado_logistica = models.CharField(max_length=21, choices=ESTADO_LOGISTICA_CHOICES, default='pendiente_seguimiento', verbose_name=_("Estado Logística"))
+    
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Creación"))
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name=_("Fecha de Actualización"))
     
