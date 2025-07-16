@@ -15,17 +15,18 @@ urlpatterns = [
     # Rutas para ventas de Portabilidad
     path('ventas/portabilidad/nueva/', views.venta_crear_portabilidad, name='venta_crear_portabilidad'),
     path('ventas/portabilidad/nueva/<str:documento>/', views.venta_crear_portabilidad, name='venta_crear_portabilidad_con_documento'),
-    path('ventas/portabilidad/<int:pk>/', views.detalle_venta_portabilidad, name='venta_detalle_portabilidad'),
+    path('ventas/portabilidad/<int:pk>/', views.detalle_venta_portabilidad, name='detalle_venta_portabilidad'),
 
     
     # Rutas para ventas de Prepago
     path('ventas/prepago/nueva/', views.venta_crear_prepago, name='venta_crear_prepago'),
     path('ventas/prepago/nueva/<str:documento>/', views.venta_crear_prepago, name='venta_crear_prepago_con_documento'),
-    path('ventas/prepago/<int:pk>/', views.detalle_venta_prepago, name='venta_detalle_prepago'),
+    path('ventas/prepago/<int:pk>/', views.detalle_venta_prepago, name='detalle_venta_prepago'),
     
     # Rutas para ventas de Upgrade
     path('ventas/upgrade/nueva/', views.venta_crear_upgrade, name='venta_crear_upgrade'),
     path('ventas/upgrade/nueva/<str:documento>/', views.venta_crear_upgrade, name='venta_crear_upgrade_con_documento'),
+    path('ventas/upgrade/<int:pk>/', views.detalle_venta_upgrade, name='detalle_venta_upgrade'),
     path('ventas/<int:pk>/', views.detalle_venta, name='venta_detalle'),
     path('ventas/<int:pk>/corregir/', views.venta_corregir, name='venta_corregir'),
     

@@ -18,6 +18,7 @@ ESTADO_VENTA_CHOICES = [
 ]
 
 ESTADO_LOGISTICA_CHOICES = [
+    ('pendiente_seguimiento', 'Pendiente de Seguimiento'),
     ('en_transito', 'En Transito'),
     ('entregado', 'Entregado'),
     ('rechazado', 'Rechazado'),
@@ -103,8 +104,8 @@ class VentaPortabilidad(models.Model):
     agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_portabilidad_realizadas", verbose_name=_("Agente"))
     backoffice = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_portabilidad_revisadas", verbose_name=_("Backoffice"))
 
-    estado_venta = models.CharField(max_length=30, choices=ESTADO_VENTA_CHOICES, default='pendiente_revision', verbose_name=_("Estado"))
-    estado_logistica = models.CharField(max_length=20, choices=ESTADO_LOGISTICA_CHOICES, default='pendiente_revision', verbose_name=_("Estado Logística"))
+    estado_venta = models.CharField(max_length=30, choices=ESTADO_VENTA_CHOICES, default='pendiente_revision', verbose_name=_("Estado Venta"))
+    estado_logistica = models.CharField(max_length=21, choices=ESTADO_LOGISTICA_CHOICES, default='pendiente_seguimiento', verbose_name=_("Estado Logística"))
     
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Creación"))
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name=_("Fecha de Actualización"))
@@ -240,9 +241,9 @@ class VentaUpgrade(models.Model):
     def nombre_completo_upgrade(self):
         return f"{self.nombres} {self.apellidos}"
 
-class agendamiento(models.Model):
+class Agendamiento(models.Model):
 
-    Estado_agendamiento = models.CharField(max_length=20, choices=ESTADO_AGENDAMIENTO_CHOICES, default='pendiente_revision', verbose_name=_("Estado"))
+    Estado_agendamiento = models.CharField(max_length=20, choices=ESTADO_AGENDAMIENTO_CHOICES, default='agendado', verbose_name=_("Estado"))
     nombre_cliente = models.CharField(max_length=100, verbose_name=_("Nombre del Cliente"))
     telefono_contacto = models.CharField(max_length=15, verbose_name=_("Teléfono de Contacto"))
     fecha_volver_a_llamar = models.DateField(verbose_name=_("Fecha de Volver a Llamar"))

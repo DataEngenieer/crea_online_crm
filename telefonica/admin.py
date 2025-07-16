@@ -7,7 +7,7 @@ from .models import (
     GestionBackoffice,
     Comision,
     Planes_portabilidad,
-    agendamiento,
+    Agendamiento,
     Escalamiento
 )
 
@@ -62,7 +62,7 @@ class ComisionAdmin(admin.ModelAdmin):
     list_filter = ('estado', 'agente')
     date_hierarchy = 'fecha_creacion'
 
-@admin.register(agendamiento)
+@admin.register(Agendamiento)
 class AgendamientoAdmin(admin.ModelAdmin):
     list_display = ('nombre_cliente', 'telefono_contacto', 'fecha_volver_a_llamar', 'hora_volver_a_llamar', 'Estado_agendamiento', 'agente')
     search_fields = ('nombre_cliente', 'telefono_contacto')

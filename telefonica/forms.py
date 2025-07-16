@@ -132,3 +132,38 @@ class PlanesPortabilidadForm(forms.ModelForm):
             'CFM_sin_iva': forms.NumberInput(attrs={'class': 'form-control'}),
             'estado': forms.Select(attrs={'class': 'form-select'}),
         }
+
+
+class CorreccionVentaForm(forms.ModelForm):
+    """Formulario para corregir ventas devueltas por backoffice"""
+    class Meta:
+        model = VentaPortabilidad
+        fields = [
+            'tipo_cliente', 'tipo_documento', 'documento', 'fecha_expedicion', 'nombres', 'apellidos',
+            'telefono_legalizacion', 'plan_adquiere', 'numero_a_portar', 'nip', 'fecha_entrega',
+            'fecha_ventana_cambio', 'numero_orden', 'base_origen', 'usuario_greta', 'confronta', 'observacion'
+        ]
+        widgets = {
+            'tipo_cliente': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
+            'tipo_documento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
+            'documento': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'fecha_expedicion': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
+            'nombres': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'apellidos': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'telefono_legalizacion': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'plan_adquiere': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
+            'numero_a_portar': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'nip': forms.NumberInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'fecha_entrega': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
+            'fecha_ventana_cambio': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
+            'numero_orden': forms.NumberInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'base_origen': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'usuario_greta': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'confronta': forms.FileInput(attrs={'class': 'form-control-file'}),
+            'observacion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'autocomplete': 'off'})
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Obtener solo los planes activos para el selector
+        self.fields['plan_adquiere'].queryset = Planes_portabilidad.objects.filter(estado='activo')

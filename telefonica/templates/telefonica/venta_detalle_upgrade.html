@@ -1,0 +1,197 @@
+{% extends 'telefonica/base_telefonica.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'telefonica/css/venta_detalle.css' %}">
+{% endblock %}
+
+{% block contenido_telefonica %}
+<div class="container-fluid">
+    <!-- Cabecera con información principal -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Detalle de Venta Upgrade #{{ venta.numero }}</h5>
+            <div class="estado-badge {{ venta.estado_venta }}">
+                {{ venta.get_estado_venta_display }}
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <!-- Columna izquierda: Datos del cliente -->
+                <div class="col-md-6">
+                    <h6 class="border-bottom pb-2 mb-3 text-primary">Datos del Cliente</h6>
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Tipo de Cliente:</div>
+                        <div class="col-md-8">{{ venta.get_tipo_cliente_display }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Documento:</div>
+                        <div class="col-md-8">{{ venta.get_tipo_documento_display }} {{ venta.documento }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Nombres:</div>
+                        <div class="col-md-8">{{ venta.nombres }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Apellidos:</div>
+                        <div class="col-md-8">{{ venta.apellidos }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Fecha Expedición:</div>
+                        <div class="col-md-8">{{ venta.fecha_expedicion|date:"d/m/Y" }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Teléfono:</div>
+                        <div class="col-md-8">{{ venta.telefono_contacto }}</div>
+                    </div>
+                </div>
+                
+                <!-- Columna derecha: Datos de la venta -->
+                <div class="col-md-6">
+                    <h6 class="border-bottom pb-2 mb-3 text-primary">Datos del Upgrade</h6>
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Plan Actual:</div>
+                        <div class="col-md-8">{{ venta.plan_actual }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Plan Nuevo:</div>
+                        <div class="col-md-8">{{ venta.plan_nuevo }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Número:</div>
+                        <div class="col-md-8">{{ venta.numero }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Fecha Entrega:</div>
+                        <div class="col-md-8">{{ venta.fecha_entrega|date:"d/m/Y" }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Información adicional -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <h6 class="border-bottom pb-2 mb-3 text-primary">Información Adicional</h6>
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Base Origen:</div>
+                        <div class="col-md-8">{{ venta.base_origen }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Usuario Greta:</div>
+                        <div class="col-md-8">{{ venta.usuario_greta }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Observación:</div>
+                        <div class="col-md-8">{{ venta.observacion|default:"Sin observaciones" }}</div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <h6 class="border-bottom pb-2 mb-3 text-primary">Datos de Registro</h6>
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Fecha Creación:</div>
+                        <div class="col-md-8">{{ venta.fecha_creacion|date:"d/m/Y H:i" }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Asesor:</div>
+                        <div class="col-md-8">{{ venta.agente.get_full_name }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Estado:</div>
+                        <div class="col-md-8">
+                            <span class="badge {{ venta.estado_venta }}">{{ venta.get_estado_venta_display }}</span>
+                        </div>
+                    </div>
+                    {% if venta.backoffice %}
+                    <div class="row mb-2">
+                        <div class="col-md-4 fw-bold">Backoffice:</div>
+                        <div class="col-md-8">{{ venta.backoffice.get_full_name }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Documentos -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h6 class="border-bottom pb-2 mb-3 text-primary">Documentación</h6>
+                    <div class="row">
+                        {% if venta.confronta %}
+                        <div class="col-md-4">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Confronta</h6>
+                                </div>
+                                <div class="card-body text-center">
+                                    <a href="{{ venta.confronta.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-file-download me-1"></i> Descargar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="col-md-12">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i> No hay documentos adjuntos para esta venta.
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Historial de gestiones -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Historial de Gestiones</h5>
+        </div>
+        <div class="card-body">
+            {% if gestiones_asesor %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Usuario</th>
+                            <th>Estado</th>
+                            <th>Comentario</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for gestion in gestiones_asesor %}
+                        <tr>
+                            <td>{{ gestion.fecha_gestion|date:"d/m/Y H:i" }}</td>
+                            <td>{{ gestion.agente.get_full_name }}</td>
+                            <td><span class="badge {{ gestion.estado }}">{{ gestion.get_estado_display }}</span></td>
+                            <td>{{ gestion.comentario }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> No hay gestiones registradas para esta venta.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Botones de acción -->
+    <div class="d-flex justify-content-between mt-4">
+        <a href="{% url 'telefonica:ventas_lista' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Volver a Listado
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    // Código JavaScript adicional si es necesario
+</script>
+{% endblock %}
