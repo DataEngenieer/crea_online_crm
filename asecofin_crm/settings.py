@@ -92,6 +92,10 @@ DATABASES = {
     )
 }
 
+# Deshabilitar cursores del lado del servidor para evitar errores de 'InvalidCursorName'
+# Esto soluciona el error: cursor "_django_curs_XXXXX" does not exist
+DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
