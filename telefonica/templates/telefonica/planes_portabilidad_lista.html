@@ -5,182 +5,385 @@
 {{ block.super }}
 <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
 <style>
+    body {
+            background: #f8f9fa;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .container-fluid {
+            padding: 10px 10px 10px 10px;
+        }
+        
+        .filters-section {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .plans-section {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+        }
+    .btn-check:checked + .btn-outline-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: white;
+    }
+    .btn-check:checked + .btn-outline-success {
+        background-color: #198754;
+        border-color: #198754;
+        color: white;
+    }
+    .btn-check:checked + .btn-outline-danger {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: white;
+    }
+    .btn-check:checked + .btn-outline-primary {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        color: white;
+    }
+    .btn-check:checked + .btn-outline-info {
+        background-color: #0dcaf0;
+        border-color: #0dcaf0;
+        color: white;
+    }
+    .btn-check:checked + .btn-outline-warning {
+        background-color: #ffc107;
+        border-color: #ffc107;
+        color: black;
+    }
     .badge.activo {
-        background-color: #28a745;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
         color: #fff;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        border-radius: 20px;
+        box-shadow: 0 2px 5px rgba(40, 167, 69, 0.3);
     }
     .badge.inactivo {
-        background-color: #6c757d;
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
         color: #fff;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        border-radius: 20px;
+        box-shadow: 0 2px 5px rgba(108, 117, 125, 0.3);
     }
     .plan-card {
-        transition: transform 0.3s;
+        transition: all 0.3s ease;
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        margin-bottom: 1.5rem;
     }
     .plan-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        transform: translateY(-8px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+    .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border: none;
+    }
+    .card-header h5 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.3rem;
+    }
+    .card-body {
+        padding: 1.5rem;
+        background: #fafbfc;
+    }
+    .card-footer {
+        background: white;
+        border-top: 1px solid #e9ecef;
+        padding: 1rem 1.5rem;
     }
     .caracteristicas {
         white-space: pre-line;
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+        margin: 1rem 0;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 0.6rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 0.6rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .btn-outline-primary {
+        border: 2px solid #667eea;
+        color: #667eea;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .btn-outline-primary:hover {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+        transform: translateY(-1px);
+    }
+    .btn-outline-secondary {
+        border: 2px solid #6c757d;
+        color: #6c757d;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .btn-outline-secondary:hover {
+        background: #6c757d;
+        border-color: #6c757d;
+        transform: translateY(-1px);
+    }
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 0.6rem 1rem;
+        transition: all 0.3s ease;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .price-highlight {
+        color: #667eea;
+        font-weight: 700;
+        font-size: 1.4rem;
+    }
+    .price-secondary {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    .no-plans {
+        text-align: center;
+        padding: 3rem;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    }
+    .no-plans i {
+        font-size: 4rem;
+        color: #667eea;
+        margin-bottom: 1rem;
+    }
+    .pagination {
+        margin-top: 2rem;
+    }
+    .page-link {
+        border: none;
+        color: #667eea;
+        font-weight: 600;
+        border-radius: 8px;
+        margin: 0 2px;
+        transition: all 0.3s ease;
+    }
+    .page-link:hover {
+        background: #667eea;
+        color: white;
+        transform: translateY(-1px);
+    }
+    .page-item.active .page-link {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
     }
 </style>
 {% endblock %}
 
 {% block contenido_telefonica %}
+{% csrf_token %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">Planes de Portabilidad</h2>
+        <h2 class="mb-0">Administrar Planes Telefonica</h2>
         <a href="{% url 'telefonica:plan_portabilidad_crear' %}" class="btn btn-primary">
             <i class="fas fa-plus me-1"></i> Nuevo Plan
         </a>
     </div>
     
-    <!-- Filtros -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">Filtros</h5>
-        </div>
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-4">
-                    <label for="estado" class="form-label">Estado</label>
-                    <select name="estado" id="estado" class="form-select">
-                        <option value="">Todos</option>
-                        <option value="activo" {% if request.GET.estado == 'activo' %}selected{% endif %}>Activo</option>
-                        <option value="inactivo" {% if request.GET.estado == 'inactivo' %}selected{% endif %}>Inactivo</option>
-                    </select>
-                </div>
-                <div class="col-md-12 text-end">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search me-1"></i> Filtrar
-                    </button>
-                    <a href="{% url 'telefonica:planes_portabilidad_lista' %}" class="btn btn-secondary">
-                        <i class="fas fa-sync-alt me-1"></i> Limpiar
-                    </a>
-                </div>
-            </form>
-        </div>
+    <div class="filters-section">
+        <form method="get" class="d-flex align-items-center gap-3">
+            {% csrf_token %}
+            <span class="fw-bold">Estado:</span>
+            <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="estado" id="estado_todos" value="" {% if request.GET.estado == '' %}checked{% endif %}>
+                <label class="btn btn-outline-secondary btn-sm" for="estado_todos">Todos</label>
+                
+                <input type="radio" class="btn-check" name="estado" id="estado_activo" value="activo" {% if request.GET.estado == 'activo' or not request.GET.estado %}checked{% endif %}>
+                <label class="btn btn-outline-success btn-sm" for="estado_activo">Activos</label>
+                
+                <input type="radio" class="btn-check" name="estado" id="estado_inactivo" value="inactivo" {% if request.GET.estado == 'inactivo' %}checked{% endif %}>
+                <label class="btn btn-outline-danger btn-sm" for="estado_inactivo">Inactivos</label>
+            </div>
+            
+            <span class="fw-bold">Tipo de Plan:</span>
+            <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="tipo_plan" id="tipo_todos" value="" {% if request.GET.tipo_plan == '' or not request.GET.tipo_plan %}checked{% endif %}>
+                <label class="btn btn-outline-secondary btn-sm" for="tipo_todos">Todos</label>
+                
+                <input type="radio" class="btn-check" name="tipo_plan" id="tipo_portabilidad" value="portabilidad" {% if request.GET.tipo_plan == 'portabilidad' %}checked{% endif %}>
+                <label class="btn btn-outline-primary btn-sm" for="tipo_portabilidad">Portabilidad</label>
+                
+                <input type="radio" class="btn-check" name="tipo_plan" id="tipo_prepos" value="prepos" {% if request.GET.tipo_plan == 'prepos' %}checked{% endif %}>
+                <label class="btn btn-outline-info btn-sm" for="tipo_prepos">PrePos</label>
+                
+                <input type="radio" class="btn-check" name="tipo_plan" id="tipo_upgrade" value="upgrade" {% if request.GET.tipo_plan == 'upgrade' %}checked{% endif %}>
+                <label class="btn btn-outline-warning btn-sm" for="tipo_upgrade">Upgrade</label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fas fa-search me-1"></i> Filtrar
+            </button>
+            <a href="{% url 'telefonica:planes_portabilidad_lista' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-refresh me-1"></i> Limpiar
+            </a>
+        </form>
     </div>
     
-    <!-- Lista de planes en tarjetas -->
-    <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
-        {% for plan in planes %}
-        <div class="col">
-            <div class="card h-100 plan-card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">{{ plan.nombre_plan }}</h5>
-                    <span class="badge {{ plan.estado }}">{{ plan.get_estado_display }}</span>
-                </div>
-                <div class="card-body">
-                    <h6 class="card-subtitle mb-2 text-muted">Código: {{ plan.codigo }}</h6>
-                    <div class="mb-3">
-                        <strong>Cargo Fijo Mensual:</strong> 
-                        <span class="fs-5 fw-bold text-primary">${{ plan.CFM }}</span>
-                        <small class="text-muted d-block">Sin IVA: ${{ plan.CFM_sin_iva }}</small>
+    <div class="plans-section">
+        <!-- Lista de planes en tarjetas -->
+        <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
+            {% for plan in planes %}
+            <div class="col">
+                <div class="card h-100 plan-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ plan.nombre_plan }}</h5>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-info">{{ plan.get_tipo_plan_display }}</span>
+                            <span class="badge {{ plan.estado }}">{{ plan.get_estado_display }}</span>
+                        </div>
                     </div>
-                    <h6>Características:</h6>
-                    <p class="card-text caracteristicas">{{ plan.caracteristicas }}</p>
-                </div>
-                <div class="card-footer bg-transparent">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">Creado: {{ plan.fecha_creacion|date:"d/m/Y" }}</small>
-                        <div class="btn-group">
-                            <a href="{% url 'telefonica:plan_portabilidad_editar' plan.id %}" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-edit"></i> Editar
-                            </a>
-                            <a href="{% url 'telefonica:plan_portabilidad_eliminar' plan.id %}" class="btn btn-sm btn-outline-danger">
-                                <i class="fas fa-trash"></i> Eliminar
-                            </a>
-                            <button type="button" class="btn btn-sm btn-outline-secondary cambiar-estado" data-plan-id="{{ plan.id }}" data-estado="{{ plan.estado }}">
-                                {% if plan.estado == 'activo' %}
-                                <i class="fas fa-toggle-off"></i> Desactivar
-                                {% else %}
-                                <i class="fas fa-toggle-on"></i> Activar
-                                {% endif %}
-                            </button>
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">Código: {{ plan.codigo }}</h6>
+                        <div class="mb-3">
+                            <strong>Cargo Fijo Mensual:</strong> 
+                            <span class="fs-5 fw-bold text-primary">${{ plan.CFM }}</span>
+                            <small class="text-muted d-block">Sin IVA: ${{ plan.CFM_sin_iva }}</small>
+                        </div>
+                        <h6>Características:</h6>
+                        <p class="card-text caracteristicas">{{ plan.caracteristicas }}</p>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Creado: {{ plan.fecha_creacion|date:"d/m/Y" }}</small>
+                            <div class="btn-group">
+                                <a href="{% url 'telefonica:plan_portabilidad_editar' plan.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i> Editar
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-secondary cambiar-estado" data-plan-id="{{ plan.id }}" data-estado="{{ plan.estado }}">
+                                    {% if plan.estado == 'activo' %}
+                                    <i class="fas fa-toggle-off"></i> Desactivar
+                                    {% else %}
+                                    <i class="fas fa-toggle-on"></i> Activar
+                                    {% endif %}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        {% empty %}
-        <div class="col-12">
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i> No se encontraron planes de portabilidad.
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> No se encontraron planes de portabilidad.
+                </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
-    
-    <!-- Paginación -->
-    {% if planes.has_other_pages %}
-    <nav aria-label="Paginación de planes" class="mt-4">
-        <ul class="pagination justify-content-center">
-            {% if planes.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page=1{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}" aria-label="Primera">
-                    <span aria-hidden="true">&laquo;&laquo;</span>
-                </a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?page={{ planes.previous_page_number }}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}" aria-label="Anterior">
-                    <span aria-hidden="true">&laquo;</span>
-                </a>
-            </li>
-            {% else %}
-            <li class="page-item disabled">
-                <a class="page-link" href="#" aria-label="Primera">
-                    <span aria-hidden="true">&laquo;&laquo;</span>
-                </a>
-            </li>
-            <li class="page-item disabled">
-                <a class="page-link" href="#" aria-label="Anterior">
-                    <span aria-hidden="true">&laquo;</span>
-                </a>
-            </li>
-            {% endif %}
-            
-            {% for i in planes.paginator.page_range %}
-                {% if planes.number == i %}
-                <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
-                {% elif i > planes.number|add:'-3' and i < planes.number|add:'3' %}
+        
+        <!-- Paginación -->
+        {% if planes.has_other_pages %}
+        <nav aria-label="Paginación de planes" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if planes.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ i }}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}">{{ i }}</a>
+                    <a class="page-link" href="?page=1{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}" aria-label="Primera">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ planes.previous_page_number }}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}" aria-label="Anterior">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <a class="page-link" href="#" aria-label="Primera">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                    </a>
+                </li>
+                <li class="page-item disabled">
+                    <a class="page-link" href="#" aria-label="Anterior">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
                 </li>
                 {% endif %}
-            {% endfor %}
-            
-            {% if planes.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ planes.next_page_number }}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}" aria-label="Siguiente">
-                    <span aria-hidden="true">&raquo;</span>
-                </a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?page={{ planes.paginator.num_pages }}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}" aria-label="Última">
-                    <span aria-hidden="true">&raquo;&raquo;</span>
-                </a>
-            </li>
-            {% else %}
-            <li class="page-item disabled">
-                <a class="page-link" href="#" aria-label="Siguiente">
-                    <span aria-hidden="true">&raquo;</span>
-                </a>
-            </li>
-            <li class="page-item disabled">
-                <a class="page-link" href="#" aria-label="Última">
-                    <span aria-hidden="true">&raquo;&raquo;</span>
-                </a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
+                
+                {% for i in planes.paginator.page_range %}
+                    {% if planes.number == i %}
+                    <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                    {% elif i > planes.number|add:'-3' and i < planes.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ i }}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}">{{ i }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if planes.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ planes.next_page_number }}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}" aria-label="Siguiente">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ planes.paginator.num_pages }}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}" aria-label="Última">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <a class="page-link" href="#" aria-label="Siguiente">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                <li class="page-item disabled">
+                    <a class="page-link" href="#" aria-label="Última">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function() {
         // Cambiar estado mediante AJAX

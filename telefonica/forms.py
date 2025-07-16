@@ -124,12 +124,14 @@ class PlanesPortabilidadForm(forms.ModelForm):
     """Formulario para la gestión de planes de portabilidad"""
     class Meta:
         model = Planes_portabilidad
-        fields = ['nombre_plan', 'caracteristicas', 'CFM', 'CFM_sin_iva', 'estado']
+        fields = ['codigo','nombre_plan', 'caracteristicas', 'CFM', 'CFM_sin_iva', 'tipo_plan', 'estado']
         widgets = {
+            'codigo': forms.TextInput(attrs={'class': 'form-control'}),
             'nombre_plan': forms.TextInput(attrs={'class': 'form-control'}),
             'caracteristicas': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'CFM': forms.NumberInput(attrs={'class': 'form-control'}),
             'CFM_sin_iva': forms.NumberInput(attrs={'class': 'form-control'}),
+            'tipo_plan': forms.Select(attrs={'class': 'form-select'}),
             'estado': forms.Select(attrs={'class': 'form-select'}),
         }
 

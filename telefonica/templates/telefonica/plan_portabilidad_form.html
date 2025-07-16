@@ -5,23 +5,99 @@
 {{ block.super }}
 <style>
     .form-group {
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
     }
     .form-label {
-        font-weight: 500;
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+    }
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 6px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        background-color: #fff;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.15);
+        background-color: #fff;
     }
     .help-text {
-        font-size: 0.85rem;
+        font-size: 0.75rem;
         color: #6c757d;
-        margin-top: 0.25rem;
+        margin-top: 0.2rem;
+        font-style: italic;
+    }
+    .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        max-width: 1200px;
+        margin: 0 auto;
     }
     .card-header {
-        background-color: #f8f9fa;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px 12px 0 0 !important;
+        padding: 1rem 1.5rem;
+    }
+    .card-body {
+        padding: 1.5rem;
+        background-color: #fafbfc;
     }
     .required-field::after {
         content: "*";
-        color: #dc3545;
-        margin-left: 4px;
+        color: #e74c3c;
+        margin-left: 3px;
+        font-weight: bold;
+    }
+    .input-group-text {
+        background-color: #f8f9fa;
+        border: 2px solid #e9ecef;
+        border-right: none;
+        color: #495057;
+        font-weight: 500;
+        padding: 0.5rem 0.75rem;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 6px;
+        padding: 0.6rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .btn-secondary {
+        border-radius: 6px;
+        padding: 0.6rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .form-section {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+    }
+    .section-title {
+        color: #2c3e50;
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.3rem;
+        border-bottom: 2px solid #e9ecef;
+    }
+    .container-fluid {
+        padding: 1rem;
     }
 </style>
 {% endblock %}
@@ -49,96 +125,118 @@
                         </div>
                         {% endif %}
                         
-                        <div class="row">
-                            <!-- Nombre del plan -->
-                            <div class="col-md-6 form-group">
-                                <label for="{{ form.nombre_plan.id_for_label }}" class="form-label required-field">Nombre del Plan</label>
-                                {{ form.nombre_plan }}
-                                {% if form.nombre_plan.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.nombre_plan.errors %}
-                                    {{ error }}
-                                    {% endfor %}
+                        <!-- Formulario Compacto -->
+                        <div class="form-section">
+                            <h6 class="section-title"><i class="fas fa-cog me-2"></i>Información del Plan</h6>
+                            <div class="row">
+                                <!-- Código del plan -->
+                                <div class="col-md-4 form-group">
+                                    <label for="{{ form.codigo.id_for_label }}" class="form-label">Código</label>
+                                    {{ form.codigo }}
+                                    {% if form.codigo.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.codigo.errors %}
+                                        {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Código único del plan</div>
                                 </div>
-                                {% endif %}
-                                {% if form.nombre_plan.help_text %}
-                                <div class="help-text">{{ form.nombre_plan.help_text }}</div>
-                                {% endif %}
+                                
+                                <!-- Nombre del plan -->
+                                <div class="col-md-4 form-group">
+                                    <label for="{{ form.nombre_plan.id_for_label }}" class="form-label required-field">Nombre del Plan</label>
+                                    {{ form.nombre_plan }}
+                                    {% if form.nombre_plan.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.nombre_plan.errors %}
+                                        {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Nombre descriptivo</div>
+                                </div>
+                                
+                                <!-- Tipo de Plan -->
+                                <div class="col-md-4 form-group">
+                                    <label for="{{ form.tipo_plan.id_for_label }}" class="form-label required-field">Tipo</label>
+                                    {{ form.tipo_plan }}
+                                    {% if form.tipo_plan.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.tipo_plan.errors %}
+                                        {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Categoría del plan</div>
+                                </div>
                             </div>
                             
-                            <!-- Estado -->
-                            <div class="col-md-6 form-group">
-                                <label for="{{ form.estado.id_for_label }}" class="form-label required-field">Estado</label>
-                                {{ form.estado }}
-                                {% if form.estado.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.estado.errors %}
-                                    {{ error }}
-                                    {% endfor %}
+                            <div class="row">
+                                <!-- CFM -->
+                                <div class="col-md-4 form-group">
+                                    <label for="{{ form.CFM.id_for_label }}" class="form-label required-field">CFM</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        {{ form.CFM }}
+                                    </div>
+                                    {% if form.CFM.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.CFM.errors %}
+                                        {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Cargo con IVA</div>
                                 </div>
-                                {% endif %}
-                                {% if form.estado.help_text %}
-                                <div class="help-text">{{ form.estado.help_text }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <!-- CFM -->
-                            <div class="col-md-6 form-group">
-                                <label for="{{ form.CFM.id_for_label }}" class="form-label required-field">Cargo Fijo Mensual</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">$</span>
-                                    {{ form.CFM }}
+                                
+                                <!-- CFM sin IVA -->
+                                <div class="col-md-4 form-group">
+                                    <label for="{{ form.CFM_sin_iva.id_for_label }}" class="form-label required-field">CFM sin IVA</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        {{ form.CFM_sin_iva }}
+                                    </div>
+                                    {% if form.CFM_sin_iva.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.CFM_sin_iva.errors %}
+                                        {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Cálculo automático</div>
                                 </div>
-                                {% if form.CFM.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.CFM.errors %}
-                                    {{ error }}
-                                    {% endfor %}
+                                
+                                <!-- Estado -->
+                                <div class="col-md-4 form-group">
+                                    <label for="{{ form.estado.id_for_label }}" class="form-label required-field">Estado</label>
+                                    {{ form.estado }}
+                                    {% if form.estado.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.estado.errors %}
+                                        {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Estado del plan</div>
                                 </div>
-                                {% endif %}
-                                {% if form.CFM.help_text %}
-                                <div class="help-text">{{ form.CFM.help_text }}</div>
-                                {% endif %}
                             </div>
                             
-                            <!-- CFM sin IVA -->
-                            <div class="col-md-6 form-group">
-                                <label for="{{ form.CFM_sin_iva.id_for_label }}" class="form-label required-field">Cargo Fijo Mensual sin IVA</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">$</span>
-                                    {{ form.CFM_sin_iva }}
+                            <!-- Características -->
+                            <div class="row">
+                                <div class="col-12 form-group">
+                                    <label for="{{ form.caracteristicas.id_for_label }}" class="form-label required-field">Características</label>
+                                    {{ form.caracteristicas }}
+                                    {% if form.caracteristicas.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.caracteristicas.errors %}
+                                        {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Describe las características principales del plan (una por línea)</div>
                                 </div>
-                                {% if form.CFM_sin_iva.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.CFM_sin_iva.errors %}
-                                    {{ error }}
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
-                                {% if form.CFM_sin_iva.help_text %}
-                                <div class="help-text">{{ form.CFM_sin_iva.help_text }}</div>
-                                {% endif %}
                             </div>
-                        </div>
-                        
-                        <!-- Características -->
-                        <div class="form-group">
-                            <label for="{{ form.caracteristicas.id_for_label }}" class="form-label required-field">Características</label>
-                            {{ form.caracteristicas }}
-                            {% if form.caracteristicas.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.caracteristicas.errors %}
-                                {{ error }}
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                            {% if form.caracteristicas.help_text %}
-                            <div class="help-text">{{ form.caracteristicas.help_text }}</div>
-                            {% else %}
-                            <div class="help-text">Ingresa cada característica en una línea separada para mejor visualización.</div>
-                            {% endif %}
                         </div>
                         
                         <!-- Código (solo visible en modo edición) -->

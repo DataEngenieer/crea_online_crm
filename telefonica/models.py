@@ -42,7 +42,7 @@ ESTADO_AGENDAMIENTO_CHOICES = [
 
 class Planes_portabilidad(models.Model):
     """Modelo para controlar los planes disponibles para venta"""
-    codigo = models.CharField(max_length=50, unique=True, verbose_name=_("Código"), editable=False)
+    codigo = models.CharField(max_length=50, unique=True, verbose_name=_("Código"))
     nombre_plan = models.CharField(max_length=150, verbose_name=_("Nombre del Plan"))
     caracteristicas = models.TextField(verbose_name=_("Características"), null=False, blank=False)
     CFM = models.DecimalField(max_digits=12, decimal_places=2, verbose_name=_("Cargo Fijo Mensual"))
@@ -50,19 +50,12 @@ class Planes_portabilidad(models.Model):
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='activo', verbose_name=_("Estado"))
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Creación"))
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name=_("Fecha de Actualización"))
+    tipo_plan = models.CharField(max_length=20, choices=[('portabilidad', 'Portabilidad'), ('prepos', 'PrePos'),('upgrade', 'Upgrade')], default='portabilidad', verbose_name=_("Tipo de Plan"))
     
     class Meta:
         verbose_name = _("Plan")
         verbose_name_plural = _("Planes")
         ordering = ['nombre_plan']
-    
-    def save(self, *args, **kwargs):
-        # Generar código automático si es una creación nueva
-        if not self.codigo:
-            ultimo_plan = Planes_portabilidad.objects.order_by('-id').first()
-            ultimo_id = ultimo_plan.id if ultimo_plan else 0
-            self.codigo = f'PLAN-{ultimo_id + 1:04d}'
-        super().save(*args, **kwargs)
     
     def __str__(self):
         return f"{self.codigo} - {self.nombre_plan}"

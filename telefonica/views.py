@@ -1011,12 +1011,16 @@ def planes_portabilidad_lista(request):
     Vista para listar los planes de portabilidad con filtros y paginación.
     Solo accesible para usuarios con rol backoffice o superusuarios.
     """
-    # Filtrar por estado si se especifica
-    estado = request.GET.get('estado', '')
+    # Filtrar por estado si se especifica, por defecto mostrar solo activos
+    estado = request.GET.get('estado', 'activo')
+    tipo_plan = request.GET.get('tipo_plan')
     planes = Planes_portabilidad.objects.all().order_by('-fecha_creacion')
     
     if estado:
         planes = planes.filter(estado=estado)
+    
+    if tipo_plan:
+        planes = planes.filter(tipo_plan=tipo_plan)
     
     # Paginación
     paginator = Paginator(planes, 9)  # 9 planes por página para mostrar en grid de 3x3
