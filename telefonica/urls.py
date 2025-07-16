@@ -15,10 +15,13 @@ urlpatterns = [
     # Rutas para ventas de Portabilidad
     path('ventas/portabilidad/nueva/', views.venta_crear_portabilidad, name='venta_crear_portabilidad'),
     path('ventas/portabilidad/nueva/<str:documento>/', views.venta_crear_portabilidad, name='venta_crear_portabilidad_con_documento'),
+    path('ventas/portabilidad/<int:pk>/', views.detalle_venta_portabilidad, name='venta_detalle_portabilidad'),
+
     
     # Rutas para ventas de Prepago
     path('ventas/prepago/nueva/', views.venta_crear_prepago, name='venta_crear_prepago'),
     path('ventas/prepago/nueva/<str:documento>/', views.venta_crear_prepago, name='venta_crear_prepago_con_documento'),
+    path('ventas/prepago/<int:pk>/', views.detalle_venta_prepago, name='venta_detalle_prepago'),
     
     # Rutas para ventas de Upgrade
     path('ventas/upgrade/nueva/', views.venta_crear_upgrade, name='venta_crear_upgrade'),

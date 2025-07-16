@@ -14,7 +14,7 @@ def crear_comision_venta(sender, instance, created, **kwargs):
     Crea una comisión automáticamente cuando una venta cambia a estado 'aprobada'.
     """
     # Si la venta ha sido aprobada y no tiene comisión asociada aún
-    if instance.estado_revisado == 'aprobada' and not Comision.objects.filter(venta=instance).exists():
+    if instance.estado_venta == 'aprobada' and not Comision.objects.filter(venta=instance).exists():
         # Calcular monto de comisión fija para este ejemplo
         # El valor real debe basarse en alguna política de la empresa
         monto_comision = 5000  # Valor fijo de ejemplo

@@ -75,7 +75,7 @@ class VentaPortabilidad(models.Model):
         ('PP', 'Pasaporte'),
     ]
 
-    numero = models.IntegerField(verbose_name=_("Número"), null=False, blank=False)
+    numero = models.CharField(verbose_name=_("Número"), null=False, blank=False)
     tipo_cliente = models.CharField(max_length=20, choices=TIPO_CLIENTE_CHOICES, verbose_name=_("Tipo de Cliente"))
 
     tipo_documento = models.CharField(
@@ -139,7 +139,7 @@ class VentaPrePos(models.Model):
         ('PP', 'Pasaporte'),
     ]
 
-    numero = models.IntegerField(verbose_name=_("Número"), null=False, blank=False)
+    numero = models.CharField(verbose_name=_("Número"), null=False, blank=False)
     tipo_cliente = models.CharField(max_length=20, choices=TIPO_CLIENTE_CHOICES, verbose_name=_("Tipo de Cliente"))
 
     tipo_documento = models.CharField(
@@ -193,7 +193,7 @@ class VentaUpgrade(models.Model):
         ('PP', 'Pasaporte'),
     ]
 
-    numero = models.IntegerField(verbose_name=_("Número"), null=False, blank=False)
+    numero = models.CharField(verbose_name=_("Número"), null=False, blank=False)
     tipo_cliente = models.CharField(max_length=20, choices=TIPO_CLIENTE_CHOICES, verbose_name=_("Tipo de Cliente"))
 
     tipo_documento = models.CharField(

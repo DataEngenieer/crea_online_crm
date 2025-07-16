@@ -116,9 +116,19 @@
                                     <td>{{ venta.backoffice.username|default:"-" }}</td>
                                     {% endif %}
                                     <td>
-                                        <a href="{% url 'telefonica:venta_detalle' venta.id %}" class="btn btn-sm btn-info">
+                                        {% if venta.tipo_venta == 'portabilidad' %}
+                                        <a href="{% url 'telefonica:venta_detalle_portabilidad' venta.id %}" class="btn btn-sm btn-info">
                                             <i class="fas fa-eye"></i>
                                         </a>
+                                        {% elif venta.tipo_venta == 'prepago' %}
+                                        <a href="{% url 'telefonica:venta_detalle_prepago' venta.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% else %}
+                                        <a href="#" class="btn btn-sm btn-info disabled">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% endif %}
                                         {% if not es_backoffice and venta.estado_venta == 'devuelta' %}
                                         <a href="{% url 'telefonica:venta_corregir' venta.id %}" class="btn btn-sm btn-warning">
                                             <i class="fas fa-edit"></i>

@@ -94,7 +94,7 @@ def venta_crear_portabilidad(request, documento=None):
             venta.agente = request.user
             venta.save()
             messages.success(request, 'Venta de portabilidad registrada exitosamente.')
-            return redirect('telefonica:venta_detalle', venta_id=venta.id)
+            return redirect('telefonica:venta_detalle_portabilidad', pk=venta.id)
     else:
         initial_data = {'documento': documento} if documento else {}
         form = VentaPortabilidadForm(initial=initial_data, user=request.user)
@@ -118,7 +118,7 @@ def venta_crear_prepago(request, documento=None):
             venta.estado_venta = 'pendiente_revision'
             venta.save()
             messages.success(request, 'Venta de Pre a Pos registrada exitosamente.')
-            return redirect('telefonica:venta_detalle', venta_id=venta.id)
+            return redirect('telefonica:venta_detalle_prepago', pk=venta.id)
     else:
         initial_data = {}
         if documento:
@@ -260,49 +260,27 @@ def ventas_lista(request):
     })
 
 @login_required
-def venta_detalle(request, venta_id):
-    """Vista detallada de una venta específica"""
-    venta = get_object_or_404(VentaPortabilidad, id=venta_id)
+def venta_detalle(request, pk):
+    """
+    Vista que redirecciona a la vista específica según el tipo de venta.
+    Esta vista existe para mantener compatibilidad con las URLs existentes.
+    """
+    # Intentar obtener la venta como VentaPortabilidad
+    try:
+        venta = VentaPortabilidad.objects.get(id=pk)
+        return redirect('telefonica:venta_detalle_portabilidad', pk=pk)
+    except VentaPortabilidad.DoesNotExist:
+        pass
     
-    # Verificar permisos (backoffice puede ver todas, asesores solo las propias)
-    if not request.user.groups.filter(name='backoffice').exists() and venta.agente != request.user:
-        return HttpResponseForbidden("No tienes permiso para ver esta venta.")
+    # Intentar obtener la venta como VentaPrePos
+    try:
+        venta = VentaPrePos.objects.get(id=pk)
+        return redirect('telefonica:venta_detalle_prepago', pk=pk)
+    except VentaPrePos.DoesNotExist:
+        pass
     
-    # Obtener gestiones asociadas
-    gestiones_asesor = GestionAsesor.objects.filter(venta=venta).order_by('-fecha_gestion')
-    
-    # Crear formulario para nueva gestión según el rol
-    form = None
-    puede_corregir = False
-    
-    if request.user.groups.filter(name='backoffice').exists():
-        if request.method == 'POST':
-            form = GestionBackofficeForm(request.POST)
-            if form.is_valid():
-                gestion = form.save(commit=False)
-                gestion.venta = venta
-                gestion.backoffice = request.user
-                gestion.save()
-                
-                # Actualizar el estado de la venta
-                venta.estado_venta = form.cleaned_data['nuevo_estado']
-                venta.save()
-                
-                messages.success(request, 'Gestión registrada correctamente.')
-                return redirect('telefonica:detalle_venta', venta_id=venta.id)
-        else:
-            form = GestionBackofficeForm()
-    elif venta.agente == request.user and venta.estado_venta == 'devuelta':
-        puede_corregir = True
-    
-    context = {
-        'venta': venta,
-        'form': form,
-        'puede_corregir': puede_corregir,
-        'gestiones_asesor': gestiones_asesor,
-    }
-    
-    return render(request, 'telefonica/venta_portabilidad_detalle.html', context)
+    # Si no se encuentra la venta, devolver 404
+    raise Http404("No se encontró la venta especificada.")
 
 @login_required
 def venta_corregir(request, venta_id):
@@ -316,7 +294,7 @@ def venta_corregir(request, venta_id):
     # Solo se pueden corregir ventas devueltas
     if venta.estado_venta != 'devuelta':
         messages.error(request, 'Esta venta no está en estado de corrección')
-        return redirect('telefonica:venta_detalle', venta_id=venta.id)
+        return redirect('telefonica:venta_detalle_portabilidad', pk=venta.id)
     
     # Obtener la última gestión de backoffice (motivo de devolución)
     ultima_gestion = GestionBackoffice.objects.filter(
@@ -1150,3 +1128,83 @@ def plan_portabilidad_cambiar_estado(request, plan_id):
         })
     
     return JsonResponse({'success': False}, status=400)
+
+
+@login_required
+def detalle_venta_portabilidad(request, pk):
+    """
+    Vista para mostrar el detalle de una venta de portabilidad.
+    
+    Permite ver todos los datos de la venta, incluyendo el historial de gestiones
+    y realizar acciones según el rol del usuario.
+    """
+    # Obtener la venta o devolver 404 si no existe
+    venta = get_object_or_404(VentaPortabilidad, pk=pk)
+    
+    # Verificar permisos: el usuario debe ser el agente de la venta, un backoffice o un superusuario
+    user = request.user
+    es_backoffice = user.groups.filter(name__iexact='backoffice').exists()
+    es_propietario = (venta.agente == user)
+    
+    if not (es_propietario or es_backoffice or user.is_superuser):
+        return HttpResponseForbidden("No tienes permisos para ver esta venta.")
+    
+    # Obtener historial de gestiones
+    gestiones_asesor = venta.gestiones_asesor.all().order_by('-fecha_gestion')
+    gestiones_backoffice = venta.gestiones_backoffice.all().order_by('-fecha_gestion')
+    
+    # Formularios para añadir gestiones
+    gestion_asesor_form = GestionAsesorForm()
+    gestion_backoffice_form = GestionBackofficeForm() if es_backoffice or user.is_superuser else None
+    
+    context = {
+        'venta': venta,
+        'gestiones_asesor': gestiones_asesor,
+        'gestiones_backoffice': gestiones_backoffice,
+        'gestion_asesor_form': gestion_asesor_form,
+        'gestion_backoffice_form': gestion_backoffice_form,
+        'es_backoffice': es_backoffice,
+        'es_propietario': es_propietario,
+    }
+    
+    return render(request, 'telefonica/venta_detalle_portabilidad.html', context)
+
+
+@login_required
+def detalle_venta_prepago(request, pk):
+    """
+    Vista para mostrar el detalle de una venta de prepago.
+    
+    Permite ver todos los datos de la venta, incluyendo el historial de gestiones
+    y realizar acciones según el rol del usuario.
+    """
+    # Obtener la venta o devolver 404 si no existe
+    venta = get_object_or_404(VentaPrePos, pk=pk)
+    
+    # Verificar permisos: el usuario debe ser el agente de la venta, un backoffice o un superusuario
+    user = request.user
+    es_backoffice = user.groups.filter(name__iexact='backoffice').exists()
+    es_propietario = (venta.agente == user)
+    
+    if not (es_propietario or es_backoffice or user.is_superuser):
+        return HttpResponseForbidden("No tienes permisos para ver esta venta.")
+    
+    # Obtener historial de gestiones
+    gestiones_asesor = venta.gestiones_asesor.all().order_by('-fecha_gestion')
+    gestiones_backoffice = venta.gestiones_backoffice.all().order_by('-fecha_gestion')
+    
+    # Formularios para añadir gestiones
+    gestion_asesor_form = GestionAsesorForm()
+    gestion_backoffice_form = GestionBackofficeForm() if es_backoffice or user.is_superuser else None
+    
+    context = {
+        'venta': venta,
+        'gestiones_asesor': gestiones_asesor,
+        'gestiones_backoffice': gestiones_backoffice,
+        'gestion_asesor_form': gestion_asesor_form,
+        'gestion_backoffice_form': gestion_backoffice_form,
+        'es_backoffice': es_backoffice,
+        'es_propietario': es_propietario,
+    }
+    
+    return render(request, 'telefonica/venta_detalle_prepago.html', context)
