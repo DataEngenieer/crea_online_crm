@@ -1,8 +1,9 @@
-{% extends 'base_telefonica.html' %}
+{% extends 'telefonica/base_telefonica.html' %}
 {% load static %}
 {% load telefonica_extras %}
 
 {% block extra_css %}
+{{ block.super }}
 <link rel="stylesheet" href="{% static 'css/telefonica/venta_lista.css' %}">
 <style>
     :root {

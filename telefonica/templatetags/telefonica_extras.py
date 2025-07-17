@@ -2,6 +2,7 @@ from django import template
 from django.contrib.auth.models import Group
 from django.template.loader import render_to_string
 from django.forms.widgets import Input, Textarea, Select, CheckboxInput, RadioSelect
+import locale
 
 register = template.Library()
 
@@ -67,3 +68,26 @@ def set_attr(field, attr_string):
             widget.attrs[key] = value
             
     return field
+
+@register.filter(name='currency_format')
+def currency_format(value):
+    """
+    Formatea un número como moneda sin decimales y con separación de miles.
+    
+    Uso en plantillas:
+    {{ plan.CFM|currency_format }}
+    
+    Ejemplo: 520000.00 -> 520,000
+    """
+    try:
+        # Convertir a float si es string
+        if isinstance(value, str):
+            value = float(value)
+        
+        # Convertir a entero para eliminar decimales
+        value = int(value)
+        
+        # Formatear con separación de miles
+        return "{:,}".format(value)
+    except (ValueError, TypeError):
+        return value

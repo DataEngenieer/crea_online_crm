@@ -3,17 +3,156 @@
 
 {% block title %}Listado de Ventas - Portal Telefónica{% endblock %}
 
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap5.min.css">
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .filter-card {
+        background: #f8f9fc;
+        border: 1px solid #e3e6f0;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .table-modern {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    .table-modern thead {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        color: white;
+    }
+    .table-modern tbody tr:hover {
+        background-color: #f1f3ff;
+        transform: translateY(-1px);
+        transition: all 0.3s ease;
+    }
+    .btn-action {
+        margin: 0 2px;
+        border-radius: 50%;
+        width: 35px;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .badge-modern {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 500;
+        font-size: 0.75rem;
+    }
+    .search-box {
+        border-radius: 25px;
+        border: 2px solid #e3e6f0;
+        padding: 0.75rem 1.5rem;
+        transition: all 0.3s ease;
+    }
+    .search-box:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    }
+    .filter-toggle {
+        background: linear-gradient(135deg, #36b9cc 0%, #258391 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 0.75rem 1.5rem;
+        color: white;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid mt-4">
+    <!-- Estadísticas rápidas -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="h5 mb-0">{{ total_ventas|default:0 }}</div>
+                        <div class="small">Total Ventas</div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-chart-line fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card" style="background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="h5 mb-0">{{ ventas_aprobadas|default:0 }}</div>
+                        <div class="small">Aprobadas</div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card" style="background: linear-gradient(135deg, #f6c23e 0%, #dda20a 100%);">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="h5 mb-0">{{ ventas_pendientes|default:0 }}</div>
+                        <div class="small">Pendientes</div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-clock fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card" style="background: linear-gradient(135deg, #e74a3b 0%, #c0392b 100%);">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="h5 mb-0">{{ ventas_devueltas|default:0 }}</div>
+                        <div class="small">Devueltas</div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-12">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Listado de Ventas</h6>
-                    <div>
+            <div class="card shadow-lg border-0 table-modern">
+                <div class="card-header py-4 d-flex flex-row align-items-center justify-content-between" style="background: linear-gradient(135deg, #4e73df 0%, #224abe 100%); color: white;">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-chart-bar fa-2x me-3"></i>
+                        <div>
+                            <h4 class="m-0 font-weight-bold">Gestión de Ventas</h4>
+                            <small class="opacity-75">Panel de control y seguimiento</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-light btn-sm" onclick="exportData()" title="Exportar datos">
+                            <i class="fas fa-download me-1"></i> Exportar
+                        </button>
+                        <button class="btn btn-light btn-sm" onclick="refreshData()" title="Actualizar">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                         {% if not es_backoffice %}
                         <div class="btn-group">
-                            <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-plus me-1"></i> Nueva Venta
                             </button>
                             <ul class="dropdown-menu">
@@ -37,110 +176,296 @@
                         {% endif %}
                     </div>
                 </div>
-                <div class="card-body">
-                    <!-- Filtros -->
-                    <div class="row mb-4">
-                        <div class="col-md-8">
-                            <form method="get" class="form-inline">
-                                <div class="input-group mr-2">
-                                    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Buscar por número, documento o nombre...">
-                                    <div class="input-group-append">
-                                        <button class="btn btn-outline-primary" type="submit">
+                <div class="card-body p-4">
+                    <!-- Panel de filtros avanzados -->
+                    <div class="filter-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0 text-primary">
+                                <i class="fas fa-filter me-2"></i>Filtros de Búsqueda
+                            </h5>
+                            <button class="btn filter-toggle btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#advancedFilters" aria-expanded="false">
+                                <i class="fas fa-sliders-h me-1"></i> Filtros Avanzados
+                            </button>
+                        </div>
+                        
+                        <form method="get" id="filterForm">
+                            <div class="row g-3">
+                                <!-- Búsqueda principal -->
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-primary text-white">
                                             <i class="fas fa-search"></i>
-                                        </button>
+                                        </span>
+                                        <input type="text" name="q" value="{{ q }}" class="form-control search-box" placeholder="Buscar por número, documento, nombre o plan...">
                                     </div>
                                 </div>
                                 
-                                <select name="estado" class="form-control mr-2" onchange="this.form.submit()">
-                                    <option value="">Todos los estados</option>
-                                    <option value="pendiente_revision" {% if estado == "pendiente_revision" %}selected{% endif %}>Pendiente de Revisión</option>
-                                    <option value="devuelta" {% if estado == "devuelta" %}selected{% endif %}>Devuelta</option>
-                                    <option value="aprobada" {% if estado == "aprobada" %}selected{% endif %}>Aprobada</option>
-                                    <option value="digitada" {% if estado == "digitada" %}selected{% endif %}>Digitada</option>
-                                    <option value="rechazada" {% if estado == "rechazada" %}selected{% endif %}>Rechazada</option>
-                                    <option value="completada" {% if estado == "completada" %}selected{% endif %}>Completada</option>
-                                </select>
+                                <!-- Estado -->
+                                <div class="col-md-3">
+                                    <select name="estado" class="form-select" onchange="this.form.submit()">
+                                        <option value="">📊 Todos los estados</option>
+                                        <option value="pendiente_revision" {% if estado == "pendiente_revision" %}selected{% endif %}>⏳ Pendiente de Revisión</option>
+                                        <option value="devuelta" {% if estado == "devuelta" %}selected{% endif %}>❌ Devuelta</option>
+                                        <option value="aprobada" {% if estado == "aprobada" %}selected{% endif %}>✅ Aprobada</option>
+                                        <option value="digitada" {% if estado == "digitada" %}selected{% endif %}>📝 Digitada</option>
+                                        <option value="rechazada" {% if estado == "rechazada" %}selected{% endif %}>🚫 Rechazada</option>
+                                        <option value="completada" {% if estado == "completada" %}selected{% endif %}>🎯 Completada</option>
+                                    </select>
+                                </div>
                                 
-                                {% if q or estado %}
-                                <a href="{% url 'telefonica:ventas_lista' %}" class="btn btn-outline-secondary">
-                                    <i class="fas fa-times mr-1"></i> Limpiar
-                                </a>
-                                {% endif %}
-                            </form>
-                        </div>
+                                <!-- Botones de acción -->
+                                <div class="col-md-3">
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary flex-fill">
+                                            <i class="fas fa-search me-1"></i> Buscar
+                                        </button>
+                                        {% if q or estado or tipo_venta or fecha_desde or fecha_hasta %}
+                                        <a href="{% url 'telefonica:ventas_lista' %}" class="btn btn-outline-secondary">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Filtros avanzados colapsables -->
+                            <div class="collapse mt-3" id="advancedFilters">
+                                <hr class="my-3">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Tipo de Venta</label>
+                                        <select name="tipo_venta" class="form-select">
+                                            <option value="">Todos los tipos</option>
+                                            <option value="portabilidad" {% if tipo_venta == "portabilidad" %}selected{% endif %}>📱 Portabilidad</option>
+                                            <option value="prepago" {% if tipo_venta == "prepago" %}selected{% endif %}>📞 Pre a Pos</option>
+                                            <option value="upgrade" {% if tipo_venta == "upgrade" %}selected{% endif %}>⬆️ Upgrade</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Fecha Desde</label>
+                                        <input type="date" name="fecha_desde" value="{{ fecha_desde }}" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Fecha Hasta</label>
+                                        <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Agente</label>
+                                        <select name="agente" class="form-select">
+                                            <option value="">Todos los agentes</option>
+                                            {% for agente_option in agentes %}
+                                            <option value="{{ agente_option.id }}" {% if agente == agente_option.id|stringformat:"s" %}selected{% endif %}>
+                                                {{ agente_option.get_full_name|default:agente_option.username }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-12 text-center">
+                                        <button type="submit" class="btn btn-success me-2">
+                                            <i class="fas fa-filter me-1"></i> Aplicar Filtros
+                                        </button>
+                                        <button type="button" class="btn btn-outline-info" onclick="exportFilteredData()">
+                                            <i class="fas fa-file-excel me-1"></i> Exportar Filtrados
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
                     </div>
 
-                    <!-- Tabla de ventas -->
+                    <!-- Tabla de ventas moderna -->
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover" width="100%" cellspacing="0">
-                            <thead>
+                        <table class="table table-hover align-middle" id="ventasTable" width="100%" cellspacing="0">
+                            <thead class="table-dark">
                                 <tr>
-                                    <th>Número</th>
-                                    <th>Cliente</th>
-                                    <th>Documento</th>
-                                    <th>Plan</th>
-                                    <th>Fecha</th>
-                                    <th>Estado</th>
-                                    <th>Agente</th>
+                                    <th class="text-center">
+                                        <input type="checkbox" id="selectAll" class="form-check-input">
+                                    </th>
+                                    <th><i class="fas fa-hashtag me-1"></i>Número</th>
+                                    <th><i class="fas fa-user me-1"></i>Cliente</th>
+                                    <th><i class="fas fa-id-card me-1"></i>Documento</th>
+                                    <th><i class="fas fa-mobile-alt me-1"></i>Plan</th>
+                                    <th><i class="fas fa-calendar me-1"></i>Fecha</th>
+                                    <th><i class="fas fa-flag me-1"></i>Estado</th>
+                                    <th><i class="fas fa-user-tie me-1"></i>Agente</th>
                                     {% if es_backoffice %}
-                                    <th>Backoffice</th>
+                                    <th><i class="fas fa-cogs me-1"></i>Backoffice</th>
                                     {% endif %}
-                                    <th>Tipo</th>
-                                    <th>Acciones</th>
+                                    <th><i class="fas fa-tags me-1"></i>Tipo</th>
+                                    <th class="text-center"><i class="fas fa-tools me-1"></i>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for venta in page_obj %}
-                                <tr>
-                                    <td>{{ venta.numero }}</td>
-                                    <td>{{ venta.nombres }} {{ venta.apellidos }}</td>
-                                    <td>{{ venta.documento }}</td>
-                                    <td>{{ venta.plan_adquiere }}</td>
-                                    <td>{{ venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                                <tr class="venta-row" data-venta-id="{{ venta.id }}">
+                                    <td class="text-center">
+                                        <input type="checkbox" class="form-check-input venta-checkbox" value="{{ venta.id }}">
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px; font-size: 0.8rem;">
+                                                {{ venta.numero|slice:":2" }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ venta.numero }}</div>
+                                                <small class="text-muted">ID: {{ venta.id }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ venta.nombres }} {{ venta.apellidos }}</div>
+                                            <small class="text-muted">Cliente</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">{{ venta.documento }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-primary">{{ venta.plan_adquiere }}</div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <div class="fw-bold">{{ venta.fecha_creacion|date:"d/m/Y" }}</div>
+                                            <small class="text-muted">{{ venta.fecha_creacion|date:"H:i" }}</small>
+                                        </div>
+                                    </td>
                                     <td>
                                         {% if venta.estado_venta == 'pendiente_revision' %}
-                                        <span class="badge bg-warning">Pendiente</span>
+                                        <span class="badge badge-modern bg-warning text-dark">
+                                            <i class="fas fa-clock me-1"></i>Pendiente
+                                        </span>
                                         {% elif venta.estado_venta == 'devuelta' %}
-                                        <span class="badge bg-danger">Devuelta</span>
+                                        <span class="badge badge-modern bg-danger">
+                                            <i class="fas fa-times me-1"></i>Devuelta
+                                        </span>
                                         {% elif venta.estado_venta == 'aprobada' %}
-                                        <span class="badge bg-success">Aprobada</span>
+                                        <span class="badge badge-modern bg-success">
+                                            <i class="fas fa-check me-1"></i>Aprobada
+                                        </span>
                                         {% elif venta.estado_venta == 'digitada' %}
-                                        <span class="badge bg-info">Digitada</span>
+                                        <span class="badge badge-modern bg-info">
+                                            <i class="fas fa-keyboard me-1"></i>Digitada
+                                        </span>
                                         {% elif venta.estado_venta == 'rechazada' %}
-                                        <span class="badge bg-secondary">Rechazada</span>
+                                        <span class="badge badge-modern bg-secondary">
+                                            <i class="fas fa-ban me-1"></i>Rechazada
+                                        </span>
                                         {% elif venta.estado_venta == 'completada' %}
-                                        <span class="badge bg-primary">Completada</span>
+                                        <span class="badge badge-modern bg-primary">
+                                            <i class="fas fa-check-circle me-1"></i>Completada
+                                        </span>
                                         {% endif %}
                                     </td>
-                                    <td>{{ venta.agente.username }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px; font-size: 0.7rem;">
+                                                {{ venta.agente.username|slice:":2"|upper }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ venta.agente.get_full_name|default:venta.agente.username }}</div>
+                                                <small class="text-muted">@{{ venta.agente.username }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
                                     {% if es_backoffice %}
-                                    <td>{{ venta.backoffice.username|default:"-" }}</td>
+                                    <td>
+                                        {% if venta.backoffice %}
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px; font-size: 0.7rem;">
+                                                {{ venta.backoffice.username|slice:":2"|upper }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ venta.backoffice.get_full_name|default:venta.backoffice.username }}</div>
+                                                <small class="text-muted">@{{ venta.backoffice.username }}</small>
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
                                     {% endif %}
                                     <td>
-                                        <span class="badge bg-{% if venta.tipo_venta == 'portabilidad' %}primary{% elif venta.tipo_venta == 'upgrade' %}success{% elif venta.tipo_venta == 'prepago' %}info{% endif %} me-2">
-                                            {% if venta.tipo_venta == 'portabilidad' %}Portabilidad{% elif venta.tipo_venta == 'upgrade' %}Upgrade{% elif venta.tipo_venta == 'prepago' %}Pre a Pos{% endif %}
+                                        {% if venta.tipo_venta == 'portabilidad' %}
+                                        <span class="badge badge-modern bg-primary">
+                                            <i class="fas fa-exchange-alt me-1"></i>Portabilidad
                                         </span>
+                                        {% elif venta.tipo_venta == 'upgrade' %}
+                                        <span class="badge badge-modern bg-success">
+                                            <i class="fas fa-arrow-up me-1"></i>Upgrade
+                                        </span>
+                                        {% elif venta.tipo_venta == 'prepago' %}
+                                        <span class="badge badge-modern bg-info">
+                                            <i class="fas fa-mobile me-1"></i>Pre a Pos
+                                        </span>
+                                        {% endif %}
                                     </td>
                                     <td>
-                                        <a href="{% url venta.detalle_url venta.id %}" class="btn btn-sm btn-info" title="Ver detalle">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        {% if not es_backoffice and venta.estado_venta == 'devuelta' and venta.tipo_venta == 'portabilidad' %}
-                                        <a href="{% url 'telefonica:venta_corregir' venta.id %}" class="btn btn-sm btn-warning">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        {% endif %}
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <a href="{% url venta.detalle_url venta.id %}" class="btn btn-action btn-info btn-sm" title="Ver detalle" data-bs-toggle="tooltip">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if not es_backoffice and venta.estado_venta == 'devuelta' and venta.tipo_venta == 'portabilidad' %}
+                                            <a href="{% url 'telefonica:venta_corregir' venta.id %}" class="btn btn-action btn-warning btn-sm" title="Corregir" data-bs-toggle="tooltip">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% endif %}
+                                            <button class="btn btn-action btn-secondary btn-sm" onclick="showVentaDetails({{ venta.id }})" title="Vista rápida" data-bs-toggle="tooltip">
+                                                <i class="fas fa-search-plus"></i>
+                                            </button>
+                                            <div class="dropdown">
+                                                <button class="btn btn-action btn-outline-primary btn-sm" type="button" data-bs-toggle="dropdown" title="Más opciones">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                    <li><a class="dropdown-item" href="#" onclick="duplicateVenta({{ venta.id }})"><i class="fas fa-copy me-2"></i>Duplicar</a></li>
+                                                    <li><a class="dropdown-item" href="#" onclick="printVenta({{ venta.id }})"><i class="fas fa-print me-2"></i>Imprimir</a></li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li><a class="dropdown-item text-danger" href="#" onclick="archiveVenta({{ venta.id }})"><i class="fas fa-archive me-2"></i>Archivar</a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="{% if es_backoffice %}10{% else %}9{% endif %}" class="text-center">
-                                        No se encontraron ventas con los filtros seleccionados
+                                    <td colspan="{% if es_backoffice %}11{% else %}10{% endif %}" class="text-center py-5">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                                            <h5 class="text-muted">No se encontraron ventas</h5>
+                                            <p class="text-muted">Intenta ajustar los filtros de búsqueda</p>
+                                            <a href="{% url 'telefonica:ventas_lista' %}" class="btn btn-outline-primary">
+                                                <i class="fas fa-refresh me-1"></i>Limpiar filtros
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <!-- Acciones masivas -->
+                    <div class="d-none" id="bulkActions">
+                        <div class="alert alert-info d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-info-circle me-2"></i>
+                                <span id="selectedCount">0</span> ventas seleccionadas
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="exportSelected()">
+                                    <i class="fas fa-download me-1"></i>Exportar
+                                </button>
+                                <button class="btn btn-sm btn-outline-info" onclick="printSelected()">
+                                    <i class="fas fa-print me-1"></i>Imprimir
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">
+                                    <i class="fas fa-times me-1"></i>Cancelar
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Paginación -->
@@ -193,11 +518,207 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap5.min.js"></script>
 <script>
-    $(document).ready(function() {
-        // Activar elemento de menú correspondiente
-        $("#sidebarTelefonica").addClass("active");
-        $("#ventasLink").addClass("active");
+$(document).ready(function() {
+    // Activar elemento de menú correspondiente
+    $("#sidebarTelefonica").addClass("active");
+    $("#ventasLink").addClass("active");
+    
+    // Inicializar tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+    
+    // Inicializar DataTable
+    $('#ventasTable').DataTable({
+        responsive: true,
+        pageLength: 25,
+        order: [[1, 'desc']],
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json'
+        },
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'excel',
+                text: '<i class="fas fa-file-excel"></i> Excel',
+                className: 'btn btn-success btn-sm'
+            },
+            {
+                extend: 'pdf',
+                text: '<i class="fas fa-file-pdf"></i> PDF',
+                className: 'btn btn-danger btn-sm'
+            },
+            {
+                extend: 'print',
+                text: '<i class="fas fa-print"></i> Imprimir',
+                className: 'btn btn-info btn-sm'
+            }
+        ],
+        columnDefs: [
+            { orderable: false, targets: [0, -1] } // Deshabilitar ordenamiento en checkbox y acciones
+        ]
+    });
+    
+    // Manejo de selección múltiple
+    $('#selectAll').on('change', function() {
+        $('.venta-checkbox').prop('checked', this.checked);
+        updateBulkActions();
+    });
+    
+    $('.venta-checkbox').on('change', function() {
+        updateBulkActions();
+        
+        // Actualizar estado del checkbox "Seleccionar todo"
+        var totalCheckboxes = $('.venta-checkbox').length;
+        var checkedCheckboxes = $('.venta-checkbox:checked').length;
+        $('#selectAll').prop('checked', totalCheckboxes === checkedCheckboxes);
+    });
+    
+    function updateBulkActions() {
+        var selectedCount = $('.venta-checkbox:checked').length;
+        $('#selectedCount').text(selectedCount);
+        
+        if (selectedCount > 0) {
+            $('#bulkActions').removeClass('d-none');
+        } else {
+            $('#bulkActions').addClass('d-none');
+        }
+    }
+    
+    // Efectos de hover en filas
+    $('.venta-row').hover(
+        function() {
+            $(this).addClass('table-active');
+        },
+        function() {
+            $(this).removeClass('table-active');
+        }
+    );
+});
+
+// Funciones globales
+function exportData() {
+    // Lógica para exportar todos los datos
+    window.location.href = '{% url "telefonica:ventas_lista" %}?export=excel';
+}
+
+function refreshData() {
+    location.reload();
+}
+
+function exportFilteredData() {
+    // Obtener parámetros actuales de filtro
+    var currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('export', 'excel');
+    window.location.href = currentUrl.toString();
+}
+
+function exportSelected() {
+    var selectedIds = [];
+    $('.venta-checkbox:checked').each(function() {
+        selectedIds.push($(this).val());
+    });
+    
+    if (selectedIds.length > 0) {
+        var url = '{% url "telefonica:ventas_lista" %}?export=excel&ids=' + selectedIds.join(',');
+        window.location.href = url;
+    }
+}
+
+function printSelected() {
+    var selectedIds = [];
+    $('.venta-checkbox:checked').each(function() {
+        selectedIds.push($(this).val());
+    });
+    
+    if (selectedIds.length > 0) {
+        var url = '{% url "telefonica:ventas_lista" %}?print=true&ids=' + selectedIds.join(',');
+        window.open(url, '_blank');
+    }
+}
+
+function clearSelection() {
+    $('.venta-checkbox').prop('checked', false);
+    $('#selectAll').prop('checked', false);
+    $('#bulkActions').addClass('d-none');
+}
+
+function showVentaDetails(ventaId) {
+    // Mostrar modal con detalles rápidos de la venta
+    // Esta función se puede expandir para mostrar un modal con información detallada
+    alert('Vista rápida de venta ID: ' + ventaId + '\n\nEsta funcionalidad se puede expandir para mostrar un modal con detalles completos.');
+}
+
+function duplicateVenta(ventaId) {
+    if (confirm('¿Está seguro de que desea duplicar esta venta?')) {
+        // Lógica para duplicar venta
+        window.location.href = '/telefonica/ventas/duplicar/' + ventaId + '/';
+    }
+}
+
+function printVenta(ventaId) {
+    // Abrir ventana de impresión para venta específica
+    window.open('/telefonica/ventas/' + ventaId + '/print/', '_blank');
+}
+
+function archiveVenta(ventaId) {
+    if (confirm('¿Está seguro de que desea archivar esta venta?')) {
+        // Lógica para archivar venta
+        fetch('/telefonica/ventas/' + ventaId + '/archive/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error al archivar la venta');
+            }
+        });
+    }
+}
+
+// Animaciones y efectos adicionales
+$(document).ready(function() {
+    // Animación de entrada para las tarjetas de estadísticas
+    $('.stats-card').each(function(index) {
+        $(this).css('opacity', '0').delay(index * 100).animate({
+            opacity: 1
+        }, 500);
+    });
+    
+    // Efecto de conteo animado para las estadísticas
+    $('.stats-card .h5').each(function() {
+        var $this = $(this);
+        var countTo = parseInt($this.text());
+        
+        $({ countNum: 0 }).animate({
+            countNum: countTo
+        }, {
+            duration: 1500,
+            easing: 'swing',
+            step: function() {
+                $this.text(Math.floor(this.countNum));
+            },
+            complete: function() {
+                $this.text(countTo);
+            }
+        });
+    });
+});
 </script>
 {% endblock %}

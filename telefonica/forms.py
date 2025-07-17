@@ -70,12 +70,14 @@ class AgendamientoForm(forms.ModelForm):
             'fecha_volver_a_llamar': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
             'hora_volver_a_llamar': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time', 'autocomplete': 'off'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'autocomplete': 'off'}),
-            'Estado_agendamiento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
+            'Estado_agendamiento': forms.HiddenInput(),
         }
     
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+        # Establecer valor por defecto para el estado del agendamiento
+        self.fields['Estado_agendamiento'].initial = 'agendado'
 
 
 class GestionAgendamientoForm(forms.ModelForm):

@@ -1,5 +1,6 @@
 {% extends 'core/base.html' %}
 {% load static %}
+{% load telefonica_extras %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
@@ -36,8 +37,8 @@
                                 <tr>
                                     <td>{{ plan.codigo }}</td>
                                     <td>{{ plan.nombre_plan }}</td>
-                                    <td>${{ plan.CFM|floatformat:2 }}</td>
-                                    <td>${{ plan.CFM_sin_iva|floatformat:2 }}</td>
+                                    <td>${{ plan.CFM|currency_format }}</td>
+                                    <td>${{ plan.CFM_sin_iva|currency_format }}</td>
                                     <td>
                                         <span class="badge badge-{% if plan.estado == 'activo' %}success{% else %}danger{% endif %}">
                                             {{ plan.estado|title }}

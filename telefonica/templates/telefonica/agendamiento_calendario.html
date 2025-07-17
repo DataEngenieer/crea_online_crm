@@ -1,8 +1,9 @@
-{% extends 'base_telefonica.html' %}
+{% extends 'telefonica/base_telefonica.html' %}
 {% load static %}
 {% load telefonica_extras %}
 
 {% block extra_css %}
+{{ block.super }}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css">
 <style>
     :root {
@@ -259,24 +260,40 @@
                         estado: document.getElementById('estado').value,
                         agente: document.getElementById('agente').value
                     };
+                },
+                failure: function(error) {
+                    console.error('Error al cargar eventos:', error);
+                    alert('Error al cargar los eventos del calendario. Por favor, revise la consola para más detalles.');
                 }
+            },
+            loading: function(bool) {
+                if (bool) {
+                    console.log('Cargando eventos...');
+                } else {
+                    console.log('Eventos cargados.');
+                }
+            },
+            eventSourceSuccess: function(content, xhr) {
+                console.log('Eventos recibidos:', content);
+                return content;
             },
             eventDidMount: function(info) {
                 // Configurar tooltip para mostrar detalles al pasar el mouse
-                $(info.el).tooltip({
-                    title: function() {
-                        return '<div class="tooltip-title">' + info.event.title + '</div>' +
-                               '<div class="tooltip-info"><strong>Teléfono:</strong> ' + info.event.extendedProps.telefono + '</div>' +
-                               '<div class="tooltip-info"><strong>Estado:</strong> ' + info.event.extendedProps.estado + '</div>' +
-                               '<div class="tooltip-info"><strong>Agente:</strong> ' + info.event.extendedProps.agente + '</div>' +
-                               '<div class="tooltip-info"><strong>Observaciones:</strong> ' + 
-                               (info.event.extendedProps.observaciones || 'Sin observaciones') + '</div>' +
-                               '<div class="tooltip-info small mt-2">Click para ver detalles</div>';
-                    },
-                    html: true,
-                    placement: 'top',
-                    container: 'body'
-                });
+                const tooltipContent = '<div class="tooltip-title">' + info.event.title + '</div>' +
+                                     '<div class="tooltip-info"><strong>Teléfono:</strong> ' + info.event.extendedProps.telefono + '</div>' +
+                                     '<div class="tooltip-info"><strong>Estado:</strong> ' + info.event.extendedProps.estado + '</div>' +
+                                     '<div class="tooltip-info"><strong>Agente:</strong> ' + info.event.extendedProps.agente + '</div>' +
+                                     '<div class="tooltip-info"><strong>Observaciones:</strong> ' + 
+                                     (info.event.extendedProps.observaciones || 'Sin observaciones') + '</div>' +
+                                     '<div class="tooltip-info small mt-2">Click para ver detalles</div>';
+                
+                info.el.setAttribute('data-bs-toggle', 'tooltip');
+                info.el.setAttribute('data-bs-placement', 'top');
+                info.el.setAttribute('data-bs-html', 'true');
+                info.el.setAttribute('data-bs-title', tooltipContent);
+                
+                // Inicializar tooltip de Bootstrap 5
+                new bootstrap.Tooltip(info.el);
             },
             eventClick: function(info) {
                 // Redireccionar a la página de detalle al hacer clic en un evento

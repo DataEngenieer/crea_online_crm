@@ -1,5 +1,6 @@
 {% extends 'core/base.html' %}
 {% load static %}
+{% load telefonica_extras %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
@@ -32,8 +33,8 @@
                         <div class="col-md-6">
                             <p><strong>Código:</strong> {{ plan.codigo }}</p>
                             <p><strong>Nombre:</strong> {{ plan.nombre_plan }}</p>
-                            <p><strong>Cargo Fijo Mensual:</strong> ${{ plan.CFM|floatformat:2 }}</p>
-                            <p><strong>Cargo Fijo Mensual sin IVA:</strong> ${{ plan.CFM_sin_iva|floatformat:2 }}</p>
+                            <p><strong>Cargo Fijo Mensual:</strong> ${{ plan.CFM|currency_format }}</p>
+                            <p><strong>Cargo Fijo Mensual sin IVA:</strong> ${{ plan.CFM_sin_iva|currency_format }}</p>
                         </div>
                         <div class="col-md-6">
                             <p><strong>Fecha de Creación:</strong> {{ plan.fecha_creacion|date:"d/m/Y H:i" }}</p>

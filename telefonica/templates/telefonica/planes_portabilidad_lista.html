@@ -1,5 +1,6 @@
 {% extends 'telefonica/base_telefonica.html' %}
 {% load static %}
+{% load telefonica_extras %}
 
 {% block extra_css %}
 {{ block.super }}
@@ -279,8 +280,8 @@
                         <h6 class="card-subtitle mb-2 text-muted">Código: {{ plan.codigo }}</h6>
                         <div class="mb-3">
                             <strong>Cargo Fijo Mensual:</strong> 
-                            <span class="fs-5 fw-bold text-primary">${{ plan.CFM }}</span>
-                            <small class="text-muted d-block">Sin IVA: ${{ plan.CFM_sin_iva }}</small>
+                            <span class="fs-5 fw-bold text-primary">${{ plan.CFM|currency_format }}</span>
+                            <small class="text-muted d-block">Sin IVA: ${{ plan.CFM_sin_iva|currency_format }}</small>
                         </div>
                         <h6>Características:</h6>
                         <p class="card-text caracteristicas">{{ plan.caracteristicas }}</p>

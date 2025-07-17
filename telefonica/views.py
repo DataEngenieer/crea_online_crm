@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 import json
 
-from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, GestionAsesor, GestionBackoffice, Planes_portabilidad, Agendamiento, GestionAgendamiento, Comision
+from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, GestionAsesor, GestionBackoffice, Planes_portabilidad, Agendamiento, GestionAgendamiento, Comision, ESTADO_AGENDAMIENTO_CHOICES
 from .forms import (
     VentaPortabilidadForm, VentaPrePosForm, VentaUpgradeForm, 
     GestionAsesorForm, GestionBackofficeForm, PlanesPortabilidadForm,
@@ -1513,36 +1513,8 @@ def agendamiento_calendario(request):
     """
     Vista para mostrar los agendamientos en formato de calendario.
     """
-    # Filtrar por usuario si es asesor (no backoffice)
-    if request.user.groups.filter(name='asesor').exists() and not request.user.groups.filter(name='backoffice').exists():
-        agendamientos = Agendamiento.objects.filter(agente=request.user)
-    else:
-        agendamientos = Agendamiento.objects.all()
-    
-    # Convertir agendamientos a formato JSON para el calendario
-    eventos = []
-    for agendamiento in agendamientos:
-        # Determinar color según estado
-        color = {
-            'agendado': '#4e73df',  # Azul
-            'venta': '#1cc88a',      # Verde
-            'volver_llamar': '#f6c23e',  # Amarillo
-            'no_acepta_oferta': '#e74a3b',  # Rojo
-            'no_contactado': '#858796',  # Gris
-        }.get(agendamiento.Estado_agendamiento, '#4e73df')
-        
-        # Crear evento
-        evento = {
-            'id': agendamiento.id,
-            'title': f"{agendamiento.nombre_cliente} - {agendamiento.telefono_contacto}",
-            'start': f"{agendamiento.fecha_volver_a_llamar}T{agendamiento.hora_volver_a_llamar}",
-            'color': color,
-            'url': reverse('telefonica:agendamiento_detalle', args=[agendamiento.id]),
-        }
-        eventos.append(evento)
-    
     # Obtener estados disponibles
-    estados = dict(Agendamiento.ESTADO_CHOICES)
+    estados = dict(ESTADO_AGENDAMIENTO_CHOICES)
     
     # Obtener agentes disponibles
     from django.contrib.auth.models import User
@@ -1558,7 +1530,6 @@ def agendamiento_calendario(request):
     
     context = {
         'titulo': 'Calendario de Agendamientos',
-        'eventos_json': json.dumps(eventos),
         'estados': estados,
         'agentes': agentes,
     }
@@ -1572,57 +1543,62 @@ def agendamiento_eventos_api(request):
     """
     API para obtener eventos de agendamiento en formato JSON para el calendario.
     """
-    # Filtrar por usuario si es asesor (no backoffice)
-    if request.user.groups.filter(name='asesor').exists() and not request.user.groups.filter(name='backoffice').exists():
-        agendamientos = Agendamiento.objects.filter(agente=request.user)
-    else:
-        agendamientos = Agendamiento.objects.all()
-    
-    # Filtros opcionales
-    estado = request.GET.get('estado')
-    agente_id = request.GET.get('agente')
-    
-    if estado:
-        agendamientos = agendamientos.filter(Estado_agendamiento=estado)
-    if agente_id:
-        agendamientos = agendamientos.filter(agente_id=agente_id)
-    
-    # Convertir agendamientos a formato JSON para el calendario
-    eventos = []
-    for agendamiento in agendamientos:
-        # Determinar color según estado
-        color = {
-            'agendado': '#4e73df',  # Azul
-            'venta': '#1cc88a',      # Verde
-            'volver_llamar': '#f6c23e',  # Amarillo
-            'no_contactado': '#e74a3b',  # Rojo
-            'no_interesado': '#6c757d',  # Gris
-        }.get(agendamiento.Estado_agendamiento, '#6c757d')
+    try:
+        # Filtrar por usuario si es asesor (no backoffice)
+        if request.user.groups.filter(name='asesor').exists() and not request.user.groups.filter(name='backoffice').exists():
+            agendamientos = Agendamiento.objects.filter(agente=request.user)
+        else:
+            agendamientos = Agendamiento.objects.all()
         
-        # Crear evento para el calendario
-        evento = {
-            'id': agendamiento.id,
-            'title': f'{agendamiento.nombre_cliente} - {agendamiento.get_Estado_agendamiento_display()}',
-            'start': agendamiento.fecha_volver_a_llamar.isoformat() if agendamiento.fecha_volver_a_llamar else agendamiento.fecha_creacion.date().isoformat(),
-            'backgroundColor': color,
-            'borderColor': color,
-            'textColor': '#ffffff',
-            'extendedProps': {
-                'cliente': agendamiento.nombre_cliente,
-                'telefono': agendamiento.telefono_contacto,
-                'estado': agendamiento.get_Estado_agendamiento_display(),
-                'agente': agendamiento.agente.get_full_name() or agendamiento.agente.username,
-                'observaciones': agendamiento.observaciones or 'Sin observaciones',
+        # Filtros opcionales
+        estado = request.GET.get('estado')
+        agente_id = request.GET.get('agente')
+        
+        if estado:
+            agendamientos = agendamientos.filter(Estado_agendamiento=estado)
+        if agente_id:
+            agendamientos = agendamientos.filter(agente_id=agente_id)
+        
+        # Convertir agendamientos a formato JSON para el calendario
+        eventos = []
+        for agendamiento in agendamientos:
+            # Determinar color según estado (coincidiendo con los valores reales del modelo)
+            color = {
+                'agendado': '#4e73df',  # Azul
+                'venta': '#1cc88a',      # Verde
+                'volver_llamar': '#f6c23e',  # Amarillo
+                'no_acepta_oferta': '#e74a3b',  # Rojo
+                'no_contactado': '#858796',  # Gris
+            }.get(agendamiento.Estado_agendamiento, '#4e73df')
+            
+            # Crear evento para el calendario
+            evento = {
+                'id': agendamiento.id,
+                'title': f'{agendamiento.nombre_cliente} - {agendamiento.get_Estado_agendamiento_display()}',
+                'start': agendamiento.fecha_volver_a_llamar.isoformat(),
+                'backgroundColor': color,
+                'borderColor': color,
+                'textColor': '#ffffff',
+                'extendedProps': {
+                    'cliente': agendamiento.nombre_cliente,
+                    'telefono': agendamiento.telefono_contacto,
+                    'estado': agendamiento.get_Estado_agendamiento_display(),
+                    'agente': agendamiento.agente.get_full_name() or agendamiento.agente.username,
+                    'observaciones': agendamiento.observaciones or 'Sin observaciones',
+                }
             }
-        }
+            
+            # Agregar hora si está disponible
+            if agendamiento.hora_volver_a_llamar:
+                evento['start'] = f"{agendamiento.fecha_volver_a_llamar}T{agendamiento.hora_volver_a_llamar}"
+            
+            eventos.append(evento)
         
-        # Agregar hora si está disponible
-        if agendamiento.hora_volver_a_llamar:
-            evento['start'] = f"{agendamiento.fecha_volver_a_llamar}T{agendamiento.hora_volver_a_llamar}"
-        
-        eventos.append(evento)
+        return JsonResponse(eventos, safe=False)
     
-    return JsonResponse(eventos, safe=False)
+    except Exception as e:
+        # En caso de error, devolver una respuesta JSON con el error
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @login_required

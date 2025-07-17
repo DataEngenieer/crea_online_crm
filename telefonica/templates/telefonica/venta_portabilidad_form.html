@@ -379,31 +379,7 @@
                             </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <div class="form-group">
-                                <label for="{{ form.base_origen.id_for_label }}">
-                                    <i class="fas fa-database me-1"></i> Base de Origen:
-                                </label>
-                                <div class="input-group input-group-custom">
-                                    <span class="input-group-text"><i class="fas fa-database"></i></span>
-                                    {{ form.base_origen|attr:"class:form-control custom-input,placeholder:Ingrese base de origen" }}
-                                </div>
-                                <div class="invalid-feedback" id="base-origen-error"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-group">
-                                <label for="{{ form.usuario_greta.id_for_label }}">
-                                    <i class="fas fa-user-cog me-1"></i> Usuario Greta:
-                                </label>
-                                <div class="input-group input-group-custom">
-                                    <span class="input-group-text"><i class="fas fa-user-cog"></i></span>
-                                    {{ form.usuario_greta|attr:"class:form-control custom-input,placeholder:Ingrese usuario Greta" }}
-                                </div>
-                                <div class="invalid-feedback" id="usuario-greta-error"></div>
-                            </div>
-                        </div>
+
                         
                         <div class="mb-3">
                             <div class="form-group">
@@ -434,21 +410,32 @@
                 </div>
                         
             </div>
-            
-            <div class="form-group mb-4 mt-4">
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="confirmo_venta" required>
-                    <label class="form-check-label" for="confirmo_venta">
-                        Confirmo que todos los datos son correctos y la venta puede ser registrada
-                    </label>
+                
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="section-container mb-4 border-left-success p-3 bg-light rounded" style="background: linear-gradient(to right, var(--success-light), var(--light-color)); border-left: 4px solid var(--accent-color) !important;">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="form-group mb-md-0">
+                                        <div class="form-check" style="padding-left: 2rem;">
+                                            <input type="checkbox" class="form-check-input" id="confirmo_venta" required style="transform: scale(1.2); margin-top: 0.2rem;">
+                                            <label class="form-check-label fw-bold" for="confirmo_venta" style="font-weight: 600; color: var(--dark-color);">
+                                                <i class="fas fa-check-circle text-warning me-2" style="color: var(--accent-color) !important;"></i>Confirmo que todos los datos son correctos y la venta puede ser registrada
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex justify-content-md-end mt-3 mt-md-0">
+                                        <button type="submit" class="btn btn-success btn-lg w-100 w-md-auto" style="padding: 12px 30px; border-radius: var(--border-radius); font-weight: 600; letter-spacing: 0.5px; transition: all 0.3s ease; background-color: var(--success-color); border-color: var(--success-color); box-shadow: 0 4px 6px rgba(50, 205, 50, 0.2);">
+                                            <i class="fas fa-save me-2"></i>{{ boton }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="d-flex justify-content-end mt-4">
-                <button type="submit" class="btn btn-success">
-                    <i class="fas fa-save me-2"></i>{{ boton }}
-                </button>
-            </div>
         </form>
     </div>
 </div>
