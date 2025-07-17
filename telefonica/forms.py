@@ -94,12 +94,10 @@ class VentaUpgradeForm(forms.ModelForm):
     class Meta:
         model = VentaUpgrade
         fields = [
-            'tipo_cliente', 'tipo_documento', 'documento', 'fecha_expedicion', 'nombres', 'apellidos',
-            'telefono_legalizacion', 'codigo_verificacion', 'plan_adquiere', 'numero_orden', 
-            'base_origen', 'usuario_greta', 'observacion'
+            'tipo_documento', 'documento', 'fecha_expedicion', 'nombres', 'apellidos',
+            'telefono_legalizacion', 'codigo_verificacion', 'plan_adquiere', 'numero_orden', 'observacion'
         ]
         widgets = {
-            'tipo_cliente': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'tipo_documento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'documento': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'fecha_expedicion': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
@@ -109,8 +107,6 @@ class VentaUpgradeForm(forms.ModelForm):
             'codigo_verificacion': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'plan_adquiere': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'numero_orden': forms.NumberInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
-            'base_origen': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
-            'usuario_greta': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'observacion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'autocomplete': 'off'})
         }
     

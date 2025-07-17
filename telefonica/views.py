@@ -165,6 +165,12 @@ def venta_crear_upgrade(request, documento=None):
             venta = form.save(commit=False)
             venta.agente = request.user
             venta.estado_venta = 'pendiente_revision'
+            # Asignar valores predeterminados a campos requeridos que no están en el formulario
+            venta.base_origen = 'Web'
+            venta.usuario_greta = request.user.username
+            # Asignar valor predeterminado al tipo_cliente si no está presente
+            if not venta.tipo_cliente:
+                venta.tipo_cliente = 'dentro_base'
             venta.save()
             messages.success(request, 'Venta de Upgrade registrada exitosamente.')
             return redirect('telefonica:detalle_venta_upgrade', pk=venta.id)
@@ -252,45 +258,113 @@ def detalle_venta(request, pk):
 
 @login_required
 def ventas_lista(request):
-    """Lista de ventas de portabilidad con filtrado según el rol del usuario"""
+    """Lista de todas las ventas (portabilidad, upgrade y prepos) con filtrado según el rol del usuario"""
     is_backoffice_user = request.user.groups.filter(name='backoffice').exists()
 
     # Filtrar ventas según el rol del usuario
     if is_backoffice_user:
         # Backoffice puede ver todas las ventas
-        ventas = VentaPortabilidad.objects.all().order_by('-fecha_creacion')
+        ventas_portabilidad = VentaPortabilidad.objects.all().order_by('-fecha_creacion')
+        ventas_upgrade = VentaUpgrade.objects.all().order_by('-fecha_creacion')
+        ventas_prepos = VentaPrePos.objects.all().order_by('-fecha_creacion')
     else:
         # Asesores solo ven sus propias ventas
-        ventas = VentaPortabilidad.objects.filter(agente=request.user).order_by('-fecha_creacion')
+        ventas_portabilidad = VentaPortabilidad.objects.filter(agente=request.user).order_by('-fecha_creacion')
+        ventas_upgrade = VentaUpgrade.objects.filter(agente=request.user).order_by('-fecha_creacion')
+        ventas_prepos = VentaPrePos.objects.filter(agente=request.user).order_by('-fecha_creacion')
     
-    # Filtrar por estado si se especifica
+    # Filtrar por estado si se especifica (solo para portabilidad que tiene estado_venta)
     estado = request.GET.get('estado')
-    if estado:
-        ventas = ventas.filter(estado_venta=estado)
+    if estado and estado != '':
+        ventas_portabilidad = ventas_portabilidad.filter(estado_venta=estado)
     
     # Filtrar por documento si se especifica
     documento = request.GET.get('documento')
-    if documento:
-        ventas = ventas.filter(documento__icontains=documento)
+    if documento and documento != '':
+        ventas_portabilidad = ventas_portabilidad.filter(documento__icontains=documento)
+        ventas_upgrade = ventas_upgrade.filter(documento__icontains=documento)
+        ventas_prepos = ventas_prepos.filter(documento__icontains=documento)
     
     # Filtrar por fechas
     fecha_desde = request.GET.get('fecha_desde')
-    if fecha_desde:
-        ventas = ventas.filter(fecha_creacion__gte=fecha_desde)
+    if fecha_desde and fecha_desde != '':
+        ventas_portabilidad = ventas_portabilidad.filter(fecha_creacion__gte=fecha_desde)
+        ventas_upgrade = ventas_upgrade.filter(fecha_creacion__gte=fecha_desde)
+        ventas_prepos = ventas_prepos.filter(fecha_creacion__gte=fecha_desde)
     
     fecha_hasta = request.GET.get('fecha_hasta')
-    if fecha_hasta:
+    if fecha_hasta and fecha_hasta != '':
         from datetime import datetime, timedelta
         fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d') + timedelta(days=1)
-        ventas = ventas.filter(fecha_creacion__lt=fecha_hasta_dt)
+        ventas_portabilidad = ventas_portabilidad.filter(fecha_creacion__lt=fecha_hasta_dt)
+        ventas_upgrade = ventas_upgrade.filter(fecha_creacion__lt=fecha_hasta_dt)
+        ventas_prepos = ventas_prepos.filter(fecha_creacion__lt=fecha_hasta_dt)
     
-    paginator = Paginator(ventas, 10)  # 10 ventas por página
+    # Crear una lista combinada de todas las ventas
+    todas_ventas = []
+    
+    # Añadir ventas de portabilidad
+    for venta in ventas_portabilidad:
+        todas_ventas.append({
+            'id': venta.id,
+            'numero': venta.numero,
+            'tipo_venta': 'portabilidad',
+            'nombres': venta.nombres,
+            'apellidos': venta.apellidos,
+            'documento': venta.documento,
+            'plan_adquiere': venta.plan_adquiere,
+            'fecha_creacion': venta.fecha_creacion,
+            'estado_venta': venta.estado_venta,
+            'agente': venta.agente,
+            'backoffice': getattr(venta, 'backoffice', None),
+            'detalle_url': 'telefonica:detalle_venta_portabilidad'
+        })
+    
+    # Añadir ventas de upgrade
+    for venta in ventas_upgrade:
+        todas_ventas.append({
+            'id': venta.id,
+            'numero': venta.numero,
+            'tipo_venta': 'upgrade',
+            'nombres': venta.nombres,
+            'apellidos': venta.apellidos,
+            'documento': venta.documento,
+            'plan_adquiere': venta.plan_adquiere,
+            'fecha_creacion': venta.fecha_creacion,
+            'estado_venta': 'pendiente_revision',  # Valor predeterminado
+            'agente': venta.agente,
+            'backoffice': None,
+            'detalle_url': 'telefonica:detalle_venta_upgrade'
+        })
+    
+    # Añadir ventas de prepos
+    for venta in ventas_prepos:
+        todas_ventas.append({
+            'id': venta.id,
+            'numero': venta.numero,
+            'tipo_venta': 'prepago',
+            'nombres': venta.nombres,
+            'apellidos': venta.apellidos,
+            'documento': venta.documento,
+            'plan_adquiere': venta.plan_adquiere,
+            'fecha_creacion': venta.fecha_creacion,
+            'estado_venta': 'pendiente_revision',  # Valor predeterminado
+            'agente': venta.agente,
+            'backoffice': None,
+            'detalle_url': 'telefonica:detalle_venta_prepago'
+        })
+    
+    # Ordenar todas las ventas por fecha de creación (más reciente primero)
+    todas_ventas.sort(key=lambda x: x['fecha_creacion'], reverse=True)
+    
+    paginator = Paginator(todas_ventas, 10)  # 10 ventas por página
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
     
-    return render(request, 'telefonica/ventas_portabilidad_lista.html', {
-        'ventas': page_obj,
-        'titulo': 'Listado de Ventas de Portabilidad',
+    return render(request, 'telefonica/ventas_lista.html', {
+        'page_obj': page_obj,
+        'q': documento,
+        'estado': estado,
         'es_backoffice': is_backoffice_user
     })
 
@@ -312,6 +386,13 @@ def venta_detalle(request, pk):
         venta = VentaPrePos.objects.get(id=pk)
         return redirect('telefonica:detalle_venta_prepago', pk=pk)
     except VentaPrePos.DoesNotExist:
+        pass
+    
+    # Intentar obtener la venta como VentaUpgrade
+    try:
+        venta = VentaUpgrade.objects.get(id=pk)
+        return redirect('telefonica:detalle_venta_upgrade', pk=pk)
+    except VentaUpgrade.DoesNotExist:
         pass
     
     # Si no se encuentra la venta, devolver 404
@@ -385,7 +466,7 @@ def planes_portabilidad_lista(request):
     
     return render(request, 'telefonica/planes_portabilidad_lista.html', {
         'planes': page_obj,
-        'titulo': 'Planes de Portabilidad',
+        'titulo': 'Planes de Telefonica',
     })
 
 
@@ -404,7 +485,7 @@ def plan_portabilidad_crear(request):
     
     return render(request, 'telefonica/plan_portabilidad_form.html', {
         'form': form,
-        'titulo': 'Crear Plan de Portabilidad',
+        'titulo': 'Crear Plan de Telefonica',
         'accion': 'Crear'
     })
 
@@ -427,7 +508,7 @@ def plan_portabilidad_editar(request, plan_id):
     return render(request, 'telefonica/plan_portabilidad_form.html', {
         'form': form,
         'plan': plan,
-        'titulo': 'Editar Plan de Portabilidad',
+        'titulo': 'Editar Plan',
         'accion': 'Actualizar'
     })
 
@@ -446,7 +527,7 @@ def plan_portabilidad_eliminar(request, plan_id):
     
     return render(request, 'telefonica/plan_portabilidad_confirmar_eliminar.html', {
         'plan': plan,
-        'titulo': 'Eliminar Plan de Portabilidad'
+        'titulo': 'Eliminar Plan'
     })
 
 
@@ -1068,7 +1149,7 @@ def planes_portabilidad_lista(request):
     
     return render(request, 'telefonica/planes_portabilidad_lista.html', {
         'planes': planes,
-        'titulo': 'Planes de Portabilidad',
+        'titulo': 'Planes de Telefonica',
     })
 
 
@@ -1090,7 +1171,7 @@ def plan_portabilidad_crear(request):
     
     return render(request, 'telefonica/plan_portabilidad_form.html', {
         'form': form,
-        'titulo': 'Crear Plan de Portabilidad',
+        'titulo': 'Crear Plan de Telefonica',
         'accion': 'Crear Plan'
     })
 
@@ -1116,7 +1197,7 @@ def plan_portabilidad_editar(request, plan_id):
     return render(request, 'telefonica/plan_portabilidad_form.html', {
         'form': form,
         'plan': plan,
-        'titulo': 'Editar Plan de Portabilidad',
+        'titulo': 'Editar Plan',
         'accion': 'Guardar Cambios'
     })
 
@@ -1196,10 +1277,6 @@ def detalle_venta_portabilidad(request, pk):
     
     context = {
         'venta': venta,
-        'gestiones_asesor': gestiones_asesor,
-        'gestiones_backoffice': gestiones_backoffice,
-        'gestion_asesor_form': gestion_asesor_form,
-        'gestion_backoffice_form': gestion_backoffice_form,
         'es_backoffice': es_backoffice,
         'es_propietario': es_propietario,
     }
@@ -1212,8 +1289,7 @@ def detalle_venta_prepago(request, pk):
     """
     Vista para mostrar el detalle de una venta de prepago.
     
-    Permite ver todos los datos de la venta, incluyendo el historial de gestiones
-    y realizar acciones según el rol del usuario.
+    Permite ver todos los datos de la venta y realizar acciones según el rol del usuario.
     """
     # Obtener la venta o devolver 404 si no existe
     venta = get_object_or_404(VentaPrePos, pk=pk)
@@ -1226,17 +1302,7 @@ def detalle_venta_prepago(request, pk):
     if not (es_propietario or es_backoffice or user.is_superuser):
         return HttpResponseForbidden("No tienes permisos para ver esta venta.")
     
-    # Procesar formularios (gestiones no implementadas para VentaPrePos)
-    if request.method == 'POST':
-        messages.info(request, 'Las gestiones para ventas PrePos aún no están implementadas.')
-    
-    # Obtener historial de gestiones (VentaPrePos no tiene gestiones por ahora)
-    gestiones_asesor = []
-    gestiones_backoffice = []
-    
-    # Formularios para añadir gestiones
-    gestion_asesor_form = GestionAsesorForm()
-    gestion_backoffice_form = GestionBackofficeForm() if es_backoffice or user.is_superuser else None
+    # No hay procesamiento de formularios para VentaPrePos
     
     context = {
         'venta': venta,

@@ -220,6 +220,26 @@ def registro_usuario(request):
             grupo, creado = Group.objects.get_or_create(name='asesor')
             user.groups.add(grupo)
             
+            # Asignar a la campaña según el módulo seleccionado
+            selected_module = request.POST.get('selected_module', 'core')
+            from .models import Campana
+            
+            # Buscar la campaña correspondiente al módulo seleccionado
+            try:
+                if selected_module == 'core':
+                    # Campaña de Cartera (ID 1, código 'carysol')
+                    campana = Campana.objects.get(codigo='carysol')
+                elif selected_module == 'telefonica':
+                    # Campaña de Telefónica (ID 2, código 'teleco')
+                    campana = Campana.objects.get(codigo='teleco')
+                
+                # Asignar usuario a la campaña
+                campana.usuarios.add(user)
+                
+            except Campana.DoesNotExist:
+                # Si no existe la campaña, no asignar a ninguna
+                pass
+            
             messages.success(request, 'Registro exitoso. Ahora puedes iniciar sesión.')
             return redirect('core:login')
     else:

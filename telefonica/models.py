@@ -150,8 +150,8 @@ class VentaPrePos(models.Model):
     telefono_legalizacion = models.CharField(max_length=10, verbose_name=_("Teléfono Legalización"), null=False)
     plan_adquiere = models.ForeignKey(Planes_portabilidad, on_delete=models.PROTECT, related_name='ventas_prepos', verbose_name=_("Plan Adquirido"), null=False)
     numero_orden = models.IntegerField(verbose_name=_("Número de Orden"), null=False)
-    base_origen = models.CharField(max_length=100, verbose_name=_("Base Origen"), null=False)
-    usuario_greta = models.CharField(max_length=100, verbose_name=_("Usuario Greta"), null=False)
+    base_origen = models.CharField(max_length=100, verbose_name=_("Base Origen"), null=True, blank=True)
+    usuario_greta = models.CharField(max_length=100, verbose_name=_("Usuario Greta"), null=True, blank=True)
     observacion = models.TextField(verbose_name=_("Observación"), null=True, blank=True)
     agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_prepos_realizadas", verbose_name=_("Agente"))
 

@@ -1,138 +1,421 @@
 {% extends 'telefonica/base_telefonica.html' %}
 {% load static %}
+{% load telefonica_extras %}
 
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'telefonica/css/venta_form.css' %}">
+<style>
+    :root {
+        --primary-color: #4361ee;
+        --primary-dark: #3a56d4;
+        --primary-light: #eef2ff;
+        --success-color: #06d6a0;
+        --success-dark: #05c091;
+        --success-light: #e6fff9;
+        --accent-color: #ff9f1c;
+        --accent-dark: #f78c00;
+        --danger-color: #ef476f;
+        --info-color: #118ab2;
+        --light-color: #f8f9fa;
+        --dark-color: #343a40;
+        --border-radius: 10px;
+        --input-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        --input-focus-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+    }
+    
+    .card {
+        border: none;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+    }
+    
+    .card-header.bg-primary {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%) !important;
+    }
+    
+    .section-container {
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        background-color: #fff;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .section-container:hover {
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        transform: translateY(-3px);
+    }
+    
+    .border-right {
+        border-right: 4px solid var(--primary-light) !important;
+    }
+    
+    .border-left {
+        border-left: 4px solid var(--success-light) !important;
+    }
+    
+    .border-left-success {
+        border-left: 4px solid var(--success-color) !important;
+    }
+    
+    .border-left-info {
+        border-left: 4px solid var(--info-color) !important;
+    }
+    
+    .text-primary {
+        color: var(--primary-color) !important;
+    }
+    
+    .text-success {
+        color: var(--success-color) !important;
+    }
+    
+    .text-info {
+        color: var(--info-color) !important;
+    }
+    
+    .bg-light {
+        background-color: var(--light-color) !important;
+    }
+    
+    .input-group-custom {
+        box-shadow: var(--input-shadow);
+        border-radius: var(--border-radius);
+        transition: all 0.3s ease;
+    }
+    
+    .input-group-custom:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    }
+    
+    .input-group-custom:focus-within {
+        box-shadow: var(--input-focus-shadow);
+    }
+    
+    .input-group-text {
+        background-color: var(--primary-light);
+        border-color: var(--primary-color);
+        color: var(--primary-dark);
+        border-top-left-radius: var(--border-radius) !important;
+        border-bottom-left-radius: var(--border-radius) !important;
+        padding: 0.6rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 45px;
+    }
+    
+    .form-control, .form-select {
+        border: 1px solid #d8e2f3;
+        padding: 0.6rem 1rem;
+        color: var(--dark-color);
+        font-weight: 500;
+    }
+    
+    .custom-input, .custom-select {
+        border-top-right-radius: var(--border-radius) !important;
+        border-bottom-right-radius: var(--border-radius) !important;
+        border-left: none;
+        background-color: white;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: none;
+        background-color: white;
+    }
+    
+    .form-label {
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: var(--dark-color);
+        display: flex;
+        align-items: center;
+    }
+    
+    .form-label i {
+        margin-right: 0.5rem;
+        color: var(--primary-color);
+    }
+    
+    .alert-info {
+        background-color: var(--info-color);
+        border-color: var(--info-color);
+        color: white;
+        border-radius: var(--border-radius);
+        box-shadow: 0 4px 6px rgba(17, 138, 178, 0.1);
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, var(--success-color) 0%, var(--success-dark) 100%);
+        border-color: var(--success-dark);
+        box-shadow: 0 4px 10px rgba(6, 214, 160, 0.3);
+        border-radius: var(--border-radius);
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-success:hover {
+        background: linear-gradient(135deg, var(--success-dark) 0%, var(--success-color) 100%);
+        border-color: var(--success-color);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(6, 214, 160, 0.4);
+    }
+    
+    .form-check-input:checked {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
+    }
+    
+    h5 {
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+</style>
 {% endblock %}
 
 {% block contenido_telefonica %}
-<div class="card shadow-sm">
-    <div class="card-header bg-primary text-white">
-        <h5 class="mb-0">{{ titulo }}</h5>
+<div class="card" style="border: none; box-shadow: var(--card-shadow); border-radius: var(--border-radius);">
+    <div class="card-header bg-primary text-white" style="border-radius: var(--border-radius) var(--border-radius) 0 0; background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); padding: 1.5rem;">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <div class="bg-white rounded-circle p-2" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                    <i class="fas fa-mobile-alt fa-2x" style="color: var(--primary-color); background: linear-gradient(135deg, var(--primary-light), white); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                </div>
+            </div>
+            <div class="col">
+                <h4 class="mb-0 font-weight-bold" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.2); font-weight: 600;">{{ titulo }}</h4>
+                <p class="mb-0">Complete todos los campos del formulario para registrar una nueva venta de prepago. Los campos marcados con <span class="text-danger fw-bold">*</span> son obligatorios.</p>
+            </div>
+        </div>
     </div>
     <div class="card-body">
+        <div class="alert alert-info mb-4" style="background-color: var(--primary-light); border: none; border-left: 4px solid var(--primary-color); border-radius: var(--border-radius);">
+
         <form method="post" enctype="multipart/form-data" id="ventaPrePosForm">
             {% csrf_token %}
             
-            <!-- Datos del Cliente -->
-            <h5 class="mb-3"><i class="fas fa-user me-2"></i>Datos del Cliente</h5>
+            <div class="row">
+                <!-- Columna Izquierda: Datos del Cliente -->
+                <div class="col-md-6">
+                    <div class="section-container mb-4 h-100 border-right border-light" style="background: linear-gradient(to bottom, white, var(--primary-light) 200%);">
+                        <h5 class="mb-3 text-primary" style="display: flex; align-items: center;">
+                            <span class="icon-circle bg-primary text-white me-2" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; box-shadow: 0 4px 6px rgba(67, 97, 238, 0.2);"><i class="fas fa-user"></i></span>
+                            Datos del Cliente
+                        </h5>
                         
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="{{ form.tipo_documento.id_for_label }}">Tipo de Documento:</label>
-                                    {{ form.tipo_documento }}
-                                    <div class="invalid-feedback" id="tipo-documento-error"></div>
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.tipo_documento.id_for_label }}" class="form-label">
+                                    <i class="fas fa-id-badge me-1"></i> Tipo de Documento:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                                    {{ form.tipo_documento|attr:"class:form-select custom-select" }}
                                 </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="{{ form.documento.id_for_label }}">Número de Documento:</label>
-                                    {{ form.documento }}
-                                    <div class="invalid-feedback" id="documento-error"></div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="{{ form.fecha_expedicion.id_for_label }}">Fecha de Expedición:</label>
-                                    {{ form.fecha_expedicion }}
-                                    <div class="invalid-feedback" id="fecha-expedicion-error"></div>
-                                </div>
+                                <div class="invalid-feedback" id="tipo-documento-error"></div>
                             </div>
                         </div>
                         
-                        <div class="row mb-3">
-                            <div class="col-md-5">
-                                <div class="form-group">
-                                    <label for="{{ form.nombres.id_for_label }}">Nombres:</label>
-                                    {{ form.nombres }}
-                                    <div class="invalid-feedback" id="nombres-error"></div>
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.documento.id_for_label }}">
+                                    <i class="fas fa-id-card me-1"></i> Número de Documento:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-hashtag"></i></span>
+                                    {{ form.documento|attr:"class:form-control custom-input,placeholder:Ingrese número de documento" }}
                                 </div>
-                            </div>
-                            <div class="col-md-5">
-                                <div class="form-group">
-                                    <label for="{{ form.apellidos.id_for_label }}">Apellidos:</label>
-                                    {{ form.apellidos }}
-                                    <div class="invalid-feedback" id="apellidos-error"></div>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label for="{{ form.telefono_legalizacion.id_for_label }}">Teléfono:</label>
-                                    {{ form.telefono_legalizacion }}
-                                    <div class="invalid-feedback" id="telefono-legalizacion-error"></div>
-                                </div>
+                                <div class="invalid-feedback" id="documento-error"></div>
                             </div>
                         </div>
-                
-                <hr class="my-4">
-                
-                <!-- Datos de la Venta -->
-                <h5 class="mb-3"><i class="fas fa-mobile-alt me-2"></i>Datos de la Venta</h5>
-                
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label for="{{ form.plan_adquiere.id_for_label }}">Plan Adquirido:</label>
-                            {{ form.plan_adquiere }}
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.fecha_expedicion.id_for_label }}">
+                                    <i class="fas fa-calendar-alt me-1"></i> Fecha de Expedición:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                    {{ form.fecha_expedicion|attr:"class:form-control custom-input" }}
+                                </div>
+                                <div class="invalid-feedback" id="fecha-expedicion-error"></div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label for="cfm_display">CFM:</label>
-                            <input type="text" id="cfm_display" class="form-control" readonly placeholder="Seleccione un plan">
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.nombres.id_for_label }}">
+                                    <i class="fas fa-user me-1"></i> Nombres:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    {{ form.nombres|attr:"class:form-control custom-input,placeholder:Ingrese nombres" }}
+                                </div>
+                                <div class="invalid-feedback" id="nombres-error"></div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label for="{{ form.numero_orden.id_for_label }}">Número de Orden:</label>
-                            {{ form.numero_orden }}
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.apellidos.id_for_label }}">
+                                    <i class="fas fa-user me-1"></i> Apellidos:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-user-tag"></i></span>
+                                    {{ form.apellidos|attr:"class:form-control custom-input,placeholder:Ingrese apellidos" }}
+                                </div>
+                                <div class="invalid-feedback" id="apellidos-error"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.telefono_legalizacion.id_for_label }}">
+                                    <i class="fas fa-phone me-1"></i> Teléfono:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-mobile-alt"></i></span>
+                                    {{ form.telefono_legalizacion|attr:"class:form-control custom-input,placeholder:Teléfono" }}
+                                </div>
+                                <div class="invalid-feedback" id="telefono-legalizacion-error"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label for="{{ form.usuario_greta.id_for_label }}">Usuario Greta:</label>
-                            {{ form.usuario_greta }}
+                <!-- Columna Derecha: Datos de la Venta -->
+                <div class="col-md-6">
+                    <div class="section-container mb-4 h-100 border-left border-light" style="background: linear-gradient(to bottom, white, var(--success-light) 200%);">
+                        <h5 class="mb-3 text-success" style="display: flex; align-items: center;">
+                            <span class="icon-circle bg-success text-white me-2" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; box-shadow: 0 4px 6px rgba(6, 214, 160, 0.2);"><i class="fas fa-mobile-alt"></i></span>
+                            Datos de la Venta
+                        </h5>
+                    
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.tipo_cliente.id_for_label }}" class="form-label">
+                                    <i class="fas fa-user-tag me-1"></i> Tipo de Cliente:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-users"></i></span>
+                                    {{ form.tipo_cliente|attr:"class:form-select custom-select" }}
+                                </div>
+                                <div class="invalid-feedback" id="tipo-cliente-error"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.plan_adquiere.id_for_label }}" class="form-label">
+                                    <i class="fas fa-mobile me-1"></i> Plan Adquirido:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-list-alt"></i></span>
+                                    {{ form.plan_adquiere|attr:"class:form-select custom-select" }}
+                                </div>
+                                <div class="invalid-feedback" id="plan-adquiere-error"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="cfm_display">
+                                    <i class="fas fa-money-bill-wave me-1"></i> CFM:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                    <input type="text" id="cfm_display" class="form-control custom-input bg-light font-weight-bold" readonly placeholder="Seleccione un plan">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.numero_orden.id_for_label }}">
+                                    <i class="fas fa-hashtag me-1"></i> Número de Orden:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-barcode"></i></span>
+                                    {{ form.numero_orden|attr:"class:form-control custom-input"|attr:"placeholder:Ingrese número de orden" }}
+                                </div>
+                                <div class="invalid-feedback" id="numero-orden-error"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.base_origen.id_for_label }}">
+                                    <i class="fas fa-database me-1"></i> Base Origen:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-server"></i></span>
+                                    {{ form.base_origen|attr:"class:form-control custom-input"|attr:"placeholder:Ingrese base origen" }}
+                                </div>
+                                <div class="invalid-feedback" id="base-origen-error"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.usuario_greta.id_for_label }}">
+                                    <i class="fas fa-user-circle me-1"></i> Usuario Greta:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-user-cog"></i></span>
+                                    {{ form.usuario_greta|attr:"class:form-control custom-input"|attr:"placeholder:Ingrese usuario greta" }}
+                                </div>
+                                <div class="invalid-feedback" id="usuario-greta-error"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.observacion.id_for_label }}">
+                                    <i class="fas fa-comment-alt me-1"></i> Observaciones:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-comment-dots"></i></span>
+                                    {{ form.observacion|attr:"rows:3"|attr:"class:form-control custom-input"|attr:"placeholder:Ingrese observaciones importantes sobre la venta" }}
+                                </div>
+                                <div class="invalid-feedback" id="observacion-error"></div>
+                            </div>
                         </div>
                     </div>
-                
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label for="{{ form.base_origen.id_for_label }}">Base Origen:</label>
-                            {{ form.base_origen }}
-                        </div>
-                    </div>
-                    <div class="col-md-8">
-                        <div class="form-group mb-3">
-                            <label for="{{ form.observacion.id_for_label }}">Observaciones:</label>
-                            {{ form.observacion }}
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-group mb-4 mt-4">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="confirmo_venta" required>
-                        <label class="form-check-label" for="confirmo_venta">
-                            Confirmo que todos los datos son correctos y la venta puede ser registrada
-                        </label>
-                    </div>
-                </div>
-                
-                <div class="d-flex justify-content-end mt-4">
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-save me-2"></i>Guardar Venta
-                    </button>
                 </div>
             </div>
-        </form>
+                
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="section-container mb-4 border-left-success p-3 bg-light rounded" style="background: linear-gradient(to right, var(--success-light), var(--light-color)); border-left: 4px solid var(--accent-color) !important;">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="form-group mb-md-0">
+                                        <div class="form-check" style="padding-left: 2rem;">
+                                            <input type="checkbox" class="form-check-input" id="confirmo_venta" required style="transform: scale(1.2); margin-top: 0.2rem;">
+                                            <label class="form-check-label fw-bold" for="confirmo_venta" style="font-weight: 600; color: var(--dark-color);">
+                                                <i class="fas fa-check-circle text-warning me-2" style="color: var(--accent-color) !important;"></i>Confirmo que todos los datos son correctos y la venta puede ser registrada
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex justify-content-md-end mt-3 mt-md-0">
+                                        <button type="submit" class="btn btn-success btn-lg w-100 w-md-auto" style="padding: 12px 30px; border-radius: var(--border-radius); font-weight: 600; letter-spacing: 0.5px; transition: all 0.3s ease; background-color: var(--success-color); border-color: var(--success-color); box-shadow: 0 4px 6px rgba(50, 205, 50, 0.2);">
+                                            <i class="fas fa-save me-2"></i>Guardar Venta
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
