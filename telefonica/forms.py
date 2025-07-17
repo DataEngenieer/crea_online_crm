@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, GestionAsesor, GestionBackoffice, Planes_portabilidad
+from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, GestionAsesor, GestionBackoffice, Planes_portabilidad, Agendamiento, GestionAgendamiento
 
 
 class VentaPortabilidadForm(forms.ModelForm):
@@ -56,9 +56,44 @@ class GestionBackofficeForm(forms.ModelForm):
             'comentario': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
+
+class AgendamientoForm(forms.ModelForm):
+    class Meta:
+        model = Agendamiento
+        fields = [
+            'nombre_cliente', 'telefono_contacto', 'fecha_volver_a_llamar',
+            'hora_volver_a_llamar', 'observaciones', 'Estado_agendamiento'
+        ]
+        widgets = {
+            'nombre_cliente': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'telefono_contacto': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'fecha_volver_a_llamar': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
+            'hora_volver_a_llamar': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time', 'autocomplete': 'off'}),
+            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'autocomplete': 'off'}),
+            'Estado_agendamiento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
+        }
+    
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        # Filtrar las opciones de estado para backoffice
+
+
+class GestionAgendamientoForm(forms.ModelForm):
+    class Meta:
+        model = GestionAgendamiento
+        fields = ['comentario', 'estado_nuevo']
+        widgets = {
+            'comentario': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'estado_nuevo': forms.Select(attrs={'class': 'form-select'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.agendamiento = kwargs.pop('agendamiento', None)
+        super().__init__(*args, **kwargs)
+        
+        # Si el agendamiento existe, guardamos su estado actual para usarlo como estado_anterior
+        if self.agendamiento:
+            self.instance.estado_anterior = self.agendamiento.Estado_agendamiento
 
 
 class VentaPrePosForm(forms.ModelForm):

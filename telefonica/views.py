@@ -12,17 +12,21 @@ from django.contrib.auth import update_session_auth_hash
 from django.db.models import Q
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+import json
 
-from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, GestionAsesor, GestionBackoffice, Planes_portabilidad, Agendamiento, Comision
+from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, GestionAsesor, GestionBackoffice, Planes_portabilidad, Agendamiento, GestionAgendamiento, Comision
 from .forms import (
     VentaPortabilidadForm, VentaPrePosForm, VentaUpgradeForm, 
     GestionAsesorForm, GestionBackofficeForm, PlanesPortabilidadForm,
-    CorreccionVentaForm
+    CorreccionVentaForm, AgendamientoForm, GestionAgendamientoForm
 )
 
 # Funciones auxiliares para verificar permisos
 def es_asesor(user):
     return user.groups.filter(name='asesor').exists() or user.is_superuser
+
+def es_asesor_o_backoffice(user):
+    return user.groups.filter(name__in=['asesor', 'backoffice']).exists() or user.is_superuser
 
 # Vistas principales
 @login_required
@@ -1314,7 +1318,311 @@ def detalle_venta_prepago(request, pk):
         'es_propietario': es_propietario,
     }
     
-    return render(request, 'telefonica/venta_detalle_prepago.html', context)
+    return render(request, 'telefonica/venta_detalle_upgrade.html', context)
+
+
+# ---- VISTAS PARA AGENDAMIENTOS ----
+
+@login_required
+@user_passes_test(es_asesor_o_backoffice)
+def agendamiento_crear(request):
+    """
+    Vista para crear un nuevo agendamiento de cliente.
+    """
+    if request.method == 'POST':
+        form = AgendamientoForm(request.POST)
+        if form.is_valid():
+            agendamiento = form.save(commit=False)
+            agendamiento.agente = request.user
+            agendamiento.save()
+            messages.success(request, 'Agendamiento creado exitosamente.')
+            return redirect('telefonica:agendamiento_detalle', pk=agendamiento.id)
+    else:
+        form = AgendamientoForm()
+    
+    context = {
+        'form': form,
+        'titulo': 'Crear Agendamiento',
+    }
+    
+    return render(request, 'telefonica/agendamiento.html', context)
+
+
+@login_required
+@user_passes_test(es_asesor_o_backoffice)
+def agendamiento_lista(request):
+    """
+    Vista para listar todos los agendamientos con filtros y paginación.
+    """
+    # Obtener parámetros de filtro
+    estado = request.GET.get('estado', '')
+    fecha_desde = request.GET.get('fecha_desde', '')
+    fecha_hasta = request.GET.get('fecha_hasta', '')
+    nombre = request.GET.get('nombre', '')
+    telefono = request.GET.get('telefono', '')
+    
+    # Iniciar consulta base
+    agendamientos = Agendamiento.objects.all().order_by('-fecha_creacion')
+    
+    # Filtrar por usuario si es asesor (no backoffice)
+    if request.user.groups.filter(name='asesor').exists() and not request.user.groups.filter(name='backoffice').exists():
+        agendamientos = agendamientos.filter(agente=request.user)
+    
+    # Aplicar filtros
+    if estado:
+        agendamientos = agendamientos.filter(Estado_agendamiento=estado)
+    
+    if fecha_desde:
+        try:
+            fecha_desde = timezone.datetime.strptime(fecha_desde, '%Y-%m-%d').date()
+            agendamientos = agendamientos.filter(fecha_volver_a_llamar__gte=fecha_desde)
+        except ValueError:
+            pass
+    
+    if fecha_hasta:
+        try:
+            fecha_hasta = timezone.datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
+            agendamientos = agendamientos.filter(fecha_volver_a_llamar__lte=fecha_hasta)
+        except ValueError:
+            pass
+    
+    if nombre:
+        agendamientos = agendamientos.filter(nombre_cliente__icontains=nombre)
+    
+    if telefono:
+        agendamientos = agendamientos.filter(telefono_contacto__icontains=telefono)
+    
+    # Paginación
+    paginator = Paginator(agendamientos, 10)  # 10 agendamientos por página
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'agendamientos': page_obj,
+        'titulo': 'Agendamientos',
+        'filtros': {
+            'estado': estado,
+            'fecha_desde': fecha_desde,
+            'fecha_hasta': fecha_hasta,
+            'nombre': nombre,
+            'telefono': telefono,
+        },
+        'estados': dict(ESTADO_AGENDAMIENTO_CHOICES),
+    }
+    
+    return render(request, 'telefonica/agendamiento_lista.html', context)
+
+
+@login_required
+@user_passes_test(es_asesor_o_backoffice)
+def agendamiento_detalle(request, pk):
+    """
+    Vista para mostrar el detalle de un agendamiento y permitir su gestión.
+    """
+    # Obtener el agendamiento o devolver 404 si no existe
+    agendamiento = get_object_or_404(Agendamiento, pk=pk)
+    
+    # Verificar permisos: el usuario debe ser el agente del agendamiento, un backoffice o un superusuario
+    user = request.user
+    es_backoffice = user.groups.filter(name='backoffice').exists()
+    es_propietario = (agendamiento.agente == user)
+    
+    if not (es_propietario or es_backoffice or user.is_superuser):
+        return HttpResponseForbidden("No tienes permisos para ver este agendamiento.")
+    
+    # Procesar formulario de gestión
+    if request.method == 'POST':
+        form = GestionAgendamientoForm(request.POST, agendamiento=agendamiento)
+        if form.is_valid():
+            gestion = form.save(commit=False)
+            gestion.agente = request.user
+            gestion.agendamiento = agendamiento
+            gestion.estado_anterior = agendamiento.Estado_agendamiento
+            
+            # Actualizar el estado del agendamiento
+            agendamiento.Estado_agendamiento = form.cleaned_data['estado_nuevo']
+            
+            # Si el estado es 'volver_llamar' o 'no_contactado', actualizar fecha y hora
+            if agendamiento.Estado_agendamiento in ['volver_llamar', 'no_contactado']:
+                agendamiento.fecha_volver_a_llamar = form.cleaned_data.get('fecha_volver_a_llamar', agendamiento.fecha_volver_a_llamar)
+                agendamiento.hora_volver_a_llamar = form.cleaned_data.get('hora_volver_a_llamar', agendamiento.hora_volver_a_llamar)
+            
+            # Guardar cambios
+            agendamiento.save()
+            gestion.save()
+            
+            messages.success(request, 'Gestión registrada exitosamente.')
+            return redirect('telefonica:agendamiento_detalle', pk=agendamiento.id)
+    else:
+        form = GestionAgendamientoForm(agendamiento=agendamiento)
+    
+    # Obtener historial de gestiones
+    gestiones = GestionAgendamiento.objects.filter(agendamiento=agendamiento).order_by('-fecha_gestion')
+    
+    context = {
+        'agendamiento': agendamiento,
+        'gestiones': gestiones,
+        'form': form,
+        'es_backoffice': es_backoffice,
+        'es_propietario': es_propietario,
+        'estados': dict(ESTADO_AGENDAMIENTO_CHOICES),
+    }
+    
+    return render(request, 'telefonica/agendamiento_detalle.html', context)
+
+
+@login_required
+@user_passes_test(es_asesor_o_backoffice)
+def agendamiento_editar(request, pk):
+    """
+    Vista para editar un agendamiento existente.
+    """
+    # Obtener el agendamiento o devolver 404 si no existe
+    agendamiento = get_object_or_404(Agendamiento, pk=pk)
+    
+    # Verificar permisos: el usuario debe ser el agente del agendamiento, un backoffice o un superusuario
+    user = request.user
+    es_backoffice = user.groups.filter(name='backoffice').exists()
+    es_propietario = (agendamiento.agente == user)
+    
+    if not (es_propietario or es_backoffice or user.is_superuser):
+        return HttpResponseForbidden("No tienes permisos para editar este agendamiento.")
+    
+    if request.method == 'POST':
+        form = AgendamientoForm(request.POST, instance=agendamiento)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Agendamiento actualizado exitosamente.')
+            return redirect('telefonica:agendamiento_detalle', pk=agendamiento.id)
+    else:
+        form = AgendamientoForm(instance=agendamiento)
+    
+    context = {
+        'form': form,
+        'agendamiento': agendamiento,
+        'titulo': 'Editar Agendamiento',
+        'es_edicion': True,
+    }
+    
+    return render(request, 'telefonica/agendamiento.html', context)
+
+
+@login_required
+@user_passes_test(es_asesor_o_backoffice)
+def agendamiento_calendario(request):
+    """
+    Vista para mostrar los agendamientos en formato de calendario.
+    """
+    # Filtrar por usuario si es asesor (no backoffice)
+    if request.user.groups.filter(name='asesor').exists() and not request.user.groups.filter(name='backoffice').exists():
+        agendamientos = Agendamiento.objects.filter(agente=request.user)
+    else:
+        agendamientos = Agendamiento.objects.all()
+    
+    # Convertir agendamientos a formato JSON para el calendario
+    eventos = []
+    for agendamiento in agendamientos:
+        # Determinar color según estado
+        color = {
+            'agendado': '#4e73df',  # Azul
+            'venta': '#1cc88a',      # Verde
+            'volver_llamar': '#f6c23e',  # Amarillo
+            'no_acepta_oferta': '#e74a3b',  # Rojo
+            'no_contactado': '#858796',  # Gris
+        }.get(agendamiento.Estado_agendamiento, '#4e73df')
+        
+        # Crear evento
+        evento = {
+            'id': agendamiento.id,
+            'title': f"{agendamiento.nombre_cliente} - {agendamiento.telefono_contacto}",
+            'start': f"{agendamiento.fecha_volver_a_llamar}T{agendamiento.hora_volver_a_llamar}",
+            'color': color,
+            'url': reverse('telefonica:agendamiento_detalle', args=[agendamiento.id]),
+        }
+        eventos.append(evento)
+    
+    # Obtener estados disponibles
+    estados = dict(Agendamiento.ESTADO_CHOICES)
+    
+    # Obtener agentes disponibles
+    from django.contrib.auth.models import User
+    if request.user.groups.filter(name='asesor').exists() and not request.user.groups.filter(name='backoffice').exists():
+        # Si es asesor, solo mostrar su propio nombre
+        agentes = [(request.user.id, request.user.get_full_name() or request.user.username)]
+    else:
+        # Si es backoffice o superusuario, mostrar todos los agentes
+        agentes_qs = User.objects.filter(
+            Q(groups__name='asesor') | Q(is_superuser=True)
+        ).distinct().order_by('first_name', 'last_name', 'username')
+        agentes = [(u.id, u.get_full_name() or u.username) for u in agentes_qs]
+    
+    context = {
+        'titulo': 'Calendario de Agendamientos',
+        'eventos_json': json.dumps(eventos),
+        'estados': estados,
+        'agentes': agentes,
+    }
+    
+    return render(request, 'telefonica/agendamiento_calendario.html', context)
+
+
+@login_required
+@user_passes_test(es_asesor_o_backoffice)
+def agendamiento_eventos_api(request):
+    """
+    API para obtener eventos de agendamiento en formato JSON para el calendario.
+    """
+    # Filtrar por usuario si es asesor (no backoffice)
+    if request.user.groups.filter(name='asesor').exists() and not request.user.groups.filter(name='backoffice').exists():
+        agendamientos = Agendamiento.objects.filter(agente=request.user)
+    else:
+        agendamientos = Agendamiento.objects.all()
+    
+    # Filtros opcionales
+    estado = request.GET.get('estado')
+    agente_id = request.GET.get('agente')
+    
+    if estado:
+        agendamientos = agendamientos.filter(Estado_agendamiento=estado)
+    if agente_id:
+        agendamientos = agendamientos.filter(agente_id=agente_id)
+    
+    # Convertir agendamientos a formato JSON para el calendario
+    eventos = []
+    for agendamiento in agendamientos:
+        # Determinar color según estado
+        color = {
+            'agendado': '#4e73df',  # Azul
+            'venta': '#1cc88a',      # Verde
+            'volver_llamar': '#f6c23e',  # Amarillo
+            'no_contactado': '#e74a3b',  # Rojo
+            'no_interesado': '#6c757d',  # Gris
+        }.get(agendamiento.Estado_agendamiento, '#6c757d')
+        
+        # Crear evento para el calendario
+        evento = {
+            'id': agendamiento.id,
+            'title': f'{agendamiento.nombre_cliente} - {agendamiento.get_Estado_agendamiento_display()}',
+            'start': agendamiento.fecha_volver_a_llamar.isoformat() if agendamiento.fecha_volver_a_llamar else agendamiento.fecha_creacion.date().isoformat(),
+            'backgroundColor': color,
+            'borderColor': color,
+            'textColor': '#ffffff',
+            'extendedProps': {
+                'cliente': agendamiento.nombre_cliente,
+                'telefono': agendamiento.telefono_contacto,
+                'estado': agendamiento.get_Estado_agendamiento_display(),
+                'agente': agendamiento.agente.get_full_name() or agendamiento.agente.username,
+                'observaciones': agendamiento.observaciones or 'Sin observaciones',
+            }
+        }
+        
+        # Agregar hora si está disponible
+        if agendamiento.hora_volver_a_llamar:
+            evento['start'] = f"{agendamiento.fecha_volver_a_llamar}T{agendamiento.hora_volver_a_llamar}"
+        
+        eventos.append(evento)
+    
+    return JsonResponse(eventos, safe=False)
 
 
 @login_required

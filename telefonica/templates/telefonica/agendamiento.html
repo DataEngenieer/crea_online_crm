@@ -183,20 +183,26 @@
 {% block contenido_telefonica %}
 <div class="card shadow border-0">
     <div class="card-header bg-gradient-primary text-white py-3">
-        <div class="d-flex align-items-center">
-            <div class="rounded-circle bg-white p-2 me-3" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
-                <i class="fas fa-sync-alt text-primary" style="font-size: 1.5rem; background: linear-gradient(135deg, var(--primary-light), rgb(0, 0, 0)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+                <div class="rounded-circle bg-white p-2 me-3" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-calendar-alt text-primary" style="font-size: 1.5rem; background: linear-gradient(135deg, var(--primary-light), rgb(0, 0, 0)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                </div>
+                <div>
+                    <h5 class="mb-0 font-weight-bold">Agendamiento de Cliente</h5>
+                    <p class="mb-0">Complete todos los campos del formulario para registrar un nuevo agendamiento. Los campos marcados con <span class="text-danger font-weight-bold">*</span> son obligatorios.</p>
+                </div>
             </div>
             <div>
-                <h5 class="mb-0 font-weight-bold">{{ titulo }}</h5>
-                <p class="mb-0">Complete todos los campos del formulario para registrar una nueva venta de upgrade. Los campos marcados con <span class="text-danger font-weight-bold">*</span> son obligatorios.</p>
-                
+                <a href="{% url 'telefonica:agendamiento_lista' %}" class="btn btn-sm btn-outline-light">
+                    <i class="fas fa-list me-1"></i> Ver Agendamientos
+                </a>
             </div>
         </div>
     </div>
     <div class="card-body">
 
-        <form method="post" enctype="multipart/form-data" id="ventaUpgradeForm">
+        <form method="post" enctype="multipart/form-data" id="agendamientoForm">
             {% csrf_token %}
             
             <div class="row">
@@ -207,148 +213,86 @@
                         
                         <div class="mb-3">
                             <div class="form-group">
-                                <label for="{{ form.tipo_documento.id_for_label }}">
-                                    <i class="fas fa-id-badge me-1"></i> Tipo de Documento:
-                                </label>
-                                <div class="input-group input-group-custom">
-                                    <span class="input-group-text"><i class="fas fa-id-card"></i></span>
-                                    {{ form.tipo_documento|attr:"class:form-select custom-select" }}
-                                </div>
-                                <div class="invalid-feedback" id="tipo-documento-error"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-group">
-                                <label for="{{ form.documento.id_for_label }}">
-                                    <i class="fas fa-id-card me-1"></i> Número de Documento:
-                                </label>
-                                <div class="input-group input-group-custom">
-                                    <span class="input-group-text"><i class="fas fa-hashtag"></i></span>
-                                    {{ form.documento|attr:"class:form-control custom-input,placeholder:Ingrese número de documento" }}
-                                </div>
-                                <div class="invalid-feedback" id="documento-error"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-group">
-                                <label for="{{ form.fecha_expedicion.id_for_label }}">
-                                    <i class="fas fa-calendar-alt me-1"></i> Fecha de Expedición:
-                                </label>
-                                <div class="input-group input-group-custom">
-                                    <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
-                                    {{ form.fecha_expedicion|attr:"class:form-control custom-input" }}
-                                </div>
-                                <div class="invalid-feedback" id="fecha-expedicion-error"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-group">
-                                <label for="{{ form.nombres.id_for_label }}">
-                                    <i class="fas fa-user me-1"></i> Nombres:
+                                <label for="{{ form.nombre_cliente.id_for_label }}">
+                                    <i class="fas fa-user me-1"></i> Nombre del Cliente:
                                 </label>
                                 <div class="input-group input-group-custom">
                                     <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                    {{ form.nombres|attr:"class:form-control custom-input,placeholder:Ingrese nombres" }}
+                                    {{ form.nombre_cliente|attr:"class:form-control custom-input,placeholder:Ingrese nombre completo del cliente" }}
                                 </div>
-                                <div class="invalid-feedback" id="nombres-error"></div>
+                                <div class="invalid-feedback" id="nombre-cliente-error"></div>
                             </div>
                         </div>
                         
                         <div class="mb-3">
                             <div class="form-group">
-                                <label for="{{ form.apellidos.id_for_label }}">
-                                    <i class="fas fa-user me-1"></i> Apellidos:
-                                </label>
-                                <div class="input-group input-group-custom">
-                                    <span class="input-group-text"><i class="fas fa-user-tag"></i></span>
-                                    {{ form.apellidos|attr:"class:form-control custom-input,placeholder:Ingrese apellidos" }}
-                                </div>
-                                <div class="invalid-feedback" id="apellidos-error"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-group">
-                                <label for="{{ form.telefono_legalizacion.id_for_label }}">
-                                    <i class="fas fa-phone me-1"></i> Teléfono:
+                                <label for="{{ form.telefono_contacto.id_for_label }}">
+                                    <i class="fas fa-phone me-1"></i> Teléfono de Contacto:
                                 </label>
                                 <div class="input-group input-group-custom">
                                     <span class="input-group-text"><i class="fas fa-mobile-alt"></i></span>
-                                    {{ form.telefono_legalizacion|attr:"class:form-control custom-input,placeholder:Teléfono" }}
+                                    {{ form.telefono_contacto|attr:"class:form-control custom-input,placeholder:Ingrese teléfono de contacto" }}
                                 </div>
-                                <div class="invalid-feedback" id="telefono-legalizacion-error"></div>
+                                <div class="invalid-feedback" id="telefono-contacto-error"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.Estado_agendamiento.id_for_label }}">
+                                    <i class="fas fa-tasks me-1"></i> Estado del Agendamiento:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-tasks"></i></span>
+                                    {{ form.Estado_agendamiento|attr:"class:form-select custom-select" }}
+                                </div>
+                                <div class="invalid-feedback" id="estado-agendamiento-error"></div>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Columna Derecha: Datos del Upgrade -->
+                <!-- Columna Derecha: Datos del Agendamiento -->
                 <div class="col-md-6">
                     <div class="section-container mb-4 h-100 border-left border-light" style="background: linear-gradient(to bottom, white, var(--success-light) 200%);">
-                        <h5 class="mb-3 text-success" style="display: flex; align-items: center;"><span class="icon-circle bg-success text-white" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; box-shadow: 0 4px 6px rgba(6, 214, 160, 0.2);"><i class="fas fa-sync-alt"></i></span>Datos del Upgrade</h5>
+                        <h5 class="mb-3 text-success" style="display: flex; align-items: center;"><span class="icon-circle bg-success text-white" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; box-shadow: 0 4px 6px rgba(6, 214, 160, 0.2);"><i class="fas fa-calendar-alt"></i></span>Datos del Agendamiento</h5>
                         
                         <div class="mb-3">
                             <div class="form-group">
-                                <label for="{{ form.plan_adquiere.id_for_label }}">
-                                    <i class="fas fa-list-alt me-1"></i> Plan Adquirido:
+                                <label for="{{ form.fecha_volver_a_llamar.id_for_label }}">
+                                    <i class="fas fa-calendar-alt me-1"></i> Fecha para Llamar:
                                 </label>
                                 <div class="input-group input-group-custom">
-                                    <span class="input-group-text"><i class="fas fa-list-alt"></i></span>
-                                    {{ form.plan_adquiere|attr:"class:form-select custom-select" }}
+                                    <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                    {{ form.fecha_volver_a_llamar|attr:"class:form-control custom-input" }}
                                 </div>
+                                <div class="invalid-feedback" id="fecha-volver-a-llamar-error"></div>
                             </div>
                         </div>
                         
                         <div class="mb-3">
                             <div class="form-group">
-                                <label for="cfm_display">
-                                    <i class="fas fa-money-bill-wave me-1"></i> CFM:
+                                <label for="{{ form.hora_volver_a_llamar.id_for_label }}">
+                                    <i class="fas fa-clock me-1"></i> Hora para Llamar:
                                 </label>
                                 <div class="input-group input-group-custom">
-                                    <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
-                                    <input type="text" id="cfm_display" class="form-control custom-input bg-light font-weight-bold" readonly placeholder="Seleccione un plan">
+                                    <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                                    {{ form.hora_volver_a_llamar|attr:"class:form-control custom-input" }}
                                 </div>
+                                <div class="invalid-feedback" id="hora-volver-a-llamar-error"></div>
                             </div>
                         </div>
                         
                         <div class="mb-3">
                             <div class="form-group">
-                                <label for="{{ form.codigo_verificacion.id_for_label }}">
-                                    <i class="fas fa-check-circle me-1"></i> Código de Verificación:
-                                </label>
-                                <div class="input-group input-group-custom">
-                                    <span class="input-group-text"><i class="fas fa-key"></i></span>
-                                    {{ form.codigo_verificacion|attr:"class:form-control custom-input,placeholder:Ingrese código de verificación" }}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-group">
-                                <label for="{{ form.numero_orden.id_for_label }}">
-                                    <i class="fas fa-hashtag me-1"></i> Número de Orden:
-                                </label>
-                                <div class="input-group input-group-custom">
-                                    <span class="input-group-text"><i class="fas fa-barcode"></i></span>
-                                    {{ form.numero_orden|attr:"class:form-control custom-input"|attr:"placeholder:Ingrese número de orden" }}
-                                </div>
-                                <div class="invalid-feedback" id="numero-orden-error"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-group">
-                                <label for="{{ form.observacion.id_for_label }}">
+                                <label for="{{ form.observaciones.id_for_label }}">
                                     <i class="fas fa-comment-alt me-1"></i> Observaciones:
                                 </label>
                                 <div class="input-group input-group-custom">
                                     <span class="input-group-text"><i class="fas fa-comment-dots"></i></span>
-                                    {{ form.observacion|attr:"rows:3"|attr:"class:form-control custom-input"|attr:"placeholder:Ingrese observaciones importantes sobre la venta" }}
+                                    {{ form.observaciones|attr:"rows:3"|attr:"class:form-control custom-input"|attr:"placeholder:Ingrese observaciones importantes sobre el agendamiento" }}
                                 </div>
-                                <div class="invalid-feedback" id="observacion-error"></div>
+                                <div class="invalid-feedback" id="observaciones-error"></div>
                             </div>
                         </div>
                     </div>
@@ -364,7 +308,7 @@
                                         <div class="form-check">
                                             <input type="checkbox" class="form-check-input" id="confirmo_venta" required style="transform: scale(1.2); margin-top: 0.2rem;">
                                             <label class="form-check-label fw-bold" for="confirmo_venta" style="font-weight: 600; color: var(--dark-color);">
-                                                <i class="fas fa-check-circle text-warning me-2" style="color: var(--accent-color) !important;"></i>Confirmo que todos los datos son correctos y la venta puede ser registrada
+                                                <i class="fas fa-check-circle text-warning me-2" style="color: var(--accent-color) !important;"></i>Confirmo que todos los datos son correctos y el agendamiento puede ser registrado
                                             </label>
                                         </div>
                                     </div>
@@ -372,7 +316,7 @@
                                 <div class="col-md-4">
                                     <div class="d-flex justify-content-md-end mt-3 mt-md-0">
                                         <button type="submit" class="btn btn-success btn-lg w-100 w-md-auto" style="padding: 12px 30px; border-radius: var(--border-radius); font-weight: 600; letter-spacing: 0.5px; transition: all 0.3s ease;">
-                                            <i class="fas fa-save me-2"></i>Guardar Venta
+                                            <i class="fas fa-save me-2"></i>Guardar Agendamiento
                                         </button>
                                     </div>
                                 </div>
@@ -390,51 +334,44 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Elementos del DOM
-        const form = document.getElementById('ventaUpgradeForm');
-        const planSelect = document.getElementById('{{ form.plan_adquiere.id_for_label }}');
-        const cfmDisplay = document.getElementById('cfm_display');
+        const form = document.getElementById('agendamientoForm');
+        const estadoSelect = document.getElementById('{{ form.Estado_agendamiento.id_for_label }}');
         
-        // Datos de planes desde el backend
-        const planesData = {{ planes_data|safe }};
-        console.log('Datos de planes:', planesData);
-        console.log('Tipo de planesData:', typeof planesData);
-        
-        // Función para actualizar el CFM
-        function actualizarCFM() {
-            const planId = planSelect.value;
-            if (planId) {
-                const planSeleccionado = planesData.find(plan => plan.id == planId);
-                if (planSeleccionado) {
-                    // Formatear como moneda colombiana
-                    const cfmFormateado = new Intl.NumberFormat('es-CO', {
-                        style: 'currency',
-                        currency: 'COP',
-                        minimumFractionDigits: 0
-                    }).format(planSeleccionado.CFM);
-                    cfmDisplay.value = cfmFormateado;
-                } else {
-                    cfmDisplay.value = '';
-                }
+        // Función para mostrar/ocultar campos de fecha y hora según el estado seleccionado
+        function toggleFechaHora() {
+            const estado = estadoSelect.value;
+            const fechaInput = document.getElementById('{{ form.fecha_volver_a_llamar.id_for_label }}');
+            const horaInput = document.getElementById('{{ form.hora_volver_a_llamar.id_for_label }}');
+            
+            // Si el estado es 'volver_llamar' o 'no_contactado', asegurarse de que fecha y hora sean requeridos
+            if (estado === 'volver_llamar' || estado === 'no_contactado') {
+                fechaInput.setAttribute('required', 'required');
+                horaInput.setAttribute('required', 'required');
             } else {
-                cfmDisplay.value = '';
+                fechaInput.removeAttribute('required');
+                horaInput.removeAttribute('required');
             }
         }
         
-        // Escuchar cambios en el selector de plan
-        planSelect.addEventListener('change', actualizarCFM);
-        
-        // Actualizar CFM al cargar la página si ya hay un plan seleccionado
-        actualizarCFM();
+        // Ejecutar al cargar la página
+        if (estadoSelect) {
+            toggleFechaHora();
+            
+            // Ejecutar cuando cambia el estado
+            estadoSelect.addEventListener('change', toggleFechaHora);
+        }
         
         // Validación del formulario antes de enviar
-        form.addEventListener('submit', function(e) {
-            if (!document.getElementById('confirmo_venta').checked) {
-                e.preventDefault();
-                alert('Debe confirmar que todos los datos son correctos antes de continuar.');
-                return false;
-            }
-            return true;
-        });
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (!document.getElementById('confirmo_venta').checked) {
+                    e.preventDefault();
+                    alert('Debe confirmar que todos los datos son correctos antes de continuar.');
+                    return false;
+                }
+                return true;
+            });
+        }
     });
 </script>
 {% endblock %}

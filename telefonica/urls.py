@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+import json
 
 app_name = 'telefonica'
 
@@ -46,4 +47,12 @@ urlpatterns = [
     path('planes-portabilidad/<int:plan_id>/editar/', views.plan_portabilidad_editar, name='plan_portabilidad_editar'),
     path('planes-portabilidad/<int:plan_id>/eliminar/', views.plan_portabilidad_eliminar, name='plan_portabilidad_eliminar'),
     path('planes-portabilidad/<int:plan_id>/cambiar-estado/', views.plan_portabilidad_cambiar_estado, name='plan_portabilidad_cambiar_estado'),
+    
+    # Rutas para agendamientos
+    path('agendamientos/', views.agendamiento_lista, name='agendamiento_lista'),
+    path('agendamientos/crear/', views.agendamiento_crear, name='agendamiento_crear'),
+    path('agendamientos/<int:pk>/', views.agendamiento_detalle, name='agendamiento_detalle'),
+    path('agendamientos/<int:pk>/editar/', views.agendamiento_editar, name='agendamiento_editar'),
+    path('agendamientos/calendario/', views.agendamiento_calendario, name='agendamiento_calendario'),
+    path('agendamientos/eventos-api/', views.agendamiento_eventos_api, name='agendamiento_eventos_api'),
 ]

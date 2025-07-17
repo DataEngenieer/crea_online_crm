@@ -99,6 +99,21 @@
                 </li>
             </ul>
         </div>
+        
+        <!-- Agendamientos -->
+        <span class="menu-section">Agendamientos</span>
+        <a href="{% url 'telefonica:agendamiento_crear' %}"
+           class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'agendamiento_crear' %}active{% endif %}">
+            <i class="bi bi-calendar-plus me-2"></i> Nuevo Agendamiento
+        </a>
+        <a href="{% url 'telefonica:agendamiento_lista' %}"
+           class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'agendamiento_lista' %}active{% endif %}">
+            <i class="bi bi-calendar-check me-2"></i> Mis Agendamientos
+        </a>
+        <a href="{% url 'telefonica:agendamiento_calendario' %}"
+           class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'agendamiento_calendario' %}active{% endif %}">
+            <i class="bi bi-calendar3 me-2"></i> Calendario
+        </a>
         {% endif %}
         {% if user|has_group:"asesor"%}
         <a href="{% url 'telefonica:ventas_lista' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'ventas_lista' %}active{% endif %}">
@@ -113,6 +128,21 @@
             {% if user.ventas_pendientes.count > 0 %}
             <span class="badge bg-warning float-end">{{ user.ventas_pendientes.count }}</span>
             {% endif %}
+        </a>
+        
+        <!-- Agendamientos para Backoffice -->
+        <span class="menu-section">Agendamientos</span>
+        <a href="{% url 'telefonica:agendamiento_crear' %}"
+           class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'agendamiento_crear' %}active{% endif %}">
+            <i class="bi bi-calendar-plus me-2"></i> Nuevo Agendamiento
+        </a>
+        <a href="{% url 'telefonica:agendamiento_lista' %}"
+           class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'agendamiento_lista' %}active{% endif %}">
+            <i class="bi bi-calendar-check me-2"></i> Lista Agendamientos
+        </a>
+        <a href="{% url 'telefonica:agendamiento_calendario' %}"
+           class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'agendamiento_calendario' %}active{% endif %}">
+            <i class="bi bi-calendar3 me-2"></i> Calendario
         </a>
         {% endif %}
 

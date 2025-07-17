@@ -1,0 +1,336 @@
+{% extends 'base_telefonica.html' %}
+{% load static %}
+{% load telefonica_extras %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/telefonica/venta_form.css' %}">
+<style>
+    :root {
+        --primary: #4e73df;
+        --primary-light: #e8eaff;
+        --primary-dark: #2e59d9;
+        --success: #1cc88a;
+        --success-light: #e6fff5;
+        --info: #36b9cc;
+        --warning: #f6c23e;
+        --danger: #e74a3b;
+        --secondary: #858796;
+        --light: #f8f9fc;
+        --dark: #5a5c69;
+        --card-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        --input-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+        --border-radius: 0.35rem;
+    }
+
+    .card {
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+    }
+
+    .section-container {
+        background-color: var(--light);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .badge-agendado {
+        background-color: var(--primary);
+        color: white;
+    }
+
+    .badge-venta {
+        background-color: var(--success);
+        color: white;
+    }
+
+    .badge-volver_llamar {
+        background-color: var(--warning);
+        color: white;
+    }
+
+    .badge-no_acepta_oferta {
+        background-color: var(--danger);
+        color: white;
+    }
+
+    .badge-no_contactado {
+        background-color: var(--secondary);
+        color: white;
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    .timeline:before {
+        content: '';
+        position: absolute;
+        left: 0.85rem;
+        top: 0;
+        height: 100%;
+        width: 2px;
+        background-color: var(--primary-light);
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+
+    .timeline-badge {
+        position: absolute;
+        left: -3rem;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        background-color: var(--primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+    }
+
+    .timeline-content {
+        background-color: white;
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        box-shadow: var(--input-shadow);
+    }
+
+    .timeline-date {
+        color: var(--secondary);
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .timeline-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .timeline-text {
+        color: var(--dark);
+    }
+
+    .form-control, .form-select {
+        border-radius: var(--border-radius);
+        box-shadow: var(--input-shadow);
+        border: 1px solid #d1d3e2;
+        padding: 0.75rem 1rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    }
+
+    .btn-primary {
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+
+    .fecha-hora-container {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block contenido_telefonica %}
+<div class="container-fluid">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-calendar-alt mr-2"></i> Detalle de Agendamiento
+        </h1>
+        <div>
+            <a href="{% url 'telefonica:agendamiento_lista' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left mr-1"></i> Volver al Listado
+            </a>
+            <a href="{% url 'telefonica:agendamiento_editar' pk=agendamiento.id %}" class="btn btn-warning ml-2">
+                <i class="fas fa-edit mr-1"></i> Editar
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Información del Agendamiento -->
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle mr-1"></i> Información del Agendamiento
+                    </h6>
+                    <span class="badge badge-{{ agendamiento.Estado_agendamiento }} px-3 py-2">
+                        {{ agendamiento.get_Estado_agendamiento_display }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1 text-secondary">Cliente:</p>
+                            <p class="font-weight-bold">{{ agendamiento.nombre_cliente }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1 text-secondary">Teléfono:</p>
+                            <p class="font-weight-bold">{{ agendamiento.telefono_contacto }}</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1 text-secondary">Fecha de llamada:</p>
+                            <p class="font-weight-bold">{{ agendamiento.fecha_volver_a_llamar|date:"d/m/Y" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1 text-secondary">Hora de llamada:</p>
+                            <p class="font-weight-bold">{{ agendamiento.hora_volver_a_llamar|time:"H:i" }}</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1 text-secondary">Agente:</p>
+                            <p class="font-weight-bold">{{ agendamiento.agente.get_full_name|default:agendamiento.agente.username }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1 text-secondary">Fecha de creación:</p>
+                            <p class="font-weight-bold">{{ agendamiento.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <p class="mb-1 text-secondary">Observaciones:</p>
+                            <p class="font-weight-bold">{{ agendamiento.observaciones|default:"Sin observaciones" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario de Gestión -->
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-tasks mr-1"></i> Gestionar Agendamiento
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="gestionForm">
+                        {% csrf_token %}
+                        
+                        <!-- Estado anterior (oculto) -->
+                        <input type="hidden" name="estado_anterior" value="{{ agendamiento.Estado_agendamiento }}">
+                        
+                        <!-- Estado nuevo -->
+                        <div class="form-group mb-3">
+                            <label for="id_estado_nuevo" class="form-label">Estado:</label>
+                            {{ form.estado_nuevo|attr:"class:form-select" }}
+                        </div>
+                        
+                        <!-- Fecha y hora (mostrar solo si es necesario) -->
+                        <div class="fecha-hora-container mb-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="id_fecha_volver_a_llamar" class="form-label">Nueva fecha:</label>
+                                        {{ form.fecha_volver_a_llamar|attr:"class:form-control" }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="id_hora_volver_a_llamar" class="form-label">Nueva hora:</label>
+                                        {{ form.hora_volver_a_llamar|attr:"class:form-control" }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Comentario -->
+                        <div class="form-group mb-3">
+                            <label for="id_comentario" class="form-label">Comentario:</label>
+                            {{ form.comentario|attr:"class:form-control" }}
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-save mr-1"></i> Guardar Gestión
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial de Gestiones -->
+    <div class="card mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-history mr-1"></i> Historial de Gestiones
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="timeline">
+                {% for gestion in gestiones %}
+                <div class="timeline-item">
+                    <div class="timeline-badge">
+                        <i class="fas fa-comment"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">
+                            {{ gestion.fecha_gestion|date:"d/m/Y H:i" }} - {{ gestion.agente.get_full_name|default:gestion.agente.username }}
+                        </div>
+                        <div class="timeline-title">
+                            Cambio de estado: 
+                            <span class="badge badge-{{ gestion.estado_anterior }} mr-1">{{ gestion.get_estado_anterior_display }}</span>
+                            <i class="fas fa-arrow-right mx-1"></i>
+                            <span class="badge badge-{{ gestion.estado_nuevo }}">{{ gestion.get_estado_nuevo_display }}</span>
+                        </div>
+                        <div class="timeline-text">
+                            {{ gestion.comentario|default:"Sin comentarios" }}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-3">
+                    <p class="text-muted">No hay gestiones registradas para este agendamiento.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Función para mostrar/ocultar campos de fecha y hora según el estado seleccionado
+        function toggleFechaHora() {
+            var estado = $('#id_estado_nuevo').val();
+            if (estado === 'volver_llamar' || estado === 'no_contactado') {
+                $('.fecha-hora-container').slideDown();
+            } else {
+                $('.fecha-hora-container').slideUp();
+            }
+        }
+
+        // Ejecutar al cargar la página
+        toggleFechaHora();
+
+        // Ejecutar cuando cambia el estado
+        $('#id_estado_nuevo').change(toggleFechaHora);
+    });
+</script>
+{% endblock %}

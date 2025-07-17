@@ -37,7 +37,9 @@ ESTADO_CHOICES = [
 ESTADO_AGENDAMIENTO_CHOICES = [
     ('agendado', 'Agendado'),
     ('venta', 'Venta'),
-    ('no_venta', 'No Venta'),
+    ('volver_llamar', 'Volver a LLamar'),
+    ('no_acepta_oferta', 'Cliente No Acepta Oferta'),
+    ('no_contactado', 'Cliente No Contactado'),
 ]
 
 class Planes_portabilidad(models.Model):
@@ -235,7 +237,7 @@ class VentaUpgrade(models.Model):
         return f"{self.nombres} {self.apellidos}"
 
 class Agendamiento(models.Model):
-
+    """Modelo para gestionar los agendamientos de clientes"""
     Estado_agendamiento = models.CharField(max_length=20, choices=ESTADO_AGENDAMIENTO_CHOICES, default='agendado', verbose_name=_("Estado"))
     nombre_cliente = models.CharField(max_length=100, verbose_name=_("Nombre del Cliente"))
     telefono_contacto = models.CharField(max_length=15, verbose_name=_("Teléfono de Contacto"))
@@ -253,6 +255,24 @@ class Agendamiento(models.Model):
     
     def __str__(self):
         return f"Agendamiento {self.id} - {self.nombre_cliente} - {self.fecha_volver_a_llamar}"
+
+
+class GestionAgendamiento(models.Model):
+    """Modelo para registrar las gestiones realizadas en los agendamientos"""
+    agendamiento = models.ForeignKey(Agendamiento, on_delete=models.CASCADE, related_name="gestiones", verbose_name=_("Agendamiento"))
+    agente = models.ForeignKey(User, on_delete=models.CASCADE, related_name="gestiones_agendamiento", verbose_name=_("Agente"))
+    comentario = models.TextField(verbose_name=_("Comentario"))
+    estado_anterior = models.CharField(max_length=20, choices=ESTADO_AGENDAMIENTO_CHOICES, verbose_name=_("Estado Anterior"))
+    estado_nuevo = models.CharField(max_length=20, choices=ESTADO_AGENDAMIENTO_CHOICES, verbose_name=_("Estado Nuevo"))
+    fecha_gestion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Gestión"))
+    
+    class Meta:
+        verbose_name = _("Gestión de Agendamiento")
+        verbose_name_plural = _("Gestiones de Agendamientos")
+        ordering = ['-fecha_gestion']
+    
+    def __str__(self):
+        return f"Gestión {self.id} - {self.agendamiento} - {self.fecha_gestion}"
 
 
 class GestionAsesor(models.Model):

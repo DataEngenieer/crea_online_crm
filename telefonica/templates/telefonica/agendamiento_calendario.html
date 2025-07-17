@@ -1,0 +1,313 @@
+{% extends 'base_telefonica.html' %}
+{% load static %}
+{% load telefonica_extras %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css">
+<style>
+    :root {
+        --primary: #4e73df;
+        --primary-light: #e8eaff;
+        --primary-dark: #2e59d9;
+        --success: #1cc88a;
+        --success-light: #e6fff5;
+        --info: #36b9cc;
+        --warning: #f6c23e;
+        --danger: #e74a3b;
+        --secondary: #858796;
+        --light: #f8f9fc;
+        --dark: #5a5c69;
+        --card-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        --input-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+        --border-radius: 0.35rem;
+    }
+
+    .card {
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+    }
+
+    .fc-toolbar-title {
+        font-size: 1.5rem !important;
+        font-weight: 600;
+    }
+
+    .fc-button-primary {
+        background-color: var(--primary) !important;
+        border-color: var(--primary) !important;
+    }
+
+    .fc-button-primary:hover {
+        background-color: var(--primary-dark) !important;
+        border-color: var(--primary-dark) !important;
+    }
+
+    .fc-button-primary:not(:disabled):active,
+    .fc-button-primary:not(:disabled).fc-button-active {
+        background-color: var(--primary-dark) !important;
+        border-color: var(--primary-dark) !important;
+    }
+
+    .fc-daygrid-day.fc-day-today {
+        background-color: var(--primary-light) !important;
+    }
+
+    .fc-event {
+        cursor: pointer;
+        border-radius: 4px;
+        padding: 2px 4px;
+        font-size: 0.85rem;
+    }
+
+    .event-agendado {
+        background-color: var(--primary) !important;
+        border-color: var(--primary) !important;
+    }
+
+    .event-venta {
+        background-color: var(--success) !important;
+        border-color: var(--success) !important;
+    }
+
+    .event-volver_llamar {
+        background-color: var(--warning) !important;
+        border-color: var(--warning) !important;
+        color: #212529 !important;
+    }
+
+    .event-no_acepta_oferta {
+        background-color: var(--danger) !important;
+        border-color: var(--danger) !important;
+    }
+
+    .event-no_contactado {
+        background-color: var(--secondary) !important;
+        border-color: var(--secondary) !important;
+    }
+
+    .filtros-container {
+        margin-bottom: 1.5rem;
+    }
+
+    .btn-filtro {
+        border-radius: var(--border-radius);
+        box-shadow: var(--input-shadow);
+        transition: all 0.2s;
+    }
+
+    .btn-filtro:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .legend-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 1rem;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-right: 15px;
+    }
+
+    .legend-color {
+        width: 15px;
+        height: 15px;
+        border-radius: 3px;
+        margin-right: 5px;
+    }
+
+    .tooltip-inner {
+        max-width: 300px;
+        padding: 10px;
+        background-color: rgba(0, 0, 0, 0.8);
+        border-radius: var(--border-radius);
+    }
+
+    .tooltip-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        padding-bottom: 3px;
+    }
+
+    .tooltip-info {
+        margin-bottom: 3px;
+    }
+</style>
+{% endblock %}
+
+{% block contenido_telefonica %}
+<div class="container-fluid">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-calendar-alt mr-2"></i> Calendario de Agendamientos
+        </h1>
+        <div>
+            <a href="{% url 'telefonica:agendamiento_lista' %}" class="btn btn-secondary">
+                <i class="fas fa-list mr-1"></i> Ver Listado
+            </a>
+            <a href="{% url 'telefonica:agendamiento_crear' %}" class="btn btn-success ml-2">
+                <i class="fas fa-plus mr-1"></i> Nuevo Agendamiento
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form id="filtrosForm" class="row">
+                <!-- Filtro por estado -->
+                <div class="col-md-3 mb-3">
+                    <label for="estado" class="form-label">Estado:</label>
+                    <select name="estado" id="estado" class="form-select">
+                        <option value="">Todos los estados</option>
+                        {% for key, value in estados.items %}
+                        <option value="{{ key }}">{{ value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Filtro por agente -->
+                <div class="col-md-3 mb-3">
+                    <label for="agente" class="form-label">Agente:</label>
+                    <select name="agente" id="agente" class="form-select">
+                        <option value="">Todos los agentes</option>
+                        {% for agente_id, agente_nombre in agentes %}
+                        <option value="{{ agente_id }}">{{ agente_nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Botones de filtro -->
+                <div class="col-md-6 d-flex align-items-end mb-3">
+                    <button type="button" id="aplicarFiltros" class="btn btn-primary btn-filtro mr-2">
+                        <i class="fas fa-filter mr-1"></i> Aplicar Filtros
+                    </button>
+                    <button type="button" id="limpiarFiltros" class="btn btn-secondary btn-filtro">
+                        <i class="fas fa-sync-alt mr-1"></i> Limpiar Filtros
+                    </button>
+                </div>
+            </form>
+
+            <!-- Leyenda -->
+            <div class="legend-container">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: var(--primary);"></div>
+                    <span>Agendado</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: var(--success);"></div>
+                    <span>Venta</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: var(--warning);"></div>
+                    <span>Volver a llamar</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: var(--danger);"></div>
+                    <span>No acepta oferta</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: var(--secondary);"></div>
+                    <span>No contactado</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendario -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div id="calendario"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/es.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar el calendario
+        var calendarEl = document.getElementById('calendario');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            locale: 'es',
+            buttonText: {
+                today: 'Hoy',
+                month: 'Mes',
+                week: 'Semana',
+                day: 'Día'
+            },
+            events: {
+                url: '{% url "telefonica:agendamiento_eventos_api" %}',
+                method: 'GET',
+                extraParams: function() {
+                    return {
+                        estado: document.getElementById('estado').value,
+                        agente: document.getElementById('agente').value
+                    };
+                }
+            },
+            eventDidMount: function(info) {
+                // Configurar tooltip para mostrar detalles al pasar el mouse
+                $(info.el).tooltip({
+                    title: function() {
+                        return '<div class="tooltip-title">' + info.event.title + '</div>' +
+                               '<div class="tooltip-info"><strong>Teléfono:</strong> ' + info.event.extendedProps.telefono + '</div>' +
+                               '<div class="tooltip-info"><strong>Estado:</strong> ' + info.event.extendedProps.estado + '</div>' +
+                               '<div class="tooltip-info"><strong>Agente:</strong> ' + info.event.extendedProps.agente + '</div>' +
+                               '<div class="tooltip-info"><strong>Observaciones:</strong> ' + 
+                               (info.event.extendedProps.observaciones || 'Sin observaciones') + '</div>' +
+                               '<div class="tooltip-info small mt-2">Click para ver detalles</div>';
+                    },
+                    html: true,
+                    placement: 'top',
+                    container: 'body'
+                });
+            },
+            eventClick: function(info) {
+                // Redireccionar a la página de detalle al hacer clic en un evento
+                window.location.href = '{% url "telefonica:agendamiento_detalle" pk=0 %}'.replace('0', info.event.id);
+            },
+            dayMaxEvents: true, // Permitir "más" link cuando hay muchos eventos
+            height: 'auto' // Altura automática
+        });
+        
+        calendar.render();
+        
+        // Función para recargar eventos cuando cambien los filtros
+        function recargarEventos() {
+            calendar.refetchEvents();
+        }
+        
+        // Agregar event listeners a los filtros
+        document.getElementById('estado').addEventListener('change', recargarEventos);
+        document.getElementById('agente').addEventListener('change', recargarEventos);
+        
+        // Aplicar filtros
+        $('#aplicarFiltros').click(function() {
+            calendar.refetchEvents();
+        });
+        
+        // Limpiar filtros
+        $('#limpiarFiltros').click(function() {
+            $('#estado').val('');
+            $('#agente').val('');
+            calendar.refetchEvents();
+        });
+    });
+</script>
+{% endblock %}
