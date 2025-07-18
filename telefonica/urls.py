@@ -28,6 +28,7 @@ urlpatterns = [
     # Rutas para ventas de Upgrade
     path('ventas/upgrade/nueva/', views.venta_crear_upgrade, name='venta_crear_upgrade'),
     path('ventas/upgrade/nueva/<str:documento>/', views.venta_crear_upgrade, name='venta_crear_upgrade_con_documento'),
+    path('ventas/upgrade/nueva/registro/<str:nro_registro>/', views.venta_crear_upgrade, name='venta_crear_upgrade_con_nro_registro'),
     path('ventas/upgrade/<int:pk>/', views.detalle_venta_upgrade, name='detalle_venta_upgrade'),
     path('ventas/<int:pk>/', views.detalle_venta, name='venta_detalle'),
     path('ventas/<int:pk>/corregir/', views.venta_corregir, name='venta_corregir'),

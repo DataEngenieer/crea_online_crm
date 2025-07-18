@@ -204,10 +204,20 @@ def venta_crear_prepago(request, documento=None, telefono=None):
     return render(request, 'telefonica/venta_prepago_form.html', context)
 
 @login_required
-def venta_crear_upgrade(request, documento=None):
+def venta_crear_upgrade(request, documento=None, nro_registro=None):
     """Vista para crear una nueva venta de Upgrade"""
     if request.method == 'POST':
-        form = VentaUpgradeForm(request.POST, request.FILES, user=request.user)
+        # Verificar si hay un documento oculto en el formulario
+        hidden_documento = request.POST.get('hidden_documento', None)
+        if hidden_documento:
+            # Crear una copia mutable del QueryDict
+            post_data = request.POST.copy()
+            # Reemplazar el valor del documento con el valor del campo oculto
+            post_data['documento'] = hidden_documento
+            form = VentaUpgradeForm(post_data, request.FILES, user=request.user)
+        else:
+            form = VentaUpgradeForm(request.POST, request.FILES, user=request.user)
+            
         if form.is_valid():
             venta = form.save(commit=False)
             venta.agente = request.user
@@ -231,11 +241,11 @@ def venta_crear_upgrade(request, documento=None):
             return redirect('telefonica:detalle_venta_upgrade', pk=venta.id)
     else:
         initial_data = {}
-        # Verificar si se recibió un documento o nro_registro por GET
-        nro_registro = request.GET.get('nro_registro', None)
-        if nro_registro:
+        # Verificar si se recibió un nro_registro por URL o por GET
+        nro_registro_param = nro_registro or request.GET.get('nro_registro', None)
+        if nro_registro_param:
             try:
-                cliente = ClientesUpgrade.objects.get(nro_registro=nro_registro)
+                cliente = ClientesUpgrade.objects.get(nro_registro=nro_registro_param)
                 # Prellenar el formulario con los datos del cliente
                 initial_data = {
                     'documento': cliente.documento,

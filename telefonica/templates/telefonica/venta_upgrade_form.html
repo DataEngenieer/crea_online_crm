@@ -472,6 +472,60 @@
                 });
         }
         
+        // Función para buscar cliente por número de registro
+        function buscarClientePorNroRegistro(nroRegistro) {
+            // Mostrar indicador de carga
+            clienteInfoText.textContent = 'Buscando cliente por número de registro...';
+            clienteInfo.style.display = 'block';
+            clienteInfo.querySelector('.alert').className = 'alert alert-info p-2 mb-0';
+            
+            // Realizar la petición AJAX
+            fetch(`/telefonica/api/clientes/upgrade/buscar/?nro_registro=${nroRegistro}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.encontrado) {
+                        // Cliente encontrado, autocompletar formulario
+                        const cliente = data.cliente;
+                        
+                        // Autocompletar campos pero NO el documento (importante)
+                        tipoDocumentoSelect.value = cliente.tipo_documento;
+                        nombreCompletoInput.value = cliente.nombre_cliente;
+                        telefonoInput.value = cliente.tel_contacto_1 || cliente.celular_contacto || '';
+                        
+                        // Establecer el cliente base si existe el campo
+                        if (clienteBaseSelect) {
+                            clienteBaseSelect.value = cliente.id;
+                        }
+                        
+                        // Guardar el documento en un campo oculto y también mostrarlo en el campo de entrada
+                        documentoInput.value = cliente.documento; // Mostramos el documento en el campo visible
+                        
+                        // Crear un campo oculto para almacenar el documento si no existe
+                        let hiddenDocumentoInput = document.getElementById('hidden_documento');
+                        if (!hiddenDocumentoInput) {
+                            hiddenDocumentoInput = document.createElement('input');
+                            hiddenDocumentoInput.type = 'hidden';
+                            hiddenDocumentoInput.id = 'hidden_documento';
+                            hiddenDocumentoInput.name = 'hidden_documento';
+                            form.appendChild(hiddenDocumentoInput);
+                        }
+                        hiddenDocumentoInput.value = cliente.documento;
+                        
+                        // Hacer el campo de documento no requerido ya que tenemos el valor
+                        documentoInput.removeAttribute('required');
+                        
+                        mostrarMensajeCliente('Cliente encontrado por número de registro. Se han autocompletado los campos.', 'success');
+                    } else {
+                        // Cliente no encontrado
+                        mostrarMensajeCliente('No se encontró cliente con el número de registro proporcionado.', 'warning');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al buscar cliente por número de registro:', error);
+                    mostrarMensajeCliente('Error al buscar cliente. Por favor, intente nuevamente.', 'danger');
+                });
+        }
+        
         // Función para mostrar mensajes sobre el cliente
         function mostrarMensajeCliente(mensaje, tipo) {
             clienteInfoText.textContent = mensaje;
@@ -487,18 +541,31 @@
             const urlParams = new URLSearchParams(window.location.search);
             const nroRegistro = urlParams.get('nro_registro');
             
-            if (nroRegistro) {
-                // Mostrar mensaje de que se está buscando por nro_registro
-                clienteInfoText.textContent = 'Buscando cliente por número de registro...';
-                clienteInfo.style.display = 'block';
-                clienteInfo.querySelector('.alert').className = 'alert alert-info p-2 mb-0';
-                
-                // Verificar si los campos ya están autocompletados (lo que indicaría que el backend encontró el cliente)
-                if (nombreCompletoInput.value) {
-                    mostrarMensajeCliente('Cliente encontrado por número de registro. Se han autocompletado los campos.', 'success');
-                } else {
-                    mostrarMensajeCliente('No se encontró cliente con el número de registro proporcionado. La venta se registrará como fuera de base.', 'warning');
+            // Extraer el nro_registro de la URL si está en formato /nueva/registro/1251222
+            if (!nroRegistro) {
+                const pathParts = window.location.pathname.split('/');
+                // Buscar si hay un segmento 'registro' en la URL
+                const registroIndex = pathParts.indexOf('registro');
+                if (registroIndex !== -1 && registroIndex + 1 < pathParts.length) {
+                    // El nro_registro estará en el siguiente segmento después de 'registro'
+                    const nroRegistroFromPath = pathParts[registroIndex + 1];
+                    if (nroRegistroFromPath && !isNaN(nroRegistroFromPath)) {
+                        buscarClientePorNroRegistro(nroRegistroFromPath);
+                        return;
+                    }
                 }
+                
+                // También verificar si el último segmento es un número (para compatibilidad)
+                const lastPart = pathParts[pathParts.length - 1];
+                if (lastPart && !isNaN(lastPart)) {
+                    // Si el último segmento de la URL es un número, asumimos que es el nro_registro
+                    buscarClientePorNroRegistro(lastPart);
+                    return;
+                }
+            }
+            
+            if (nroRegistro) {
+                buscarClientePorNroRegistro(nroRegistro);
             }
         }
         
