@@ -67,8 +67,11 @@
                 <!-- Sección para Administradores -->
                 {% if user.is_superuser %}
                     <h6 class="text-muted small mt-3 mb-2 ps-2">ADMINISTRACIÓN</h6>
-                    <a class="list-group-item list-group-item-action bg-transparent text-white border-0 ps-3 py-2" href="{% url 'telefonica:planes_lista' %}" id="planesLink">
+                    <a class="list-group-item list-group-item-action bg-transparent text-white border-0 ps-3 py-2" href="{% url 'telefonica:planes_portabilidad_lista' %}" id="planesLink">
                         <i class="bi bi-list-stars me-2"></i> Planes
+                    </a>
+                    <a class="list-group-item list-group-item-action bg-transparent text-white border-0 ps-3 py-2" href="{% url 'telefonica:clientes_lista' %}" id="clientesLink">
+                        <i class="bi bi-people-fill me-2"></i> Clientes
                     </a>
                 {% endif %}
                 

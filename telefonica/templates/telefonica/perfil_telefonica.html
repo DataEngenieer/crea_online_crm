@@ -51,17 +51,10 @@
                     
                     <h5 class="mb-3">Datos Personales</h5>
                     <div class="mb-3">
-                        <label for="nombre" class="form-label">Nombre</label>
+                        <label for="nombre_completo" class="form-label">Nombre Completo</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
-                            <input type="text" class="form-control" id="nombre" name="nombre" value="{{ user.first_name }}" placeholder="Nombre">
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="apellidos" class="form-label">Apellidos</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-person-lines-fill"></i></span>
-                            <input type="text" class="form-control" id="apellidos" name="apellidos" value="{{ user.last_name }}" placeholder="Apellidos">
+                            <input type="text" class="form-control" id="nombre_completo" name="nombre_completo" value="{{ user.first_name }} {{ user.last_name }}" placeholder="Nombre Completo">
                         </div>
                     </div>
 

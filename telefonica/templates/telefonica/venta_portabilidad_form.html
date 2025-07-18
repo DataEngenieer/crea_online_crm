@@ -245,27 +245,14 @@
                         
                         <div class="mb-3">
                             <div class="form-group">
-                                <label for="{{ form.nombres.id_for_label }}">
-                                    <i class="fas fa-user me-1"></i> Nombres:
+                                <label for="{{ form.nombre_completo.id_for_label }}">
+                                    <i class="fas fa-user me-1"></i> Nombre Completo:
                                 </label>
                                 <div class="input-group input-group-custom">
                                     <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                    {{ form.nombres|attr:"class:form-control custom-input,placeholder:Ingrese nombres" }}
+                                    {{ form.nombre_completo|attr:"class:form-control custom-input,placeholder:Ingrese nombre completo" }}
                                 </div>
-                                <div class="invalid-feedback" id="nombres-error"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-group">
-                                <label for="{{ form.apellidos.id_for_label }}">
-                                    <i class="fas fa-user me-1"></i> Apellidos:
-                                </label>
-                                <div class="input-group input-group-custom">
-                                    <span class="input-group-text"><i class="fas fa-user-tag"></i></span>
-                                    {{ form.apellidos|attr:"class:form-control custom-input,placeholder:Ingrese apellidos" }}
-                                </div>
-                                <div class="invalid-feedback" id="apellidos-error"></div>
+                                <div class="invalid-feedback" id="nombre-completo-error"></div>
                             </div>
                         </div>
                         

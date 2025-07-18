@@ -10,8 +10,8 @@ def telefonica_menu(request):
     if request.user.is_authenticated:
         # Verificamos si el usuario pertenece a grupos relevantes para Telefónica
         groups = [g.name for g in request.user.groups.all()]
-        telefonica_groups = ['Asesores', 'Backoffice']
-        show_menu = any(group in telefonica_groups for group in groups)
+        telefonica_groups = ['asesor', 'backoffice', 'administrador']
+        show_menu = any(group in telefonica_groups for group in groups) or request.user.is_superuser
         
         return {
             'show_telefonica_menu': show_menu,

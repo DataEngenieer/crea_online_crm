@@ -1,0 +1,54 @@
+{% extends 'telefonica/base_telefonica.html' %}
+{% load static %}
+
+{% block title %}Confirmar Eliminación{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card">
+                <div class="card-header bg-danger">
+                    <h3 class="card-title text-white">
+                        <i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación
+                    </h3>
+                </div>
+                <div class="card-body text-center">
+                    <h4>¿Está seguro que desea eliminar este cliente?</h4>
+                    
+                    <div class="alert alert-warning mt-3">
+                        <p><strong>Esta acción no se puede deshacer.</strong></p>
+                        
+                        {% if tipo_cliente == 'upgrade' %}
+                            <p><strong>Cliente:</strong> {{ cliente.nombre_cliente }}</p>
+                            <p><strong>ID Base:</strong> {{ cliente.id_base }}</p>
+                            <p><strong>Documento:</strong> {{ cliente.documento }}</p>
+                        {% else %}
+                            <p><strong>Teléfono:</strong> {{ cliente.telefono }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Sí, Eliminar
+                            </button>
+                            
+                            {% if tipo_cliente == 'upgrade' %}
+                                <a href="{% url 'telefonica:clientes_lista' %}?tipo_cliente=upgrade" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </a>
+                            {% else %}
+                                <a href="{% url 'telefonica:clientes_lista' %}?tipo_cliente=prepos" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

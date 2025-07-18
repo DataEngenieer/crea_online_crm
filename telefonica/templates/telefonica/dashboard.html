@@ -9,15 +9,15 @@
         {% if es_asesor %}
         <!-- Tarjetas para Asesores -->
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="telefonica-card card border-left-primary shadow h-100 py-2">
+            <div class="telefonica-card card shadow h-100 py-2" style="border-left: 4px solid rgb(197,74,176);">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Mis Ventas</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ mis_ventas }}</div>
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: rgb(197,74,176);">Portabilidad</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_portabilidad }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="bi bi-list-ul fa-2x text-gray-300"></i>
+                            <i class="bi bi-arrow-left-right fa-2x" style="color: rgb(197,74,176);"></i>
                         </div>
                     </div>
                 </div>
@@ -25,15 +25,15 @@
         </div>
         
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="telefonica-card card border-left-warning shadow h-100 py-2">
+            <div class="telefonica-card card shadow h-100 py-2" style="border-left: 4px solid rgb(20,24,92);">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pendientes</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ mis_ventas_pendientes }}</div>
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: rgb(20,24,92);">Pre a Pos</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_prepago }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="bi bi-hourglass-split fa-2x text-gray-300"></i>
+                            <i class="bi bi-phone fa-2x" style="color: rgb(20,24,92);"></i>
                         </div>
                     </div>
                 </div>
@@ -41,15 +41,15 @@
         </div>
         
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="telefonica-card card border-left-danger shadow h-100 py-2">
+            <div class="telefonica-card card shadow h-100 py-2" style="border-left: 4px solid rgb(52,56,124);">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Devueltas</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ mis_ventas_devueltas }}</div>
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: rgb(52,56,124);">Upgrade</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_upgrade }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="bi bi-arrow-return-left fa-2x text-gray-300"></i>
+                            <i class="bi bi-arrow-up-circle fa-2x" style="color: rgb(52,56,124);"></i>
                         </div>
                     </div>
                 </div>
@@ -76,15 +76,15 @@
         {% if es_backoffice %}
         <!-- Tarjetas para Backoffice -->
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="telefonica-card card border-left-warning shadow h-100 py-2">
+            <div class="telefonica-card card shadow h-100 py-2" style="border-left: 4px solid rgb(197,74,176);">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pendientes de Revisión</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_pendientes }}</div>
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: rgb(197,74,176);">Portabilidad</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_portabilidad }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="bi bi-hourglass-split fa-2x text-gray-300"></i>
+                            <i class="bi bi-arrow-left-right fa-2x" style="color: rgb(197,74,176);"></i>
                         </div>
                     </div>
                 </div>
@@ -92,15 +92,15 @@
         </div>
         
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="telefonica-card card border-left-danger shadow h-100 py-2">
+            <div class="telefonica-card card shadow h-100 py-2" style="border-left: 4px solid rgb(20,24,92);">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Devueltas</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_devueltas }}</div>
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: rgb(20,24,92);">Pre a Pos</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_prepago }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="bi bi-arrow-return-left fa-2x text-gray-300"></i>
+                            <i class="bi bi-phone fa-2x" style="color: rgb(20,24,92);"></i>
                         </div>
                     </div>
                 </div>
@@ -108,15 +108,15 @@
         </div>
         
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="telefonica-card card border-left-success shadow h-100 py-2">
+            <div class="telefonica-card card shadow h-100 py-2" style="border-left: 4px solid rgb(52,56,124);">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Aprobadas</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_aprobadas }}</div>
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: rgb(52,56,124);">Upgrade</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_upgrade }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="bi bi-check-circle fa-2x text-gray-300"></i>
+                            <i class="bi bi-arrow-up-circle fa-2x" style="color: rgb(52,56,124);"></i>
                         </div>
                     </div>
                 </div>

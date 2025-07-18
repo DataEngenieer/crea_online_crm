@@ -113,6 +113,17 @@
                     </select>
                 </div>
 
+                <!-- Filtro por tipo de venta -->
+                <div class="col-md-2 mb-3">
+                    <label for="tipo_venta" class="form-label">Tipo de Venta:</label>
+                    <select name="tipo_venta" id="tipo_venta" class="form-select">
+                        <option value="">Todos</option>
+                        {% for key, value in tipos_venta %}
+                        <option value="{{ key }}" {% if filtros.tipo_venta == key %}selected{% endif %}>{{ value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
                 <!-- Filtro por fecha desde -->
                 <div class="col-md-2 mb-3">
                     <label for="fecha_desde" class="form-label">Fecha desde:</label>
@@ -163,6 +174,7 @@
                             <th>ID</th>
                             <th>Cliente</th>
                             <th>Teléfono</th>
+                            <th>Tipo Venta</th>
                             <th>Fecha</th>
                             <th>Hora</th>
                             <th>Estado</th>
@@ -176,6 +188,11 @@
                             <td>{{ agendamiento.id }}</td>
                             <td>{{ agendamiento.nombre_cliente }}</td>
                             <td>{{ agendamiento.telefono_contacto }}</td>
+                            <td>
+                                <span class="badge badge-secondary">
+                                    {{ agendamiento.get_tipo_venta_display }}
+                                </span>
+                            </td>
                             <td>{{ agendamiento.fecha_volver_a_llamar|date:"d/m/Y" }}</td>
                             <td>{{ agendamiento.hora_volver_a_llamar|time:"H:i" }}</td>
                             <td>
@@ -195,7 +212,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center">No hay agendamientos que coincidan con los filtros.</td>
+                            <td colspan="9" class="text-center">No hay agendamientos que coincidan con los filtros.</td>
                         </tr>
                         {% endfor %}
                     </tbody>

@@ -942,7 +942,7 @@ def acuerdos_pago(request):
             acuerdos_list = acuerdos_list.filter(estado=estado)
     
     # Paginación
-    paginator = Paginator(acuerdos_list, 25)  # 25 acuerdos por página
+    paginator = Paginator(acuerdos_list, 20)  # 20 acuerdos por página
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -1089,7 +1089,7 @@ def seguimientos(request):
         seguimientos_list = seguimientos_list.filter(usuario_gestion__username__icontains=usuario)
     
     # Paginación
-    paginator = Paginator(seguimientos_list, 25)  # 25 seguimientos por página
+    paginator = Paginator(seguimientos_list, 20)  # 20 seguimientos por página
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     

@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 import json
 
-from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, GestionAsesor, GestionBackoffice, Planes_portabilidad, Agendamiento, GestionAgendamiento, Comision, ESTADO_AGENDAMIENTO_CHOICES
+from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, ClientesUpgrade, ClientesPrePos, GestionAsesor, GestionBackoffice, Planes_portabilidad, Agendamiento, GestionAgendamiento, Comision, ESTADO_AGENDAMIENTO_CHOICES
 from .forms import (
     VentaPortabilidadForm, VentaPrePosForm, VentaUpgradeForm, 
     GestionAsesorForm, GestionBackofficeForm, PlanesPortabilidadForm,
@@ -44,8 +44,11 @@ def dashboard(request):
 
     # --- Lógica para Asesores ---
     if es_asesor:
+        # Contar ventas por tipo para el asesor
         context.update({
-            'mis_ventas': VentaPortabilidad.objects.filter(agente=user).count(),
+            'ventas_portabilidad': VentaPortabilidad.objects.filter(agente=user).count(),
+            'ventas_prepago': VentaPrePos.objects.filter(agente=user).count(),
+            'ventas_upgrade': VentaUpgrade.objects.filter(agente=user).count(),
             'mis_ventas_pendientes': VentaPortabilidad.objects.filter(agente=user, estado_venta='pendiente_revision').count(),
             'mis_ventas_devueltas': VentaPortabilidad.objects.filter(agente=user, estado_venta='devuelta').count(),
             'mis_comisiones_pendientes': 0,  # Temporalmente establecido a 0 hasta que se implemente Comision
@@ -57,7 +60,11 @@ def dashboard(request):
     # --- Lógica para Backoffice ---
     # Esto anulará algunas variables de contexto si el usuario también es asesor, lo cual es correcto.
     if es_backoffice:
+        # Contar ventas por tipo para backoffice
         context.update({
+            'ventas_portabilidad': VentaPortabilidad.objects.all().count(),
+            'ventas_prepago': VentaPrePos.objects.all().count(),
+            'ventas_upgrade': VentaUpgrade.objects.all().count(),
             'ventas_pendientes': VentaPortabilidad.objects.filter(estado_venta='pendiente_revision').count(),
             'ventas_devueltas': VentaPortabilidad.objects.filter(estado_venta='devuelta').count(),
             'ventas_aprobadas': VentaPortabilidad.objects.filter(estado_venta='aprobada').count(),
@@ -74,6 +81,9 @@ def dashboard(request):
         elif not es_backoffice and not es_asesor:
             # Asignar vista de backoffice por defecto a superusuarios sin grupo
             context.update({
+                'ventas_portabilidad': VentaPortabilidad.objects.all().count(),
+                'ventas_prepago': VentaPrePos.objects.all().count(),
+                'ventas_upgrade': VentaUpgrade.objects.all().count(),
                 'ventas_pendientes': VentaPortabilidad.objects.filter(estado_venta='pendiente_revision').count(),
                 'ventas_devueltas': VentaPortabilidad.objects.filter(estado_venta='devuelta').count(),
                 'ventas_aprobadas': VentaPortabilidad.objects.filter(estado_venta='aprobada').count(),
@@ -125,14 +135,25 @@ def venta_crear_portabilidad(request, documento=None):
     return render(request, 'telefonica/venta_portabilidad_form.html', context)
 
 @login_required
-def venta_crear_prepago(request, documento=None):
+def venta_crear_prepago(request, documento=None, telefono=None):
     """Vista para crear una nueva venta de Prepago"""
     if request.method == 'POST':
         form = VentaPrePosForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             venta = form.save(commit=False)
             venta.agente = request.user
-            venta.estado_venta = 'pendiente_revision'
+            venta.estado_venta = 'enviada'
+            
+            # Verificar si el teléfono existe en la base de clientes PrePos
+            telefono = venta.telefono_legalizacion
+            try:
+                cliente_base = ClientesPrePos.objects.get(telefono=telefono)
+                venta.cliente_base = cliente_base
+                venta.tipo_cliente = 'dentro_base'
+            except ClientesPrePos.DoesNotExist:
+                venta.cliente_base = None
+                venta.tipo_cliente = 'fuera_base'
+            
             venta.save()
             messages.success(request, 'Venta de Pre a Pos registrada exitosamente.')
             return redirect('telefonica:detalle_venta_prepago', pk=venta.id)
@@ -140,6 +161,28 @@ def venta_crear_prepago(request, documento=None):
         initial_data = {}
         if documento:
             initial_data = {'documento': documento}
+        
+        # Verificar si se proporciona un teléfono por parámetro en la URL
+        if telefono:
+            try:
+                cliente_base = ClientesPrePos.objects.get(telefono=telefono)
+                # Solo establecemos el teléfono, el estado se mostrará en la interfaz
+                initial_data['telefono_legalizacion'] = telefono
+            except ClientesPrePos.DoesNotExist:
+                # Si no se encuentra el cliente, solo establecemos el teléfono
+                initial_data['telefono_legalizacion'] = telefono
+        else:
+            # Verificar si se proporciona un teléfono por parámetro GET
+            telefono_get = request.GET.get('telefono', '')
+            if telefono_get:
+                try:
+                    cliente_base = ClientesPrePos.objects.get(telefono=telefono_get)
+                    # Solo establecemos el teléfono, el estado se mostrará en la interfaz
+                    initial_data['telefono_legalizacion'] = telefono_get
+                except ClientesPrePos.DoesNotExist:
+                    # Si no se encuentra el cliente, solo establecemos el teléfono
+                    initial_data['telefono_legalizacion'] = telefono_get
+        
         form = VentaPrePosForm(initial=initial_data, user=request.user)
     
     # Obtener planes activos de tipo prepos para JavaScript
@@ -168,19 +211,43 @@ def venta_crear_upgrade(request, documento=None):
         if form.is_valid():
             venta = form.save(commit=False)
             venta.agente = request.user
-            venta.estado_venta = 'pendiente_revision'
+            venta.estado_venta = 'enviada'
             # Asignar valores predeterminados a campos requeridos que no están en el formulario
             venta.base_origen = 'Web'
             venta.usuario_greta = request.user.username
-            # Asignar valor predeterminado al tipo_cliente si no está presente
-            if not venta.tipo_cliente:
+            
+            # Verificar si el documento existe en la base de clientes Upgrade
+            documento = venta.documento
+            try:
+                cliente_base = ClientesUpgrade.objects.get(documento=documento)
+                venta.cliente_base = cliente_base
                 venta.tipo_cliente = 'dentro_base'
+            except ClientesUpgrade.DoesNotExist:
+                venta.cliente_base = None
+                venta.tipo_cliente = 'fuera_base'
+            
             venta.save()
             messages.success(request, 'Venta de Upgrade registrada exitosamente.')
             return redirect('telefonica:detalle_venta_upgrade', pk=venta.id)
     else:
         initial_data = {}
-        if documento:
+        # Verificar si se recibió un documento o nro_registro por GET
+        nro_registro = request.GET.get('nro_registro', None)
+        if nro_registro:
+            try:
+                cliente = ClientesUpgrade.objects.get(nro_registro=nro_registro)
+                # Prellenar el formulario con los datos del cliente
+                initial_data = {
+                    'documento': cliente.documento,
+                    'tipo_documento': cliente.tipo_documento,
+                    'nombre_completo': cliente.nombre_cliente,
+                    'telefono_legalizacion': cliente.tel_contacto_1 or cliente.celular_contacto or '',
+                    'cliente_base': cliente.id
+                }
+            except ClientesUpgrade.DoesNotExist:
+                # Si no se encuentra el cliente, no prellenar nada
+                pass
+        elif documento:
             initial_data = {'documento': documento}
         form = VentaUpgradeForm(initial=initial_data, user=request.user)
     
@@ -313,8 +380,7 @@ def ventas_lista(request):
             'id': venta.id,
             'numero': venta.numero,
             'tipo_venta': 'portabilidad',
-            'nombres': venta.nombres,
-            'apellidos': venta.apellidos,
+            'nombre_completo': venta.nombre_completo,
             'documento': venta.documento,
             'plan_adquiere': venta.plan_adquiere,
             'fecha_creacion': venta.fecha_creacion,
@@ -330,8 +396,7 @@ def ventas_lista(request):
             'id': venta.id,
             'numero': venta.numero,
             'tipo_venta': 'upgrade',
-            'nombres': venta.nombres,
-            'apellidos': venta.apellidos,
+            'nombre_completo': venta.nombre_completo,
             'documento': venta.documento,
             'plan_adquiere': venta.plan_adquiere,
             'fecha_creacion': venta.fecha_creacion,
@@ -347,8 +412,7 @@ def ventas_lista(request):
             'id': venta.id,
             'numero': venta.numero,
             'tipo_venta': 'prepago',
-            'nombres': venta.nombres,
-            'apellidos': venta.apellidos,
+            'nombre_completo': venta.nombre_completo,
             'documento': venta.documento,
             'plan_adquiere': venta.plan_adquiere,
             'fecha_creacion': venta.fecha_creacion,
@@ -361,6 +425,18 @@ def ventas_lista(request):
     # Ordenar todas las ventas por fecha de creación (más reciente primero)
     todas_ventas.sort(key=lambda x: x['fecha_creacion'], reverse=True)
     
+    # Contar ventas por tipo
+    total_portabilidad = ventas_portabilidad.count()
+    total_upgrade = ventas_upgrade.count()
+    total_prepago = ventas_prepos.count()
+    total_ventas = total_portabilidad + total_upgrade + total_prepago
+    
+    # Contar ventas por estado (solo para portabilidad que tiene estados definidos)
+    ventas_pendientes = ventas_portabilidad.filter(estado_venta='pendiente_revision').count()
+    ventas_aprobadas = ventas_portabilidad.filter(estado_venta='aprobada').count()
+    ventas_devueltas = ventas_portabilidad.filter(estado_venta='devuelta').count()
+    ventas_digitadas = ventas_portabilidad.filter(estado_venta='digitada').count()
+    
     paginator = Paginator(todas_ventas, 10)  # 10 ventas por página
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
@@ -369,7 +445,15 @@ def ventas_lista(request):
         'page_obj': page_obj,
         'q': documento,
         'estado': estado,
-        'es_backoffice': is_backoffice_user
+        'es_backoffice': is_backoffice_user,
+        'total_ventas': total_ventas,
+        'ventas_pendientes': ventas_pendientes,
+        'ventas_aprobadas': ventas_aprobadas,
+        'ventas_devueltas': ventas_devueltas,
+        'ventas_digitadas': ventas_digitadas,
+        'total_portabilidad': total_portabilidad,
+        'total_upgrade': total_upgrade,
+        'total_prepago': total_prepago
     })
 
 @login_required
@@ -611,7 +695,7 @@ def ventas_pendientes(request):
     """Bandeja de ventas pendientes de revisión"""
     ventas = VentaPortabilidad.objects.filter(estado_venta='pendiente_revision').order_by('-fecha_creacion')
     
-    paginator = Paginator(ventas, 25)
+    paginator = Paginator(ventas, 20)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
     
@@ -726,7 +810,7 @@ def bandeja_asesores(request):
             estado_venta__in=['digitada', 'completada']
         ).order_by('-fecha_creacion')
     
-    paginator = Paginator(ventas, 25)
+    paginator = Paginator(ventas, 20)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
     
@@ -747,7 +831,7 @@ def bandeja_devueltas(request):
             estado_venta='devuelta'
         ).order_by('-fecha_creacion')
     
-    paginator = Paginator(ventas, 25)
+    paginator = Paginator(ventas, 20)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
     
@@ -804,11 +888,11 @@ def comisiones_lista(request):
     is_backoffice = request.user.groups.filter(name='backoffice').exists()
 
     if is_backoffice:
-        comisiones = Comision.objects.all().order_by('-fecha_calculo')
+        comisiones = Comision.objects.all().order_by('-fecha_creacion')
     else:
-        comisiones = Comision.objects.filter(agente=request.user).order_by('-fecha_calculo')
+        comisiones = Comision.objects.filter(agente=request.user).order_by('-fecha_creacion')
     
-    paginator = Paginator(comisiones, 25)
+    paginator = Paginator(comisiones, 20)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
     
@@ -854,10 +938,10 @@ def menu_fragment(request):
     """
     # Verificar si el usuario pertenece a alguno de los grupos de Telefónica
     groups = request.user.groups.all().values_list('name', flat=True)
-    telefonica_groups = ['asesor', 'backoffice']
+    telefonica_groups = ['asesor', 'backoffice', 'administrador']
     
-    # Solo mostrar el menú si el usuario pertenece a alguno de los grupos de Telefónica
-    if not any(group in telefonica_groups for group in groups):
+    # Solo mostrar el menú si el usuario pertenece a alguno de los grupos de Telefónica o es superusuario
+    if not (any(group in telefonica_groups for group in groups) or request.user.is_superuser):
         return HttpResponse("")
     
     # Renderizar el fragmento de menú
@@ -904,16 +988,16 @@ def perfil_telefonica(request):
     user = request.user
     if request.method == 'POST':
         # Procesar datos del formulario
-        nombre = request.POST.get('nombre', '').strip()
-        apellidos = request.POST.get('apellidos', '').strip()
+        nombre_completo = request.POST.get('nombre_completo', '').strip()
         password1 = request.POST.get('password1', '')
         password2 = request.POST.get('password2', '')
         
-        # Actualizar nombre y apellidos
-        if nombre:
-            user.first_name = nombre
-        if apellidos:
-            user.last_name = apellidos
+        # Actualizar nombre completo
+        if nombre_completo:
+            # Dividir el nombre completo en nombre y apellidos
+            partes = nombre_completo.split(' ', 1)
+            user.first_name = partes[0] if partes else ''
+            user.last_name = partes[1] if len(partes) > 1 else ''
         
         # Gestionar cambio de contraseña
         if password1:
@@ -1356,6 +1440,7 @@ def agendamiento_lista(request):
     """
     # Obtener parámetros de filtro
     estado = request.GET.get('estado', '')
+    tipo_venta = request.GET.get('tipo_venta', '')
     fecha_desde = request.GET.get('fecha_desde', '')
     fecha_hasta = request.GET.get('fecha_hasta', '')
     nombre = request.GET.get('nombre', '')
@@ -1371,6 +1456,9 @@ def agendamiento_lista(request):
     # Aplicar filtros
     if estado:
         agendamientos = agendamientos.filter(Estado_agendamiento=estado)
+    
+    if tipo_venta:
+        agendamientos = agendamientos.filter(tipo_venta=tipo_venta)
     
     if fecha_desde:
         try:
@@ -1402,12 +1490,14 @@ def agendamiento_lista(request):
         'titulo': 'Agendamientos',
         'filtros': {
             'estado': estado,
+            'tipo_venta': tipo_venta,
             'fecha_desde': fecha_desde,
             'fecha_hasta': fecha_hasta,
             'nombre': nombre,
             'telefono': telefono,
         },
         'estados': dict(ESTADO_AGENDAMIENTO_CHOICES),
+        'tipos_venta': [('portabilidad', 'Portabilidad'), ('prepos', 'PrePos'), ('upgrade', 'Upgrade')],
     }
     
     return render(request, 'telefonica/agendamiento_lista.html', context)
@@ -1531,6 +1621,7 @@ def agendamiento_calendario(request):
     context = {
         'titulo': 'Calendario de Agendamientos',
         'estados': estados,
+        'tipos_venta': [('portabilidad', 'Portabilidad'), ('prepos', 'PrePos'), ('upgrade', 'Upgrade')],
         'agentes': agentes,
     }
     
@@ -1552,10 +1643,13 @@ def agendamiento_eventos_api(request):
         
         # Filtros opcionales
         estado = request.GET.get('estado')
+        tipo_venta = request.GET.get('tipo_venta')
         agente_id = request.GET.get('agente')
         
         if estado:
             agendamientos = agendamientos.filter(Estado_agendamiento=estado)
+        if tipo_venta:
+            agendamientos = agendamientos.filter(tipo_venta=tipo_venta)
         if agente_id:
             agendamientos = agendamientos.filter(agente_id=agente_id)
         

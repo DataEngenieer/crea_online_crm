@@ -226,8 +226,16 @@
                                 <div class="input-group input-group-custom">
                                     <span class="input-group-text"><i class="fas fa-hashtag"></i></span>
                                     {{ form.documento|attr:"class:form-control custom-input,placeholder:Ingrese número de documento" }}
+                                    <button type="button" id="buscarClienteBtn" class="btn btn-primary" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                                        <i class="fas fa-search"></i>
+                                    </button>
                                 </div>
                                 <div class="invalid-feedback" id="documento-error"></div>
+                                <div id="clienteInfo" class="mt-2" style="display: none;">
+                                    <div class="alert alert-info p-2 mb-0">
+                                        <i class="fas fa-info-circle me-2"></i> <span id="clienteInfoText"></span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -246,27 +254,14 @@
                         
                         <div class="mb-3">
                             <div class="form-group">
-                                <label for="{{ form.nombres.id_for_label }}">
-                                    <i class="fas fa-user me-1"></i> Nombres:
+                                <label for="{{ form.nombre_completo.id_for_label }}">
+                                    <i class="fas fa-user me-1"></i> Nombre Completo:
                                 </label>
                                 <div class="input-group input-group-custom">
                                     <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                    {{ form.nombres|attr:"class:form-control custom-input,placeholder:Ingrese nombres" }}
+                                    {{ form.nombre_completo|attr:"class:form-control custom-input,placeholder:Ingrese nombre completo" }}
                                 </div>
-                                <div class="invalid-feedback" id="nombres-error"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-group">
-                                <label for="{{ form.apellidos.id_for_label }}">
-                                    <i class="fas fa-user me-1"></i> Apellidos:
-                                </label>
-                                <div class="input-group input-group-custom">
-                                    <span class="input-group-text"><i class="fas fa-user-tag"></i></span>
-                                    {{ form.apellidos|attr:"class:form-control custom-input,placeholder:Ingrese apellidos" }}
-                                </div>
-                                <div class="invalid-feedback" id="apellidos-error"></div>
+                                <div class="invalid-feedback" id="nombre-completo-error"></div>
                             </div>
                         </div>
                         
@@ -393,11 +388,17 @@
         const form = document.getElementById('ventaUpgradeForm');
         const planSelect = document.getElementById('{{ form.plan_adquiere.id_for_label }}');
         const cfmDisplay = document.getElementById('cfm_display');
+        const documentoInput = document.getElementById('{{ form.documento.id_for_label }}');
+        const tipoDocumentoSelect = document.getElementById('{{ form.tipo_documento.id_for_label }}');
+        const nombreCompletoInput = document.getElementById('{{ form.nombre_completo.id_for_label }}');
+        const telefonoInput = document.getElementById('{{ form.telefono_legalizacion.id_for_label }}');
+        const clienteBaseSelect = document.getElementById('{{ form.cliente_base.id_for_label }}');
+        const buscarClienteBtn = document.getElementById('buscarClienteBtn');
+        const clienteInfo = document.getElementById('clienteInfo');
+        const clienteInfoText = document.getElementById('clienteInfoText');
         
         // Datos de planes desde el backend
         const planesData = {{ planes_data|safe }};
-        console.log('Datos de planes:', planesData);
-        console.log('Tipo de planesData:', typeof planesData);
         
         // Función para actualizar el CFM
         function actualizarCFM() {
@@ -420,11 +421,106 @@
             }
         }
         
+        // Función para buscar cliente por documento
+        function buscarCliente() {
+            const documento = documentoInput.value.trim();
+            if (!documento) {
+                mostrarMensajeCliente('Por favor, ingrese un número de documento válido.', 'warning');
+                return;
+            }
+            
+            // Mostrar indicador de carga
+            clienteInfoText.textContent = 'Buscando cliente...';
+            clienteInfo.style.display = 'block';
+            clienteInfo.querySelector('.alert').className = 'alert alert-info p-2 mb-0';
+            
+            // Realizar la petición AJAX
+            fetch(`/telefonica/api/clientes/upgrade/buscar/?documento=${documento}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.encontrado) {
+                        // Cliente encontrado, autocompletar formulario
+                        const cliente = data.cliente;
+                        
+                        // Autocompletar campos
+                        tipoDocumentoSelect.value = cliente.tipo_documento;
+                        
+                        // Asignar el nombre completo
+                        nombreCompletoInput.value = cliente.nombre_cliente;
+                        
+                        // Usar el primer teléfono disponible
+                        telefonoInput.value = cliente.tel_contacto_1 || cliente.celular_contacto || '';
+                        
+                        // Establecer el cliente base si existe el campo
+                        if (clienteBaseSelect) {
+                            clienteBaseSelect.value = cliente.id;
+                        }
+                        
+                        mostrarMensajeCliente('Cliente encontrado en la base de datos. Se han autocompletado los campos.', 'success');
+                    } else {
+                        // Cliente no encontrado
+                        mostrarMensajeCliente('Cliente no encontrado en la base de datos. La venta se registrará como fuera de base.', 'warning');
+                        // Limpiar campos que podrían estar autocompletados
+                        if (clienteBaseSelect) {
+                            clienteBaseSelect.value = '';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al buscar cliente:', error);
+                    mostrarMensajeCliente('Error al buscar cliente. Por favor, intente nuevamente.', 'danger');
+                });
+        }
+        
+        // Función para mostrar mensajes sobre el cliente
+        function mostrarMensajeCliente(mensaje, tipo) {
+            clienteInfoText.textContent = mensaje;
+            clienteInfo.style.display = 'block';
+            
+            // Actualizar clase del alert según el tipo de mensaje
+            const alertElement = clienteInfo.querySelector('.alert');
+            alertElement.className = `alert alert-${tipo} p-2 mb-0`;
+        }
+        
+        // Verificar si hay un nro_registro en la URL al cargar la página
+        function verificarParametrosURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const nroRegistro = urlParams.get('nro_registro');
+            
+            if (nroRegistro) {
+                // Mostrar mensaje de que se está buscando por nro_registro
+                clienteInfoText.textContent = 'Buscando cliente por número de registro...';
+                clienteInfo.style.display = 'block';
+                clienteInfo.querySelector('.alert').className = 'alert alert-info p-2 mb-0';
+                
+                // Verificar si los campos ya están autocompletados (lo que indicaría que el backend encontró el cliente)
+                if (nombreCompletoInput.value) {
+                    mostrarMensajeCliente('Cliente encontrado por número de registro. Se han autocompletado los campos.', 'success');
+                } else {
+                    mostrarMensajeCliente('No se encontró cliente con el número de registro proporcionado. La venta se registrará como fuera de base.', 'warning');
+                }
+            }
+        }
+        
         // Escuchar cambios en el selector de plan
         planSelect.addEventListener('change', actualizarCFM);
         
+        // Escuchar clic en el botón de búsqueda
+        buscarClienteBtn.addEventListener('click', buscarCliente);
+        
+        // Escuchar evento de tecla Enter en el campo de documento
+        documentoInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Evitar envío del formulario
+                buscarCliente();
+            }
+        });
+        
         // Actualizar CFM al cargar la página si ya hay un plan seleccionado
         actualizarCFM();
+        
+        // Verificar parámetros URL al cargar
+        verificarParametrosURL();
         
         // Validación del formulario antes de enviar
         form.addEventListener('submit', function(e) {

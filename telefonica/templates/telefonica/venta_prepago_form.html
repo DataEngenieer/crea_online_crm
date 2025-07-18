@@ -248,27 +248,14 @@
                         
                         <div class="mb-3">
                             <div class="form-group">
-                                <label for="{{ form.nombres.id_for_label }}">
-                                    <i class="fas fa-user me-1"></i> Nombres:
+                                <label for="{{ form.nombre_completo.id_for_label }}">
+                                    <i class="fas fa-user me-1"></i> Nombre Completo:
                                 </label>
                                 <div class="input-group input-group-custom">
                                     <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                    {{ form.nombres|attr:"class:form-control custom-input,placeholder:Ingrese nombres" }}
+                                    {{ form.nombre_completo|attr:"class:form-control custom-input,placeholder:Ingrese nombre completo" }}
                                 </div>
-                                <div class="invalid-feedback" id="nombres-error"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-group">
-                                <label for="{{ form.apellidos.id_for_label }}">
-                                    <i class="fas fa-user me-1"></i> Apellidos:
-                                </label>
-                                <div class="input-group input-group-custom">
-                                    <span class="input-group-text"><i class="fas fa-user-tag"></i></span>
-                                    {{ form.apellidos|attr:"class:form-control custom-input,placeholder:Ingrese apellidos" }}
-                                </div>
-                                <div class="invalid-feedback" id="apellidos-error"></div>
+                                <div class="invalid-feedback" id="nombre-completo-error"></div>
                             </div>
                         </div>
                         
@@ -402,6 +389,33 @@
         const form = document.getElementById('ventaPrePosForm');
         const planSelect = document.getElementById('{{ form.plan_adquiere.id_for_label }}');
         const cfmDisplay = document.getElementById('cfm_display');
+        const telefonoInput = document.getElementById('{{ form.telefono_legalizacion.id_for_label }}');
+        const btnBuscar = document.createElement('button');
+        btnBuscar.type = 'button';
+        btnBuscar.className = 'btn btn-outline-secondary btn-sm ml-2';
+        btnBuscar.innerHTML = '<i class="fas fa-search"></i> Buscar';
+        btnBuscar.id = 'btn_buscar_cliente';
+        btnBuscar.style.fontSize = '0.85rem';
+        btnBuscar.style.padding = '0.25rem 0.5rem';
+        
+        // Agregar botón de búsqueda después del campo de teléfono
+        if (telefonoInput) {
+            telefonoInput.parentNode.appendChild(btnBuscar);
+        }
+        
+        // Crear div para mostrar información del cliente
+        const clienteInfoDiv = document.createElement('div');
+        clienteInfoDiv.id = 'cliente_info';
+        clienteInfoDiv.className = 'alert mt-2';
+        clienteInfoDiv.style.display = 'none';
+        clienteInfoDiv.style.fontSize = '0.85rem';
+        clienteInfoDiv.style.padding = '0.5rem';
+        clienteInfoDiv.style.marginBottom = '0.5rem';
+        
+        // Agregar div de información después del campo de teléfono
+        if (telefonoInput) {
+            telefonoInput.parentNode.appendChild(clienteInfoDiv);
+        }
         
         // Datos de planes desde el backend
         const planesData = {{ planes_data|safe }};
@@ -429,11 +443,104 @@
             }
         }
         
+        // Función para buscar cliente por teléfono
+        function buscarCliente() {
+            const telefono = telefonoInput.value.trim();
+            if (!telefono) {
+                mostrarMensajeCliente('Por favor ingrese un número de teléfono válido.', 'warning');
+                return;
+            }
+            
+            mostrarMensajeCliente('Buscando cliente...', 'info');
+            
+            fetch(`/telefonica/api/clientes/prepos/buscar/?telefono=${telefono}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.encontrado) {
+                        mostrarMensajeCliente('Cliente encontrado en la base de datos.', 'success');
+                    } else {
+                        mostrarMensajeCliente(data.mensaje, 'warning');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al buscar cliente:', error);
+                    mostrarMensajeCliente('Error al buscar cliente. Intente nuevamente.', 'danger');
+                });
+        }
+        
+        // Función para mostrar mensaje sobre el cliente
+        function mostrarMensajeCliente(mensaje, tipo) {
+            clienteInfoDiv.textContent = mensaje;
+            clienteInfoDiv.style.display = 'block';
+            
+            // Actualizar clase según el tipo de mensaje
+            clienteInfoDiv.className = 'alert mt-2';
+            clienteInfoDiv.style.fontSize = '0.85rem';
+            clienteInfoDiv.style.padding = '0.5rem';
+            clienteInfoDiv.style.marginBottom = '0.5rem';
+            clienteInfoDiv.style.borderRadius = '0.2rem';
+            
+            switch (tipo) {
+                case 'success':
+                    clienteInfoDiv.classList.add('alert-success');
+                    break;
+                case 'warning':
+                    clienteInfoDiv.classList.add('alert-warning');
+                    break;
+                case 'danger':
+                    clienteInfoDiv.classList.add('alert-danger');
+                    break;
+                default:
+                    clienteInfoDiv.classList.add('alert-info');
+            }
+        }
+        
+        // Función para verificar parámetros en la URL
+        function verificarParametrosURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const telefono = urlParams.get('telefono');
+            
+            if (telefono) {
+                mostrarMensajeCliente('Buscando cliente con teléfono: ' + telefono, 'info');
+                
+                // Verificar si los campos ya están autocompletados por el backend
+                if (telefonoInput.value === telefono) {
+                    // Verificar si el cliente existe en la base de datos
+                    fetch(`/telefonica/api/clientes/prepos/buscar/?telefono=${telefono}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.encontrado) {
+                                mostrarMensajeCliente('Cliente encontrado en la base de datos.', 'success');
+                            } else {
+                                mostrarMensajeCliente('Cliente no encontrado en la base de datos.', 'warning');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error al verificar cliente:', error);
+                        });
+                }
+            }
+        }
+        
         // Escuchar cambios en el selector de plan
         planSelect.addEventListener('change', actualizarCFM);
         
+        // Escuchar clic en el botón de búsqueda
+        btnBuscar.addEventListener('click', buscarCliente);
+        
+        // Escuchar tecla Enter en el campo de teléfono
+        telefonoInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                buscarCliente();
+            }
+        });
+        
         // Actualizar CFM al cargar la página si ya hay un plan seleccionado
         actualizarCFM();
+        
+        // Verificar parámetros URL al cargar la página
+        verificarParametrosURL();
         
         // Validación del formulario antes de enviar
         form.addEventListener('submit', function(e) {

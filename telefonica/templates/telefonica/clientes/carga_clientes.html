@@ -1,0 +1,99 @@
+{% extends 'telefonica/base_telefonica.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ titulo }}</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'telefonica:clientes_lista' %}?tipo_cliente=upgrade" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Volver a la lista
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 offset-md-3">
+                            <div class="alert alert-info">
+                                <h5><i class="icon fas fa-info"></i> Instrucciones:</h5>
+                                <ol>
+                                    <li>Descargue la plantilla Excel</li>
+                                    <li>Complete la información de los clientes</li>
+                                    <li>Guarde el archivo y súbalo utilizando el formulario a continuación</li>
+                                </ol>
+                                <p>Los campos obligatorios son: <strong>ID Base</strong>, <strong>Número de Registro</strong>, <strong>Nombre Cliente</strong> y <strong>Documento</strong>.</p>
+                            </div>
+                            
+                            <div class="text-center mb-4">
+                                <a href="{% url 'telefonica:descargar_plantilla_upgrade' %}" class="btn btn-primary">
+                                    <i class="fas fa-download"></i> Descargar Plantilla Excel
+                                </a>
+                            </div>
+                            
+                            <form method="post" enctype="multipart/form-data" class="form">
+                                {% csrf_token %}
+                                
+                                <div class="form-group">
+                                    <label for="archivo">Seleccione archivo Excel (.xlsx) o CSV (.csv)</label>
+                                    <div class="custom-file">
+                                        <input type="file" class="custom-file-input" id="archivo" name="archivo" accept=".xlsx,.csv" required>
+                                        <label class="custom-file-label" for="archivo">Seleccionar archivo...</label>
+                                    </div>
+                                    <small class="form-text text-muted">Formatos aceptados: Excel (.xlsx) o CSV (.csv)</small>
+                                </div>
+                                
+                                <div class="text-center mt-4">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-upload"></i> Cargar Archivo
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            {% if resumen %}
+                            <div class="mt-4">
+                                <div class="alert alert-success">
+                                    <h5><i class="icon fas fa-check"></i> Resumen de la carga:</h5>
+                                    <ul>
+                                        <li><strong>Clientes nuevos:</strong> {{ resumen.nuevos }}</li>
+                                        <li><strong>Clientes actualizados:</strong> {{ resumen.actualizados }}</li>
+                                        <li><strong>Errores:</strong> {{ resumen.errores }}</li>
+                                    </ul>
+                                </div>
+                                
+                                {% if errores %}
+                                <div class="alert alert-warning mt-3">
+                                    <h5><i class="icon fas fa-exclamation-triangle"></i> Errores encontrados:</h5>
+                                    <ul>
+                                        {% for error in errores %}
+                                            <li>{{ error }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Mostrar el nombre del archivo seleccionado
+        $('.custom-file-input').on('change', function() {
+            var fileName = $(this).val().split('\\').pop();
+            $(this).next('.custom-file-label').html(fileName);
+        });
+    });
+</script>
+{% endblock %}

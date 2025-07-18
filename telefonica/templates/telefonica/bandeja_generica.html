@@ -39,7 +39,7 @@
             {% for venta in ventas %}
             <tr>
               <td>{{ venta.numero }}</td>
-              <td>{{ venta.cliente.nombres }} {{ venta.cliente.apellidos }}</td>
+              <td>{{ venta.cliente.nombre_completo }}</td>
               <td>{{ venta.plan_adquiere }}</td>
               <td>{{ venta.agente.get_full_name }}</td>
               <td>

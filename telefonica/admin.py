@@ -3,6 +3,8 @@ from .models import (
     VentaPortabilidad,
     VentaPrePos,
     VentaUpgrade,
+    ClientesUpgrade,
+    ClientesPrePos,
     GestionAsesor, 
     GestionBackoffice,
     Comision,
@@ -24,21 +26,37 @@ class PlanesPortabilidadAdmin(admin.ModelAdmin):
 class VentaPortabilidadAdmin(admin.ModelAdmin):
     list_display = ('id', 'nombre_completo_portabilidad', 'plan_adquiere', 'estado_venta', 'agente', 'backoffice', 'fecha_creacion')
     search_fields = ('documento', 'nombres', 'apellidos', 'numero')
-    list_filter = ('estado_venta', 'agente', 'backoffice', 'tipo_cliente')
+    list_filter = ('estado_venta', 'agente', 'backoffice')
     date_hierarchy = 'fecha_creacion'
+
+@admin.register(ClientesPrePos)
+class ClientesPrePosAdmin(admin.ModelAdmin):
+    list_display = ('id', 'telefono', 'fecha_creacion')
+    search_fields = ('telefono',)
+    list_filter = ('fecha_creacion',)
+    date_hierarchy = 'fecha_creacion'
+    readonly_fields = ('fecha_creacion', 'fecha_actualizacion')
 
 @admin.register(VentaPrePos)
 class VentaPrePosAdmin(admin.ModelAdmin):
-    list_display = ('id', 'nombre_completo_prepos', 'plan_adquiere', 'agente', 'fecha_creacion')
-    search_fields = ('documento', 'nombres', 'apellidos', 'numero')
-    list_filter = ('agente', 'tipo_cliente')
+    list_display = ('id', 'nombre_completo_prepos', 'plan_adquiere', 'cliente_base', 'tipo_cliente', 'agente', 'fecha_creacion')
+    search_fields = ('documento', 'nombres', 'apellidos', 'numero', 'telefono_legalizacion')
+    list_filter = ('agente', 'tipo_cliente', 'cliente_base')
     date_hierarchy = 'fecha_creacion'
+
+@admin.register(ClientesUpgrade)
+class ClientesUpgradeAdmin(admin.ModelAdmin):
+    list_display = ('id', 'nombre_cliente', 'documento', 'tipo_documento', 'campana', 'promedio_fact', 'fecha_creacion')
+    search_fields = ('nombre_cliente', 'documento', 'id_base', 'nro_registro')
+    list_filter = ('tipo_documento', 'campana', 'grupo_campana', 'estrategia', 'producto')
+    date_hierarchy = 'fecha_creacion'
+    readonly_fields = ('fecha_creacion', 'fecha_actualizacion')
 
 @admin.register(VentaUpgrade)
 class VentaUpgradeAdmin(admin.ModelAdmin):
-    list_display = ('id', 'nombre_completo_upgrade', 'plan_adquiere', 'agente', 'fecha_creacion')
+    list_display = ('id', 'nombre_completo_upgrade', 'plan_adquiere', 'cliente_base', 'agente', 'fecha_creacion')
     search_fields = ('documento', 'nombres', 'apellidos', 'numero')
-    list_filter = ('agente', 'tipo_cliente')
+    list_filter = ('agente', 'tipo_cliente', 'cliente_base')
     date_hierarchy = 'fecha_creacion'
 
 @admin.register(GestionAsesor)
@@ -64,9 +82,9 @@ class ComisionAdmin(admin.ModelAdmin):
 
 @admin.register(Agendamiento)
 class AgendamientoAdmin(admin.ModelAdmin):
-    list_display = ('nombre_cliente', 'telefono_contacto', 'fecha_volver_a_llamar', 'hora_volver_a_llamar', 'Estado_agendamiento', 'agente')
+    list_display = ('nombre_cliente', 'telefono_contacto', 'tipo_venta', 'fecha_volver_a_llamar', 'hora_volver_a_llamar', 'Estado_agendamiento', 'agente')
     search_fields = ('nombre_cliente', 'telefono_contacto')
-    list_filter = ('Estado_agendamiento', 'agente')
+    list_filter = ('Estado_agendamiento', 'tipo_venta', 'agente')
     date_hierarchy = 'fecha_volver_a_llamar'
 
 @admin.register(Escalamiento)

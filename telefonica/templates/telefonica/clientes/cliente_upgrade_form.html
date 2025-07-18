@@ -1,0 +1,177 @@
+{% extends 'telefonica/base_telefonica.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ titulo }}</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'telefonica:clientes_lista' %}?tipo_cliente=upgrade" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Volver a la lista
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="form">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <h5><i class="icon fas fa-ban"></i> Por favor corrija los siguientes errores:</h5>
+                            <ul>
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li>{{ field.label }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <!-- Primera columna -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.id_base.id_for_label }}">ID Base *</label>
+                                    {{ form.id_base }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.nro_registro.id_for_label }}">Número de Registro</label>
+                                    {{ form.nro_registro }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.campana.id_for_label }}">Campaña</label>
+                                    {{ form.campana }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.grupo_campana.id_for_label }}">Grupo Campaña</label>
+                                    {{ form.grupo_campana }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.estrategia.id_for_label }}">Estrategia</label>
+                                    {{ form.estrategia }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.nombre_cliente.id_for_label }}">Nombre Cliente *</label>
+                                    {{ form.nombre_cliente }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.tipo_documento.id_for_label }}">Tipo Documento</label>
+                                    {{ form.tipo_documento }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.documento.id_for_label }}">Documento *</label>
+                                    {{ form.documento }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.direccion.id_for_label }}">Dirección</label>
+                                    {{ form.direccion }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.estrato.id_for_label }}">Estrato</label>
+                                    {{ form.estrato }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.barrio.id_for_label }}">Barrio</label>
+                                    {{ form.barrio }}
+                                </div>
+                            </div>
+                            
+                            <!-- Segunda columna -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.departamento.id_for_label }}">Departamento</label>
+                                    {{ form.departamento }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.ciudad.id_for_label }}">Ciudad</label>
+                                    {{ form.ciudad }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.producto.id_for_label }}">Producto</label>
+                                    {{ form.producto }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.puertos_disponibles.id_for_label }}">Puertos Disponibles</label>
+                                    {{ form.puertos_disponibles }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.promedio_fact.id_for_label }}">Promedio Facturación</label>
+                                    {{ form.promedio_fact }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.mx_tenencia_cuenta.id_for_label }}">MX Tenencia Cuenta</label>
+                                    {{ form.mx_tenencia_cuenta }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.tel_contacto_1.id_for_label }}">Teléfono Contacto 1</label>
+                                    {{ form.tel_contacto_1 }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.tel_contacto_2.id_for_label }}">Teléfono Contacto 2</label>
+                                    {{ form.tel_contacto_2 }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.tel_contacto_3.id_for_label }}">Teléfono Contacto 3</label>
+                                    {{ form.tel_contacto_3 }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.celular_contacto.id_for_label }}">Celular Contacto</label>
+                                    {{ form.celular_contacto }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-12 text-center">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> {{ accion }}
+                                </button>
+                                <a href="{% url 'telefonica:clientes_lista' %}?tipo_cliente=upgrade" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Aplicar clases de Bootstrap a los campos del formulario
+        $('input, select, textarea').addClass('form-control');
+    });
+</script>
+{% endblock %}

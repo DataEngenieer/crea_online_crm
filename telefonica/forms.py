@@ -1,13 +1,13 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, GestionAsesor, GestionBackoffice, Planes_portabilidad, Agendamiento, GestionAgendamiento
+from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, ClientesUpgrade, ClientesPrePos, GestionAsesor, GestionBackoffice, Planes_portabilidad, Agendamiento, GestionAgendamiento
 
 
 class VentaPortabilidadForm(forms.ModelForm):
     class Meta:
         model = VentaPortabilidad
         fields = [
-            'tipo_documento', 'documento', 'fecha_expedicion', 'nombres', 'apellidos',
+            'tipo_documento', 'documento', 'fecha_expedicion', 'nombre_completo',
             'telefono_legalizacion', 'plan_adquiere', 'numero_a_portar', 'nip', 'fecha_entrega',
             'fecha_ventana_cambio', 'numero_orden', 'base_origen', 'usuario_greta', 'confronta', 'observacion'
         ]
@@ -15,8 +15,7 @@ class VentaPortabilidadForm(forms.ModelForm):
             'tipo_documento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'documento': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'fecha_expedicion': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
-            'nombres': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
-            'apellidos': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'nombre_completo': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'telefono_legalizacion': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'plan_adquiere': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'numero_a_portar': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
@@ -61,10 +60,11 @@ class AgendamientoForm(forms.ModelForm):
     class Meta:
         model = Agendamiento
         fields = [
-            'nombre_cliente', 'telefono_contacto', 'fecha_volver_a_llamar',
+            'tipo_venta', 'nombre_cliente', 'telefono_contacto', 'fecha_volver_a_llamar',
             'hora_volver_a_llamar', 'observaciones', 'Estado_agendamiento'
         ]
         widgets = {
+            'tipo_venta': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'nombre_cliente': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'telefono_contacto': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'fecha_volver_a_llamar': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
@@ -98,20 +98,27 @@ class GestionAgendamientoForm(forms.ModelForm):
             self.instance.estado_anterior = self.agendamiento.Estado_agendamiento
 
 
+class ClientesPrePosForm(forms.ModelForm):
+    class Meta:
+        model = ClientesPrePos
+        fields = ['telefono']
+        widgets = {
+            'telefono': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'})
+        }
+
 class VentaPrePosForm(forms.ModelForm):
     class Meta:
         model = VentaPrePos
         fields = [
-            'tipo_cliente', 'tipo_documento', 'documento', 'fecha_expedicion', 'nombres', 'apellidos',
+            'cliente_base', 'tipo_documento', 'documento', 'fecha_expedicion', 'nombre_completo',
             'telefono_legalizacion', 'plan_adquiere', 'numero_orden', 'base_origen', 'usuario_greta', 'observacion'
         ]
         widgets = {
-            'tipo_cliente': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
+            'cliente_base': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'tipo_documento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'documento': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'fecha_expedicion': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
-            'nombres': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
-            'apellidos': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'nombre_completo': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'telefono_legalizacion': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'plan_adquiere': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'numero_orden': forms.NumberInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
@@ -127,19 +134,52 @@ class VentaPrePosForm(forms.ModelForm):
         self.fields['plan_adquiere'].queryset = Planes_portabilidad.objects.filter(estado='activo', tipo_plan='prepos')
 
 
+class ClientesUpgradeForm(forms.ModelForm):
+    class Meta:
+        model = ClientesUpgrade
+        fields = [
+            'id_base', 'nro_registro', 'campana', 'grupo_campana', 'estrategia', 'nombre_cliente',
+            'tipo_documento', 'documento', 'direccion', 'estrato', 'barrio', 'departamento',
+            'ciudad', 'producto', 'puertos_disponibles', 'promedio_fact', 'mx_tenencia_cuenta',
+            'tel_contacto_1', 'tel_contacto_2', 'tel_contacto_3', 'celular_contacto'
+        ]
+        widgets = {
+            'id_base': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'nro_registro': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'campana': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'grupo_campana': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'estrategia': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'nombre_cliente': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'tipo_documento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
+            'documento': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'direccion': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'estrato': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'autocomplete': 'off'}),
+            'barrio': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'departamento': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'ciudad': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'producto': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'puertos_disponibles': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'promedio_fact': forms.NumberInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'mx_tenencia_cuenta': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'tel_contacto_1': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'tel_contacto_2': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'tel_contacto_3': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'celular_contacto': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'})
+        }
+
 class VentaUpgradeForm(forms.ModelForm):
     class Meta:
         model = VentaUpgrade
         fields = [
-            'tipo_documento', 'documento', 'fecha_expedicion', 'nombres', 'apellidos',
+            'cliente_base', 'tipo_documento', 'documento', 'fecha_expedicion', 'nombre_completo',
             'telefono_legalizacion', 'codigo_verificacion', 'plan_adquiere', 'numero_orden', 'observacion'
         ]
         widgets = {
+            'cliente_base': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'tipo_documento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'documento': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'fecha_expedicion': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
-            'nombres': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
-            'apellidos': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'nombre_completo': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'telefono_legalizacion': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'codigo_verificacion': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'plan_adquiere': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
@@ -175,17 +215,15 @@ class CorreccionVentaForm(forms.ModelForm):
     class Meta:
         model = VentaPortabilidad
         fields = [
-            'tipo_cliente', 'tipo_documento', 'documento', 'fecha_expedicion', 'nombres', 'apellidos',
+            'tipo_documento', 'documento', 'fecha_expedicion', 'nombre_completo',
             'telefono_legalizacion', 'plan_adquiere', 'numero_a_portar', 'nip', 'fecha_entrega',
             'fecha_ventana_cambio', 'numero_orden', 'base_origen', 'usuario_greta', 'confronta', 'observacion'
         ]
         widgets = {
-            'tipo_cliente': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'tipo_documento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'documento': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'fecha_expedicion': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
-            'nombres': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
-            'apellidos': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'nombre_completo': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'telefono_legalizacion': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'plan_adquiere': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'numero_a_portar': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),

@@ -29,6 +29,11 @@ TIPO_CLIENTE_CHOICES = [
     ('fuera_base', 'Fuera de la Base'),
 ]
 
+TIPO_CLIENTE_BASE_CHOICES = [
+    ('dentro_base', 'Dentro de Base'),
+    ('fuera_base', 'Fuera de Base'),
+]
+
 ESTADO_CHOICES = [
     ('activo', 'Activo'),
     ('inactivo', 'Inactivo'),
@@ -40,6 +45,12 @@ ESTADO_AGENDAMIENTO_CHOICES = [
     ('volver_llamar', 'Volver a LLamar'),
     ('no_acepta_oferta', 'Cliente No Acepta Oferta'),
     ('no_contactado', 'Cliente No Contactado'),
+]
+
+TIPO_VENTA_CHOICES = [
+    ('portabilidad', 'Portabilidad'),
+    ('prepos', 'PrePos'),
+    ('upgrade', 'Upgrade'),
 ]
 
 class Planes_portabilidad(models.Model):
@@ -72,7 +83,6 @@ class VentaPortabilidad(models.Model):
     ]
 
     numero = models.CharField(verbose_name=_("Número"), null=False, blank=False)
-    tipo_cliente = models.CharField(max_length=20, choices=TIPO_CLIENTE_CHOICES, verbose_name=_("Tipo de Cliente"))
 
     tipo_documento = models.CharField(
         max_length=10, 
@@ -83,8 +93,7 @@ class VentaPortabilidad(models.Model):
 
     documento = models.CharField(max_length=15, verbose_name=_("Documento"), null=False)
     fecha_expedicion = models.DateField(verbose_name=_("Fecha de Expedición"), null=False)
-    nombres = models.CharField(max_length=100, verbose_name=_("Nombres"), null=False)
-    apellidos = models.CharField(max_length=100, verbose_name=_("Apellidos"), null=False)
+    nombre_completo = models.CharField(max_length=100, verbose_name=_('Nombre Completo'), null=False)
     telefono_legalizacion = models.CharField(max_length=10, verbose_name=_("Teléfono Legalización"), null=False)
     plan_adquiere = models.ForeignKey(Planes_portabilidad, on_delete=models.PROTECT, related_name='ventas_portabilidad', verbose_name=_("Plan Adquirido"), null=False)
     numero_a_portar = models.CharField(max_length=10, verbose_name=_("Número a Portar"), null=False)
@@ -111,7 +120,7 @@ class VentaPortabilidad(models.Model):
         ordering = ['-fecha_creacion']
     
     def __str__(self):
-        return f"Venta {self.id} - {self.nombres} {self.apellidos} - {self.plan_adquiere}"
+        return f"Venta {self.id} - {self.nombre_completo} - {self.plan_adquiere}"
     
     def save(self, *args, **kwargs):
         # Si es una nueva venta, generar un número único
@@ -123,7 +132,22 @@ class VentaPortabilidad(models.Model):
     
     @property
     def nombre_completo_portabilidad(self):
-        return f"{self.nombres} {self.apellidos}"
+        return self.nombre_completo
+
+
+class ClientesPrePos(models.Model):
+    """Modelo para gestionar la base de clientes PrePos"""
+    telefono = models.CharField(max_length=20, unique=True, verbose_name="Teléfono")
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha Creación")
+    fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Fecha Actualización")
+
+    class Meta:
+        verbose_name = "Cliente PrePos"
+        verbose_name_plural = "Clientes PrePos"
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return self.telefono
 
 
 class VentaPrePos(models.Model):
@@ -134,9 +158,14 @@ class VentaPrePos(models.Model):
         ('NIT', 'NIT'),
         ('PP', 'Pasaporte'),
     ]
+    
+    ESTADO_VENTA_PREPOS_CHOICES = [
+        ('enviada', 'Enviada'),
+    ]
 
     numero = models.CharField(verbose_name=_("Número"), null=False, blank=False)
-    tipo_cliente = models.CharField(max_length=20, choices=TIPO_CLIENTE_CHOICES, verbose_name=_("Tipo de Cliente"))
+    cliente_base = models.ForeignKey(ClientesPrePos, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Cliente Base"))
+    tipo_cliente = models.CharField(max_length=20, choices=TIPO_CLIENTE_BASE_CHOICES, default='fuera_base', verbose_name=_("Tipo de Cliente"))
 
     tipo_documento = models.CharField(
         max_length=10, 
@@ -147,8 +176,7 @@ class VentaPrePos(models.Model):
 
     documento = models.CharField(max_length=15, verbose_name=_("Documento"), null=False)
     fecha_expedicion = models.DateField(verbose_name=_("Fecha de Expedición"), null=False)
-    nombres = models.CharField(max_length=100, verbose_name=_("Nombres"), null=False)
-    apellidos = models.CharField(max_length=100, verbose_name=_("Apellidos"), null=False)
+    nombre_completo = models.CharField(max_length=100, verbose_name=_('Nombre Completo'), null=False)
     telefono_legalizacion = models.CharField(max_length=10, verbose_name=_("Teléfono Legalización"), null=False)
     plan_adquiere = models.ForeignKey(Planes_portabilidad, on_delete=models.PROTECT, related_name='ventas_prepos', verbose_name=_("Plan Adquirido"), null=False)
     numero_orden = models.IntegerField(verbose_name=_("Número de Orden"), null=False)
@@ -156,6 +184,8 @@ class VentaPrePos(models.Model):
     usuario_greta = models.CharField(max_length=100, verbose_name=_("Usuario Greta"), null=True, blank=True)
     observacion = models.TextField(verbose_name=_("Observación"), null=True, blank=True)
     agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_prepos_realizadas", verbose_name=_("Agente"))
+    
+    estado_venta = models.CharField(max_length=30, choices=ESTADO_VENTA_PREPOS_CHOICES, default='enviada', verbose_name=_("Estado Venta"))
 
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Creación"))
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name=_("Fecha de Actualización"))
@@ -166,7 +196,7 @@ class VentaPrePos(models.Model):
         ordering = ['-fecha_creacion']
     
     def __str__(self):
-        return f"Venta {self.id} - {self.nombres} {self.apellidos} - {self.plan_adquiere}"
+        return f"Venta {self.id} - {self.nombre_completo} - {self.plan_adquiere}"
     
     def save(self, *args, **kwargs):
         # Si es una nueva venta, generar un número único
@@ -178,7 +208,54 @@ class VentaPrePos(models.Model):
     
     @property
     def nombre_completo_prepos(self):
-        return f"{self.nombres} {self.apellidos}"
+        return self.nombre_completo
+
+class ClientesUpgrade(models.Model):
+    """Modelo para almacenar la base de clientes elegibles para upgrade"""
+    
+    TIPO_DOCUMENTO_CHOICES = [
+        ('CC', 'CC'),
+        ('CE', 'CE'),
+        ('NIT', 'NIT'),
+        ('PP', 'Pasaporte'),
+    ]
+    
+    id_base = models.CharField(max_length=100, verbose_name=_("ID Base"))
+    nro_registro = models.CharField(max_length=50, verbose_name=_("Número de Registro"), unique=True)
+    campana = models.CharField(max_length=200, verbose_name=_("Campaña"))
+    grupo_campana = models.CharField(max_length=200, verbose_name=_("Grupo Campaña"))
+    estrategia = models.CharField(max_length=100, verbose_name=_("Estrategia"))
+    nombre_cliente = models.CharField(max_length=200, verbose_name=_("Nombre Cliente"))
+    tipo_documento = models.CharField(
+        max_length=10, 
+        choices=TIPO_DOCUMENTO_CHOICES,
+        verbose_name=_("Tipo de Documento")
+    )
+    documento = models.CharField(max_length=15, verbose_name=_("Documento"))
+    direccion = models.CharField(max_length=200, verbose_name=_("Dirección"), null=True, blank=True)
+    estrato = models.DecimalField(max_digits=5, decimal_places=2, verbose_name=_("Estrato"), null=True, blank=True)
+    barrio = models.CharField(max_length=100, verbose_name=_("Barrio"), null=True, blank=True)
+    departamento = models.CharField(max_length=100, verbose_name=_("Departamento"), null=True, blank=True)
+    ciudad = models.CharField(max_length=100, verbose_name=_("Ciudad"), null=True, blank=True)
+    producto = models.CharField(max_length=50, verbose_name=_("Producto"))
+    puertos_disponibles = models.CharField(max_length=10, verbose_name=_("Puertos Disponibles"), null=True, blank=True)
+    promedio_fact = models.DecimalField(max_digits=12, decimal_places=2, verbose_name=_("Promedio Facturación"), null=True, blank=True)
+    mx_tenencia_cuenta = models.CharField(max_length=50, verbose_name=_("Máx Tenencia Cuenta"), null=True, blank=True)
+    tel_contacto_1 = models.CharField(max_length=15, verbose_name=_("Teléfono Contacto 1"), null=True, blank=True)
+    tel_contacto_2 = models.CharField(max_length=15, verbose_name=_("Teléfono Contacto 2"), null=True, blank=True)
+    tel_contacto_3 = models.CharField(max_length=15, verbose_name=_("Teléfono Contacto 3"), null=True, blank=True)
+    celular_contacto = models.CharField(max_length=15, verbose_name=_("Celular Contacto"), null=True, blank=True)
+    
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Creación"))
+    fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name=_("Fecha de Actualización"))
+    
+    class Meta:
+        verbose_name = _("Cliente Upgrade")
+        verbose_name_plural = _("Clientes Upgrade")
+        ordering = ['nombre_cliente']
+        
+    def __str__(self):
+        return f"{self.nombre_cliente} - {self.documento}"
 
 class VentaUpgrade(models.Model):
 
@@ -187,6 +264,10 @@ class VentaUpgrade(models.Model):
         ('CE', 'CE'),
         ('NIT', 'NIT'),
         ('PP', 'Pasaporte'),
+    ]
+    
+    ESTADO_VENTA_UPGRADE_CHOICES = [
+        ('enviada', 'Enviada'),
     ]
 
     numero = models.CharField(verbose_name=_("Número"), null=False, blank=False)
@@ -201,8 +282,7 @@ class VentaUpgrade(models.Model):
 
     documento = models.CharField(max_length=15, verbose_name=_("Documento"), null=False)
     fecha_expedicion = models.DateField(verbose_name=_("Fecha de Expedición"), null=False)
-    nombres = models.CharField(max_length=100, verbose_name=_("Nombres"), null=False)
-    apellidos = models.CharField(max_length=100, verbose_name=_("Apellidos"), null=False)
+    nombre_completo = models.CharField(max_length=100, verbose_name=_('Nombre Completo'), null=False)
     telefono_legalizacion = models.CharField(max_length=10, verbose_name=_("Teléfono Legalización"), null=False)
     codigo_verificacion = models.CharField(max_length=6, verbose_name=_("Código de Verificación"), null=False, blank=False)
     plan_adquiere = models.ForeignKey(Planes_portabilidad, on_delete=models.PROTECT, related_name='ventas_upgrade', verbose_name=_("Plan Adquirido"), null=False)
@@ -212,6 +292,12 @@ class VentaUpgrade(models.Model):
     
     observacion = models.TextField(verbose_name=_("Observación"), null=True, blank=True)
     agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_upgrade_realizadas", verbose_name=_("Agente"))
+    
+    # Relación opcional con cliente de base - null=True porque pueden ser clientes fuera de base
+    cliente_base = models.ForeignKey(ClientesUpgrade, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_realizadas", verbose_name=_("Cliente de Base"))
+    tipo_cliente = models.CharField(max_length=20, choices=TIPO_CLIENTE_BASE_CHOICES, default='fuera_base', verbose_name=_("Tipo de Cliente"))
+    
+    estado_venta = models.CharField(max_length=30, choices=ESTADO_VENTA_UPGRADE_CHOICES, default='enviada', verbose_name=_("Estado Venta"))
 
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Creación"))
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name=_("Fecha de Actualización"))
@@ -222,7 +308,7 @@ class VentaUpgrade(models.Model):
         ordering = ['-fecha_creacion']
     
     def __str__(self):
-        return f"Venta {self.id} - {self.nombres} {self.apellidos} - {self.plan_adquiere}"
+        return f"Venta {self.id} - {self.nombre_completo} - {self.plan_adquiere}"
     
     def save(self, *args, **kwargs):
         # Si es una nueva venta, generar un número único
@@ -234,11 +320,12 @@ class VentaUpgrade(models.Model):
     
     @property
     def nombre_completo_upgrade(self):
-        return f"{self.nombres} {self.apellidos}"
+        return self.nombre_completo
 
 class Agendamiento(models.Model):
     """Modelo para gestionar los agendamientos de clientes"""
     Estado_agendamiento = models.CharField(max_length=20, choices=ESTADO_AGENDAMIENTO_CHOICES, default='agendado', verbose_name=_("Estado"))
+    tipo_venta = models.CharField(max_length=20, choices=TIPO_VENTA_CHOICES, default='portabilidad', verbose_name=_("Tipo de Venta"))
     nombre_cliente = models.CharField(max_length=100, verbose_name=_("Nombre del Cliente"))
     telefono_contacto = models.CharField(max_length=15, verbose_name=_("Teléfono de Contacto"))
     fecha_volver_a_llamar = models.DateField(verbose_name=_("Fecha de Volver a Llamar"))

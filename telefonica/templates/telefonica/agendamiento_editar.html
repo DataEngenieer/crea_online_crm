@@ -322,6 +322,20 @@
                         <div class="section-container mb-4 h-100 border-left border-light" style="background: linear-gradient(to bottom, white, var(--success-light) 200%);">
                             <h5 class="mb-3 text-success" style="display: flex; align-items: center;"><span class="icon-circle bg-success text-white" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; box-shadow: 0 4px 6px rgba(6, 214, 160, 0.2);"><i class="fas fa-calendar-alt"></i></span>Datos del Agendamiento</h5>
                             
+                            <!-- Tipo de Venta -->
+                            <div class="mb-3">
+                                <div class="form-group">
+                                    <label for="{{ form.tipo_venta.id_for_label }}">
+                                        <i class="fas fa-tags me-1"></i> Tipo de Venta:
+                                    </label>
+                                    <div class="input-group input-group-custom">
+                                        <span class="input-group-text"><i class="fas fa-tags"></i></span>
+                                        {{ form.tipo_venta|attr:"class:form-select custom-input" }}
+                                    </div>
+                                    <div class="invalid-feedback" id="tipo-venta-error"></div>
+                                </div>
+                            </div>
+                            
                             <div class="mb-3">
                                 <div class="form-group">
                                     <label for="{{ form.fecha_volver_a_llamar.id_for_label }}">

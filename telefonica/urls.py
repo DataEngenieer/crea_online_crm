@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, views_clientes
 import json
 
 app_name = 'telefonica'
@@ -22,6 +22,7 @@ urlpatterns = [
     # Rutas para ventas de Prepago
     path('ventas/prepago/nueva/', views.venta_crear_prepago, name='venta_crear_prepago'),
     path('ventas/prepago/nueva/<str:documento>/', views.venta_crear_prepago, name='venta_crear_prepago_con_documento'),
+    path('ventas/prepago/nueva/telefono/<str:telefono>/', views.venta_crear_prepago, name='venta_crear_prepago_con_telefono'),
     path('ventas/prepago/<int:pk>/', views.detalle_venta_prepago, name='detalle_venta_prepago'),
     
     # Rutas para ventas de Upgrade
@@ -55,4 +56,25 @@ urlpatterns = [
     path('agendamientos/<int:pk>/editar/', views.agendamiento_editar, name='agendamiento_editar'),
     path('agendamientos/calendario/', views.agendamiento_calendario, name='agendamiento_calendario'),
     path('agendamientos/eventos-api/', views.agendamiento_eventos_api, name='agendamiento_eventos_api'),
+    
+    # Rutas para gestión de clientes
+    path('clientes/', views_clientes.clientes_lista, name='clientes_lista'),
+    
+    # Clientes Upgrade
+    path('clientes/upgrade/crear/', views_clientes.cliente_upgrade_crear, name='cliente_upgrade_crear'),
+    path('clientes/upgrade/<int:pk>/editar/', views_clientes.cliente_upgrade_editar, name='cliente_upgrade_editar'),
+    path('clientes/upgrade/<int:pk>/eliminar/', views_clientes.cliente_upgrade_eliminar, name='cliente_upgrade_eliminar'),
+    path('clientes/upgrade/carga/', views_clientes.carga_clientes_upgrade, name='carga_clientes_upgrade'),
+    path('clientes/upgrade/plantilla/', views_clientes.descargar_plantilla_upgrade, name='descargar_plantilla_upgrade'),
+    
+    # Clientes PrePos
+    path('clientes/prepos/crear/', views_clientes.cliente_prepos_crear, name='cliente_prepos_crear'),
+    path('clientes/prepos/<int:pk>/editar/', views_clientes.cliente_prepos_editar, name='cliente_prepos_editar'),
+    path('clientes/prepos/<int:pk>/eliminar/', views_clientes.cliente_prepos_eliminar, name='cliente_prepos_eliminar'),
+    path('clientes/prepos/carga/', views_clientes.carga_clientes_prepos, name='carga_clientes_prepos'),
+    path('clientes/prepos/plantilla/', views_clientes.descargar_plantilla_prepos, name='descargar_plantilla_prepos'),
+    
+    # API para autocompletado
+    path('api/clientes/upgrade/buscar/', views_clientes.buscar_cliente_upgrade_por_documento, name='buscar_cliente_upgrade'),
+    path('api/clientes/prepos/buscar/', views_clientes.buscar_cliente_prepos_por_telefono, name='buscar_cliente_prepos'),
 ]

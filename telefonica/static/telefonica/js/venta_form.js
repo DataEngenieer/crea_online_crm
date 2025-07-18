@@ -143,8 +143,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tabId === "cliente") {
             // Validar campos del cliente
             const camposRequeridos = [
-                "id_tipo_documento", "id_documento", "id_nombres", 
-                "id_apellidos", "id_direccion", "id_ciudad", 
+                "id_tipo_documento", "id_documento", "id_nombre_completo", 
+                "id_direccion", "id_ciudad", 
                 "id_departamento", "id_telefono"
             ];
             
@@ -212,8 +212,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Si se encuentra el cliente, se cargan todos sus datos
                     $("#id_tipo_documento").val(data.tipo_documento);
                     $("#id_documento").val(data.documento);
-                    $("#id_nombres").val(data.nombres);
-                    $("#id_apellidos").val(data.apellidos);
+                    $("#id_nombre_completo").val(data.nombre_completo);
                     $("#id_correo").val(data.correo);
                     $("#id_departamento").val(data.departamento);
                     $("#id_ciudad").val(data.ciudad);
@@ -324,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function actualizarResumen() {
         console.log("Ejecutando actualizarResumen()");
         // Actualizar datos del cliente
-        $("#resumen-nombre").text($("#id_nombres").val() + " " + $("#id_apellidos").val());
+        $("#resumen-nombre").text($("#id_nombre_completo").val());
         
         // Actualizar documento con tipo
         const tipoDocVal = $("#id_tipo_documento").val();
@@ -393,15 +392,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 camposValidos = false;
             }
             
-            if (!$("#id_nombres").val()) {
-                $("#nombres-error").text("El nombre es requerido").show();
-                $("#id_nombres").addClass("is-invalid");
-                camposValidos = false;
-            }
-            
-            if (!$("#id_apellidos").val()) {
-                $("#apellidos-error").text("Los apellidos son requeridos").show();
-                $("#id_apellidos").addClass("is-invalid");
+            if (!$("#id_nombre_completo").val()) {
+                $("#nombre-completo-error").text("El nombre completo es requerido").show();
+                $("#id_nombre_completo").addClass("is-invalid");
                 camposValidos = false;
             }
             

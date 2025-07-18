@@ -79,7 +79,7 @@
     <!-- Estadísticas rápidas -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6">
-            <div class="stats-card">
+            <div class="stats-card" style="background: linear-gradient(135deg, rgb(187,43,163) 0%, rgb(187,43,163) 100%);">
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
                         <div class="h5 mb-0">{{ total_ventas|default:0 }}</div>
@@ -92,40 +92,40 @@
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="stats-card" style="background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);">
+            <div class="stats-card" style="background: linear-gradient(135deg, rgb(197,74,176) 0%, rgb(187,43,163) 100%);">
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
-                        <div class="h5 mb-0">{{ ventas_aprobadas|default:0 }}</div>
-                        <div class="small">Aprobadas</div>
+                        <div class="h5 mb-0">{{ total_portabilidad|default:0 }}</div>
+                        <div class="small">Portabilidad</div>
                     </div>
                     <div class="flex-shrink-0">
-                        <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                        <i class="bi bi-arrow-left-right fa-2x opacity-75"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="stats-card" style="background: linear-gradient(135deg, #f6c23e 0%, #dda20a 100%);">
+            <div class="stats-card" style="background: linear-gradient(135deg, rgb(20,24,92) 0%, rgb(20,24,92) 100%);">
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
-                        <div class="h5 mb-0">{{ ventas_pendientes|default:0 }}</div>
-                        <div class="small">Pendientes</div>
+                        <div class="h5 mb-0">{{ total_prepago|default:0 }}</div>
+                        <div class="small">Pre a Pos</div>
                     </div>
                     <div class="flex-shrink-0">
-                        <i class="fas fa-clock fa-2x opacity-75"></i>
+                        <i class="bi bi-phone fa-2x opacity-75"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="stats-card" style="background: linear-gradient(135deg, #e74a3b 0%, #c0392b 100%);">
+            <div class="stats-card" style="background: linear-gradient(135deg, rgb(52,56,124) 0%, rgb(52,56,124) 100%);">
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
-                        <div class="h5 mb-0">{{ ventas_devueltas|default:0 }}</div>
-                        <div class="small">Devueltas</div>
+                        <div class="h5 mb-0">{{ total_upgrade|default:0 }}</div>
+                        <div class="small">Upgrade</div>
                     </div>
                     <div class="flex-shrink-0">
-                        <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+                        <i class="bi bi-arrow-up-circle fa-2x opacity-75"></i>
                     </div>
                 </div>
             </div>
@@ -135,7 +135,7 @@
     <div class="row">
         <div class="col-12">
             <div class="card shadow-lg border-0 table-modern">
-                <div class="card-header py-4 d-flex flex-row align-items-center justify-content-between" style="background: linear-gradient(135deg, #4e73df 0%, #224abe 100%); color: white;">
+                <div class="card-header py-4 d-flex flex-row align-items-center justify-content-between" style="background: linear-gradient(135deg, rgb(52,56,124) 0%, rgb(52,56,124) 100%); color: white;">
                     <div class="d-flex align-items-center">
                         <i class="fas fa-chart-bar fa-2x me-3"></i>
                         <div>
@@ -316,7 +316,7 @@
                                     </td>
                                     <td>
                                         <div>
-                                            <div class="fw-bold text-dark">{{ venta.nombres }} {{ venta.apellidos }}</div>
+                                            <div class="fw-bold text-dark">{{ venta.nombre_completo }}</div>
                                             <small class="text-muted">Cliente</small>
                                         </div>
                                     </td>
@@ -412,20 +412,7 @@
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             {% endif %}
-                                            <button class="btn btn-action btn-secondary btn-sm" onclick="showVentaDetails({{ venta.id }})" title="Vista rápida" data-bs-toggle="tooltip">
-                                                <i class="fas fa-search-plus"></i>
-                                            </button>
-                                            <div class="dropdown">
-                                                <button class="btn btn-action btn-outline-primary btn-sm" type="button" data-bs-toggle="dropdown" title="Más opciones">
-                                                    <i class="fas fa-ellipsis-v"></i>
-                                                </button>
-                                                <ul class="dropdown-menu dropdown-menu-end">
-                                                    <li><a class="dropdown-item" href="#" onclick="duplicateVenta({{ venta.id }})"><i class="fas fa-copy me-2"></i>Duplicar</a></li>
-                                                    <li><a class="dropdown-item" href="#" onclick="printVenta({{ venta.id }})"><i class="fas fa-print me-2"></i>Imprimir</a></li>
-                                                    <li><hr class="dropdown-divider"></li>
-                                                    <li><a class="dropdown-item text-danger" href="#" onclick="archiveVenta({{ venta.id }})"><i class="fas fa-archive me-2"></i>Archivar</a></li>
-                                                </ul>
-                                            </div>
+                                            
                                         </div>
                                     </td>
                                 </tr>
