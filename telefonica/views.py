@@ -108,6 +108,13 @@ def venta_crear_portabilidad(request, documento=None):
             venta = form.save(commit=False)
             venta.agente = request.user
             venta.tipo_cliente = 'dentro_base'  # Establecer valor por defecto
+            
+            # Asignar valores por defecto a base_origen y usuario_greta si están vacíos
+            if not venta.base_origen:
+                venta.base_origen = 'Web'
+            if not venta.usuario_greta:
+                venta.usuario_greta = request.user.username
+                
             venta.save()
             messages.success(request, 'Venta de portabilidad registrada exitosamente.')
             return redirect('telefonica:detalle_venta_portabilidad', pk=venta.id)
@@ -143,6 +150,12 @@ def venta_crear_prepago(request, documento=None, telefono=None):
             venta = form.save(commit=False)
             venta.agente = request.user
             venta.estado_venta = 'enviada'
+            
+            # Asignar valores por defecto a base_origen y usuario_greta si están vacíos
+            if not venta.base_origen:
+                venta.base_origen = 'Web'
+            if not venta.usuario_greta:
+                venta.usuario_greta = request.user.username
             
             # Verificar si el teléfono existe en la base de clientes PrePos
             telefono = venta.telefono_legalizacion
@@ -1373,13 +1386,27 @@ def detalle_venta_portabilidad(request, pk):
     gestion_asesor_form = GestionAsesorForm()
     gestion_backoffice_form = GestionBackofficeForm() if es_backoffice or user.is_superuser else None
     
+    # Preparar información del plan para la plantilla
+    plan_info = {
+        'nombre': venta.plan_nombre,
+        'codigo': venta.plan_codigo,
+        'caracteristicas': venta.plan_caracteristicas.split('|') if venta.plan_caracteristicas else [],
+        'cfm': venta.plan_cfm,
+        'cfm_sin_iva': venta.plan_cfm_sin_iva
+    }
+    
     context = {
         'venta': venta,
+        'plan_info': plan_info,
+        'gestiones_asesor': gestiones_asesor,
+        'gestiones_backoffice': gestiones_backoffice,
+        'gestion_asesor_form': gestion_asesor_form,
+        'gestion_backoffice_form': gestion_backoffice_form,
         'es_backoffice': es_backoffice,
         'es_propietario': es_propietario,
     }
     
-    return render(request, 'telefonica/venta_detalle_portabilidad.html', context)
+    return render(request, 'telefonica/venta_portabilidad_detalle.html', context)
 
 
 @login_required
@@ -1402,8 +1429,26 @@ def detalle_venta_prepago(request, pk):
     
     # No hay procesamiento de formularios para VentaPrePos
     
+    # Inicializar variables de gestiones (aunque no se usen actualmente)
+    gestiones_asesor = []
+    gestiones_backoffice = []
+    
+    # Formularios para añadir gestiones
+    gestion_asesor_form = GestionAsesorForm()
+    gestion_backoffice_form = GestionBackofficeForm() if es_backoffice or user.is_superuser else None
+    
+    # Preparar información del plan para la plantilla
+    plan_info = {
+        'nombre': venta.plan_nombre,
+        'codigo': venta.plan_codigo,
+        'caracteristicas': venta.plan_caracteristicas.split('|') if venta.plan_caracteristicas else [],
+        'cfm': venta.plan_cfm,
+        'cfm_sin_iva': venta.plan_cfm_sin_iva
+    }
+    
     context = {
         'venta': venta,
+        'plan_info': plan_info,
         'gestiones_asesor': gestiones_asesor,
         'gestiones_backoffice': gestiones_backoffice,
         'gestion_asesor_form': gestion_asesor_form,
@@ -1412,7 +1457,7 @@ def detalle_venta_prepago(request, pk):
         'es_propietario': es_propietario,
     }
     
-    return render(request, 'telefonica/venta_detalle_upgrade.html', context)
+    return render(request, 'telefonica/venta_detalle_prepago.html', context)
 
 
 # ---- VISTAS PARA AGENDAMIENTOS ----
@@ -1736,8 +1781,18 @@ def detalle_venta_upgrade(request, pk):
     gestion_asesor_form = GestionAsesorForm()
     gestion_backoffice_form = GestionBackofficeForm() if es_backoffice or user.is_superuser else None
     
+    # Preparar información del plan para la plantilla
+    plan_info = {
+        'nombre': venta.plan_nombre,
+        'codigo': venta.plan_codigo,
+        'caracteristicas': venta.plan_caracteristicas.split('|') if venta.plan_caracteristicas else [],
+        'cfm': venta.plan_cfm,
+        'cfm_sin_iva': venta.plan_cfm_sin_iva
+    }
+    
     context = {
         'venta': venta,
+        'plan_info': plan_info,
         'gestiones_asesor': gestiones_asesor,
         'gestiones_backoffice': gestiones_backoffice,
         'gestion_asesor_form': gestion_asesor_form,

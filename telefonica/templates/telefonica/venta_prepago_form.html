@@ -282,18 +282,7 @@
                             Datos de la Venta
                         </h5>
                     
-                        <div class="mb-3">
-                            <div class="form-group">
-                                <label for="{{ form.tipo_cliente.id_for_label }}" class="form-label">
-                                    <i class="fas fa-user-tag me-1"></i> Tipo de Cliente:
-                                </label>
-                                <div class="input-group input-group-custom">
-                                    <span class="input-group-text"><i class="fas fa-users"></i></span>
-                                    {{ form.tipo_cliente|attr:"class:form-select custom-select" }}
-                                </div>
-                                <div class="invalid-feedback" id="tipo-cliente-error"></div>
-                            </div>
-                        </div>
+                        <!-- El tipo de cliente se calcula automáticamente basado en el teléfono de legalización -->
                         
                         <div class="mb-3">
                             <div class="form-group">

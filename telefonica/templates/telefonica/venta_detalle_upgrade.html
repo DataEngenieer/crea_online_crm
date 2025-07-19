@@ -4,75 +4,198 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'telefonica/css/venta_detalle.css' %}">
+<style>
+    .venta-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px 15px 0 0;
+    }
+    .info-card {
+        border-radius: 10px;
+        transition: transform 0.2s ease-in-out;
+    }
+    .info-card:hover {
+        transform: translateY(-2px);
+    }
+    .characteristics-content {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #6c757d;
+    }
+    .price-badge {
+        font-size: 1.1rem;
+        padding: 8px 15px;
+    }
+    .section-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+    }
+</style>
 {% endblock %}
 
 {% block contenido_telefonica %}
 <div class="container-fluid">
     <!-- Cabecera con información principal -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Detalle de Venta Upgrade #{{ venta.numero }}</h5>
-            <div class="estado-badge {{ venta.estado_venta }}">
-                {{ venta.get_estado_venta_display }}
+    <div class="card shadow-lg mb-4 info-card">
+        <div class="card-header venta-header text-white d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="section-icon bg-white text-secondary me-3">
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+                <div>
+                    <h5 class="mb-0">Detalle de Venta Upgrade</h5>
+                    <small class="opacity-75">#{{ venta.numero }}</small>
+                </div>
+            </div>
+            <div class="badge bg-secondary fs-6 px-3 py-2">
+                <i class="fas fa-check-circle me-1"></i>{{ venta.get_estado_venta_display }}
             </div>
         </div>
         <div class="card-body">
+            <!-- Detalles del Plan -->
+            <div class="mb-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="section-icon bg-light text-secondary">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h6 class="mb-0 text-secondary">Detalles del Plan</h6>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-secondary mb-3">Características</h6>
+                        <div class="characteristics-content">
+                            <ul class="list-unstyled mb-0">
+                                {% if plan_info.caracteristicas %}
+                                    {% for caracteristica in plan_info.caracteristicas %}
+                                        <li class="mb-2"><i class="fas fa-check-circle text-secondary me-2"></i>{{ caracteristica }}</li>
+                                    {% endfor %}
+                                {% else %}
+                                    <li class="mb-2"><i class="fas fa-check-circle text-secondary me-2"></i>Minutos ilimitados</li>
+                                    <li class="mb-2"><i class="fas fa-check-circle text-secondary me-2"></i>Datos ilimitados</li>
+                                    <li class="mb-2"><i class="fas fa-check-circle text-secondary me-2"></i>SMS ilimitados</li>
+                                    <li class="mb-2"><i class="fas fa-check-circle text-secondary me-2"></i>Redes sociales incluidas</li>
+                                    <li><i class="fas fa-check-circle text-secondary me-2"></i>Beneficios adicionales</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-secondary mb-3">Precios</h6>
+                        <div class="characteristics-content">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Cargo Fijo Mensual:</span>
+                                <span class="badge bg-secondary price-badge">${{ plan_info.cfm|floatformat:0|default:"0" }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Cargo Fijo Mensual (sin IVA):</span>
+                                <span>${{ plan_info.cfm_sin_iva|floatformat:0|default:"0" }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Código del Plan:</span>
+                                <span>{{ plan_info.codigo }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="row">
                 <!-- Columna izquierda: Datos del cliente -->
                 <div class="col-md-6">
-                    <h6 class="border-bottom pb-2 mb-3 text-primary">Datos del Cliente</h6>
-                    <div class="row mb-2">
-                        <div class="col-md-4 fw-bold">Tipo de Cliente:</div>
-                        <div class="col-md-8">{{ venta.get_tipo_cliente_display }}</div>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="section-icon bg-light text-secondary">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <h6 class="mb-0 text-secondary">Datos del Cliente</h6>
                     </div>
-                    <div class="row mb-2">
-                        <div class="col-md-4 fw-bold">Tipo Documento:</div>
-                        <div class="col-md-8">{{ venta.get_tipo_documento_display }}</div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold text-muted">
+                            <i class="fas fa-tag me-1"></i>Tipo de Cliente:
+                        </div>
+                        <div class="col-md-8">
+                            <span class="badge bg-secondary">{{ venta.get_tipo_cliente_display }}</span>
+                        </div>
                     </div>
-                    <div class="row mb-2">
-                        <div class="col-md-4 fw-bold">Documento:</div>
-                        <div class="col-md-8">{{ venta.documento }}</div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold text-muted">
+                            <i class="fas fa-id-card me-1"></i>Documento:
+                        </div>
+                        <div class="col-md-8">{{ venta.get_tipo_documento_display }} {{ venta.documento }}</div>
                     </div>
-                    <div class="row mb-2">
-                        <div class="col-md-4 fw-bold">Nombre Completo:</div>
-                        <div class="col-md-8">{{ venta.nombre_completo }}</div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold text-muted">
+                            <i class="fas fa-user-circle me-1"></i>Nombre Completo:
+                        </div>
+                        <div class="col-md-8 fw-bold">{{ venta.nombre_completo }}</div>
                     </div>
-                    <div class="row mb-2">
-                        <div class="col-md-4 fw-bold">Fecha Expedición:</div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold text-muted">
+                            <i class="fas fa-calendar me-1"></i>Fecha Expedición:
+                        </div>
                         <div class="col-md-8">{{ venta.fecha_expedicion|date:"d/m/Y" }}</div>
                     </div>
-                    <div class="row mb-2">
-                        <div class="col-md-4 fw-bold">Teléfono Legalización:</div>
-                        <div class="col-md-8">{{ venta.telefono_legalizacion }}</div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold text-muted">
+                            <i class="fas fa-phone me-1"></i>Teléfono:
+                        </div>
+                        <div class="col-md-8">
+                            <span class="badge bg-secondary">{{ venta.telefono_legalizacion }}</span>
+                        </div>
                     </div>
-                    <div class="row mb-2">
-                        <div class="col-md-4 fw-bold">Código Verificación:</div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold text-muted">
+                            <i class="fas fa-key me-1"></i>Código Verificación:
+                        </div>
                         <div class="col-md-8">{{ venta.codigo_verificacion }}</div>
                     </div>
                 </div>
                 
                 <!-- Columna derecha: Datos de la venta -->
                 <div class="col-md-6">
-                    <h6 class="border-bottom pb-2 mb-3 text-primary">Datos del Upgrade</h6>
-                    <div class="row mb-2">
-                        <div class="col-md-4 fw-bold">Plan Adquirido:</div>
-                        <div class="col-md-8">{{ venta.plan_adquiere }}</div>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="section-icon bg-light text-secondary">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <h6 class="mb-0 text-secondary">Datos de la Venta</h6>
                     </div>
-                    <div class="row mb-2">
-                        <div class="col-md-4 fw-bold">Número:</div>
-                        <div class="col-md-8">{{ venta.numero }}</div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold text-muted">
+                            <i class="fas fa-mobile-alt me-1"></i>Plan Adquirido:
+                        </div>
+                        <div class="col-md-8">
+                            <span class="fw-bold">{{ plan_info.nombre }}</span>
+                            <small class="text-muted d-block">Código: {{ plan_info.codigo }}</small>
+                        </div>
                     </div>
-                    <div class="row mb-2">
-                        <div class="col-md-4 fw-bold">Número de Orden:</div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold text-muted">
+                            <i class="fas fa-hashtag me-1"></i>Número de Venta:
+                        </div>
+                        <div class="col-md-8">
+                            <span class="badge bg-secondary fs-6">{{ venta.numero }}</span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold text-muted">
+                            <i class="fas fa-receipt me-1"></i>Número de Orden:
+                        </div>
                         <div class="col-md-8">{{ venta.numero_orden }}</div>
                     </div>
-                    <div class="row mb-2">
-                        <div class="col-md-4 fw-bold">Base Origen:</div>
-                        <div class="col-md-8">{{ venta.base_origen }}</div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold text-muted">
+                            <i class="fas fa-database me-1"></i>Base Origen:
+                        </div>
+                        <div class="col-md-8">{{ venta.base_origen|default:"No especificado" }}</div>
                     </div>
-                    <div class="row mb-2">
-                        <div class="col-md-4 fw-bold">Usuario Greta:</div>
-                        <div class="col-md-8">{{ venta.usuario_greta }}</div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold text-muted">
+                            <i class="fas fa-user-tag me-1"></i>Usuario Greta:
+                        </div>
+                        <div class="col-md-8">{{ venta.usuario_greta|default:"No especificado" }}</div>
                     </div>
                 </div>
             </div>
@@ -107,8 +230,8 @@
 
     
     <!-- Botones de acción -->
-    <div class="d-flex justify-content-between mt-4">
-        <a href="{% url 'telefonica:ventas_lista' %}" class="btn btn-secondary">
+    <div class="text-center mt-4 mb-4">
+        <a href="{% url 'telefonica:ventas_lista' %}" class="btn btn-outline-secondary btn-lg px-4">
             <i class="fas fa-arrow-left me-1"></i> Volver a Listado
         </a>
     </div>

@@ -9,7 +9,7 @@ class VentaPortabilidadForm(forms.ModelForm):
         fields = [
             'tipo_documento', 'documento', 'fecha_expedicion', 'nombre_completo',
             'telefono_legalizacion', 'plan_adquiere', 'numero_a_portar', 'nip', 'fecha_entrega',
-            'fecha_ventana_cambio', 'numero_orden', 'base_origen', 'usuario_greta', 'confronta', 'observacion'
+            'fecha_ventana_cambio', 'numero_orden', 'confronta', 'observacion'
         ]
         widgets = {
             'tipo_documento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
@@ -23,8 +23,6 @@ class VentaPortabilidadForm(forms.ModelForm):
             'fecha_entrega': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
             'fecha_ventana_cambio': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
             'numero_orden': forms.NumberInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
-            'base_origen': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
-            'usuario_greta': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'confronta': forms.FileInput(attrs={'class': 'form-control-file'}),
             'observacion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'autocomplete': 'off'})
         }
@@ -110,11 +108,10 @@ class VentaPrePosForm(forms.ModelForm):
     class Meta:
         model = VentaPrePos
         fields = [
-            'cliente_base', 'tipo_documento', 'documento', 'fecha_expedicion', 'nombre_completo',
-            'telefono_legalizacion', 'plan_adquiere', 'numero_orden', 'base_origen', 'usuario_greta', 'observacion'
+            'tipo_documento', 'documento', 'fecha_expedicion', 'nombre_completo',
+            'telefono_legalizacion', 'plan_adquiere', 'numero_orden', 'observacion'
         ]
         widgets = {
-            'cliente_base': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'tipo_documento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'documento': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'fecha_expedicion': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
@@ -122,8 +119,6 @@ class VentaPrePosForm(forms.ModelForm):
             'telefono_legalizacion': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'plan_adquiere': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
             'numero_orden': forms.NumberInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
-            'base_origen': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
-            'usuario_greta': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'observacion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'autocomplete': 'off'})
         }
     
@@ -132,6 +127,9 @@ class VentaPrePosForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Filtrar solo planes activos de tipo prepos
         self.fields['plan_adquiere'].queryset = Planes_portabilidad.objects.filter(estado='activo', tipo_plan='prepos')
+        # Excluir explícitamente el campo tipo_cliente del formulario
+        if 'tipo_cliente' in self.fields:
+            del self.fields['tipo_cliente']
 
 
 class ClientesUpgradeForm(forms.ModelForm):

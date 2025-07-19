@@ -101,12 +101,19 @@ class VentaPortabilidad(models.Model):
     fecha_entrega = models.DateField(verbose_name=_("Fecha de Entrega"), null=False, blank=False)
     fecha_ventana_cambio = models.DateField(verbose_name=_("Fecha de Ventana de Cambio"), null=False, blank=False)
     numero_orden = models.IntegerField(verbose_name=_("Número de Orden"), null=False)
-    base_origen = models.CharField(max_length=100, verbose_name=_("Base Origen"), null=False)
-    usuario_greta = models.CharField(max_length=100, verbose_name=_("Usuario Greta"), null=False)
+    base_origen = models.CharField(max_length=100, verbose_name=_("Base Origen"), null=True, blank=True)
+    usuario_greta = models.CharField(max_length=100, verbose_name=_("Usuario Greta"), null=True, blank=True)
     confronta = models.FileField(upload_to='confrontas/', verbose_name=_("Confronta"), null=True, blank=True)
     observacion = models.TextField(verbose_name=_("Observación"), null=True, blank=True)
     agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_portabilidad_realizadas", verbose_name=_("Agente"))
     backoffice = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_portabilidad_revisadas", verbose_name=_("Backoffice"))
+
+    # Información permanente del plan (para mantener histórico)
+    plan_nombre = models.CharField(max_length=150, verbose_name=_("Nombre del Plan"), null=True, blank=True)
+    plan_codigo = models.CharField(max_length=50, verbose_name=_("Código del Plan"), null=True, blank=True)
+    plan_caracteristicas = models.TextField(verbose_name=_("Características del Plan"), null=True, blank=True)
+    plan_cfm = models.DecimalField(max_digits=12, decimal_places=2, verbose_name=_("CFM del Plan"), null=True, blank=True)
+    plan_cfm_sin_iva = models.DecimalField(max_digits=12, decimal_places=2, verbose_name=_("CFM sin IVA del Plan"), null=True, blank=True)
 
     estado_venta = models.CharField(max_length=30, choices=ESTADO_VENTA_CHOICES, default='pendiente_revision', verbose_name=_("Estado Venta"))
     estado_logistica = models.CharField(max_length=21, choices=ESTADO_LOGISTICA_CHOICES, default='pendiente_seguimiento', verbose_name=_("Estado Logística"))
@@ -127,6 +134,14 @@ class VentaPortabilidad(models.Model):
         if not self.numero:
             now = timezone.now()
             self.numero = f"PORTA-{now.strftime('%Y%m%d%H%M%S')}"
+        
+        # Guardar información del plan de forma permanente
+        if self.plan_adquiere and not self.plan_nombre:
+            self.plan_nombre = self.plan_adquiere.nombre_plan
+            self.plan_codigo = self.plan_adquiere.codigo
+            self.plan_caracteristicas = self.plan_adquiere.caracteristicas
+            self.plan_cfm = self.plan_adquiere.CFM
+            self.plan_cfm_sin_iva = self.plan_adquiere.CFM_sin_iva
             
         super().save(*args, **kwargs)
     
@@ -185,6 +200,13 @@ class VentaPrePos(models.Model):
     observacion = models.TextField(verbose_name=_("Observación"), null=True, blank=True)
     agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_prepos_realizadas", verbose_name=_("Agente"))
     
+    # Información permanente del plan (para mantener histórico)
+    plan_nombre = models.CharField(max_length=150, verbose_name=_("Nombre del Plan"), null=True, blank=True)
+    plan_codigo = models.CharField(max_length=50, verbose_name=_("Código del Plan"), null=True, blank=True)
+    plan_caracteristicas = models.TextField(verbose_name=_("Características del Plan"), null=True, blank=True)
+    plan_cfm = models.DecimalField(max_digits=12, decimal_places=2, verbose_name=_("CFM del Plan"), null=True, blank=True)
+    plan_cfm_sin_iva = models.DecimalField(max_digits=12, decimal_places=2, verbose_name=_("CFM sin IVA del Plan"), null=True, blank=True)
+    
     estado_venta = models.CharField(max_length=30, choices=ESTADO_VENTA_PREPOS_CHOICES, default='enviada', verbose_name=_("Estado Venta"))
 
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Creación"))
@@ -203,6 +225,14 @@ class VentaPrePos(models.Model):
         if not self.numero:
             now = timezone.now()
             self.numero = f"PREPOS-{now.strftime('%Y%m%d%H%M%S')}"
+        
+        # Guardar información del plan de forma permanente
+        if self.plan_adquiere and not self.plan_nombre:
+            self.plan_nombre = self.plan_adquiere.nombre_plan
+            self.plan_codigo = self.plan_adquiere.codigo
+            self.plan_caracteristicas = self.plan_adquiere.caracteristicas
+            self.plan_cfm = self.plan_adquiere.CFM
+            self.plan_cfm_sin_iva = self.plan_adquiere.CFM_sin_iva
             
         super().save(*args, **kwargs)
     
@@ -287,8 +317,15 @@ class VentaUpgrade(models.Model):
     codigo_verificacion = models.CharField(max_length=6, verbose_name=_("Código de Verificación"), null=False, blank=False)
     plan_adquiere = models.ForeignKey(Planes_portabilidad, on_delete=models.PROTECT, related_name='ventas_upgrade', verbose_name=_("Plan Adquirido"), null=False)
     numero_orden = models.IntegerField(verbose_name=_("Número de Orden"), null=False)
-    base_origen = models.CharField(max_length=100, verbose_name=_("Base Origen"), null=False)
-    usuario_greta = models.CharField(max_length=100, verbose_name=_("Usuario Greta"), null=False)
+    base_origen = models.CharField(max_length=100, verbose_name=_("Base Origen"), null=True, blank=True)
+    usuario_greta = models.CharField(max_length=100, verbose_name=_("Usuario Greta"), null=True, blank=True)
+    
+    # Información permanente del plan (para mantener histórico)
+    plan_nombre = models.CharField(max_length=150, verbose_name=_("Nombre del Plan"), null=True, blank=True)
+    plan_codigo = models.CharField(max_length=50, verbose_name=_("Código del Plan"), null=True, blank=True)
+    plan_caracteristicas = models.TextField(verbose_name=_("Características del Plan"), null=True, blank=True)
+    plan_cfm = models.DecimalField(max_digits=12, decimal_places=2, verbose_name=_("CFM del Plan"), null=True, blank=True)
+    plan_cfm_sin_iva = models.DecimalField(max_digits=12, decimal_places=2, verbose_name=_("CFM sin IVA del Plan"), null=True, blank=True)
     
     observacion = models.TextField(verbose_name=_("Observación"), null=True, blank=True)
     agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_upgrade_realizadas", verbose_name=_("Agente"))
@@ -315,6 +352,14 @@ class VentaUpgrade(models.Model):
         if not self.numero:
             now = timezone.now()
             self.numero = f"UPGRADE-{now.strftime('%Y%m%d%H%M%S')}"
+        
+        # Guardar información del plan de forma permanente
+        if self.plan_adquiere and not self.plan_nombre:
+            self.plan_nombre = self.plan_adquiere.nombre_plan
+            self.plan_codigo = self.plan_adquiere.codigo
+            self.plan_caracteristicas = self.plan_adquiere.caracteristicas
+            self.plan_cfm = self.plan_adquiere.CFM
+            self.plan_cfm_sin_iva = self.plan_adquiere.CFM_sin_iva
             
         super().save(*args, **kwargs)
     
