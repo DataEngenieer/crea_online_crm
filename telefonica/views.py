@@ -28,6 +28,10 @@ def es_asesor(user):
 def es_asesor_o_backoffice(user):
     return user.groups.filter(name__in=['asesor', 'backoffice']).exists() or user.is_superuser
 
+def es_backoffice(user):
+    """Verifica si el usuario es backoffice, administrador o superusuario"""
+    return user.groups.filter(name='backoffice').exists() or user.groups.filter(name__iexact='Administrador').exists() or user.is_superuser
+
 # Vistas principales
 @login_required
 def dashboard(request):
@@ -302,10 +306,12 @@ def detalle_venta(request, pk):
     
     # Determinar roles y permisos
     is_backoffice = request.user.groups.filter(name='backoffice').exists()
+    is_admin = request.user.groups.filter(name__iexact='Administrador').exists()
+    is_superuser = request.user.is_superuser
     is_asesor = request.user.groups.filter(name='asesor').exists()
 
-    # Un asesor solo puede ver sus propias ventas. Un backoffice puede ver todas.
-    if not is_backoffice and (not is_asesor or venta.agente != request.user):
+    # Un asesor solo puede ver sus propias ventas. Un backoffice, administrador o superusuario puede ver todas.
+    if not (is_backoffice or is_admin or is_superuser) and (not is_asesor or venta.agente != request.user):
         messages.error(request, "No tienes permiso para acceder a esta página.")
         return redirect('telefonica:dashboard')
 
@@ -353,11 +359,14 @@ def detalle_venta(request, pk):
 @login_required
 def ventas_lista(request):
     """Lista de todas las ventas (portabilidad, upgrade y prepos) con filtrado según el rol del usuario"""
-    is_backoffice_user = request.user.groups.filter(name='backoffice').exists()
+    user = request.user
+    is_backoffice_user = user.groups.filter(name='backoffice').exists()
+    is_admin = user.groups.filter(name__iexact='Administrador').exists()
+    is_superuser = user.is_superuser
 
     # Filtrar ventas según el rol del usuario
-    if is_backoffice_user:
-        # Backoffice puede ver todas las ventas
+    if is_backoffice_user or is_admin or is_superuser:
+        # Backoffice, administradores y superusuarios pueden ver todas las ventas
         ventas_portabilidad = VentaPortabilidad.objects.all().order_by('-fecha_creacion')
         ventas_upgrade = VentaUpgrade.objects.all().order_by('-fecha_creacion')
         ventas_prepos = VentaPrePos.objects.all().order_by('-fecha_creacion')
@@ -468,7 +477,7 @@ def ventas_lista(request):
         'page_obj': page_obj,
         'q': documento,
         'estado': estado,
-        'es_backoffice': is_backoffice_user,
+        'es_backoffice': is_backoffice_user or is_admin or is_superuser,  # Tratar admin/superuser como backoffice para la interfaz
         'total_ventas': total_ventas,
         'ventas_pendientes': ventas_pendientes,
         'ventas_aprobadas': ventas_aprobadas,
@@ -713,7 +722,7 @@ def venta_revisar(request, venta_id):
     })
 
 @login_required
-@user_passes_test(lambda u: u.groups.filter(name='backoffice').exists())
+@user_passes_test(lambda u: u.groups.filter(name='backoffice').exists() or u.groups.filter(name__iexact='Administrador').exists() or u.is_superuser)
 def ventas_pendientes(request):
     """Bandeja de ventas pendientes de revisión"""
     ventas = VentaPortabilidad.objects.filter(estado_venta='pendiente_revision').order_by('-fecha_creacion')
@@ -757,16 +766,18 @@ def bandeja_seguimiento(request):
     Vista que muestra todas las ventas para hacer seguimiento
     """
     is_backoffice = request.user.groups.filter(name='backoffice').exists()
+    is_admin = request.user.groups.filter(name__iexact='Administrador').exists()
+    is_superuser = request.user.is_superuser
     is_asesor = request.user.groups.filter(name='asesor').exists()
 
     # Verificar permisos
-    if not is_backoffice and not is_asesor:
+    if not is_backoffice and not is_asesor and not is_admin and not is_superuser:
         messages.warning(request, "No tienes permiso para acceder a esta sección")
         return redirect('telefonica:dashboard')
     
     # Obtener ventas según el rol
-    if is_backoffice:
-        # Backoffice puede ver todas las ventas
+    if is_backoffice or is_admin or is_superuser:
+        # Backoffice, Administradores y Superusuarios pueden ver todas las ventas
         ventas = VentaPortabilidad.objects.all().order_by('-fecha_creacion')
     else: # is_asesor
         # Asesor solo puede ver sus ventas
@@ -978,10 +989,11 @@ def menu_fragment(request):
 @login_required
 def bandeja_pendientes(request):
     """
-    Vista que muestra las ventas pendientes de revisión para los usuarios de Backoffice
+    Vista que muestra las ventas pendientes de revisión para los usuarios de Backoffice, Administradores y Superusuarios
     """
     # Verificar permisos
-    if not request.user.groups.filter(name='backoffice').exists():
+    user = request.user
+    if not (user.groups.filter(name='backoffice').exists() or user.groups.filter(name__iexact='Administrador').exists() or user.is_superuser):
         messages.warning(request, "No tienes permiso para acceder a esta sección")
         return redirect('telefonica:dashboard')
     
