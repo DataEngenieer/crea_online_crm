@@ -39,6 +39,7 @@ def dashboard(request):
     user = request.user
     es_asesor = user.groups.filter(name='asesor').exists()
     es_backoffice = user.groups.filter(name='backoffice').exists()
+    es_admin = user.groups.filter(name__iexact='Administrador').exists()
 
     context = {
         'es_asesor': es_asesor,
@@ -61,9 +62,9 @@ def dashboard(request):
         # La tabla principal para un asesor debe mostrar sus propias ventas recientes
         context['ventas_recientes'] = VentaPortabilidad.objects.filter(agente=user).order_by('-fecha_creacion')[:10]
 
-    # --- Lógica para Backoffice ---
+    # --- Lógica para Backoffice, Administradores y Superusuarios ---
     # Esto anulará algunas variables de contexto si el usuario también es asesor, lo cual es correcto.
-    if es_backoffice:
+    if es_backoffice or es_admin or user.is_superuser:
         # Contar ventas por tipo para backoffice
         context.update({
             'ventas_portabilidad': VentaPortabilidad.objects.all().count(),
@@ -78,23 +79,9 @@ def dashboard(request):
         # La tabla principal de backoffice debe mostrar todas las ventas recientes pendientes de revisión
         context['ventas_recientes'] = VentaPortabilidad.objects.select_related('plan_adquiere').filter(estado_venta='pendiente_revision').order_by('-fecha_creacion')[:10]
 
-    # --- Lógica para Superusuario (si no está en grupos o es ambos) ---
-    if user.is_superuser:
-        if es_backoffice and es_asesor:
-            context['titulo'] = 'Dashboard General'
-        elif not es_backoffice and not es_asesor:
-            # Asignar vista de backoffice por defecto a superusuarios sin grupo
-            context.update({
-                'ventas_portabilidad': VentaPortabilidad.objects.all().count(),
-                'ventas_prepago': VentaPrePos.objects.all().count(),
-                'ventas_upgrade': VentaUpgrade.objects.all().count(),
-                'ventas_pendientes': VentaPortabilidad.objects.filter(estado_venta='pendiente_revision').count(),
-                'ventas_devueltas': VentaPortabilidad.objects.filter(estado_venta='devuelta').count(),
-                'ventas_aprobadas': VentaPortabilidad.objects.filter(estado_venta='aprobada').count(),
-                'ventas_digitadas': VentaPortabilidad.objects.filter(estado_venta='digitada').count(),
-                'titulo': 'Dashboard Superusuario',
-                'ventas_recientes': VentaPortabilidad.objects.select_related('plan_adquiere').all().order_by('-fecha_creacion')[:10]
-            })
+    # --- Lógica para Superusuario (si está en múltiples grupos) ---
+    if user.is_superuser and es_backoffice and es_asesor:
+        context['titulo'] = 'Dashboard General'
 
     return render(request, 'telefonica/dashboard.html', context)
 
@@ -676,7 +663,7 @@ def plan_portabilidad_cambiar_estado(request, plan_id):
     return redirect('telefonica:planes_portabilidad_lista')
 
 @login_required
-@user_passes_test(lambda u: u.groups.filter(name='backoffice').exists())
+@user_passes_test(lambda u: u.groups.filter(name='backoffice').exists() or u.groups.filter(name__iexact='Administrador').exists() or u.is_superuser)
 def venta_revisar(request, venta_id):
     """Vista para que backoffice revise una venta"""
     venta = get_object_or_404(VentaPortabilidad, id=venta_id)
@@ -737,7 +724,7 @@ def ventas_pendientes(request):
     })
 
 @login_required
-@user_passes_test(lambda u: u.groups.filter(name='backoffice').exists())
+@user_passes_test(lambda u: u.groups.filter(name='backoffice').exists() or u.groups.filter(name__iexact='Administrador').exists() or u.is_superuser)
 def bandeja_digitacion(request):
     """Bandeja de ventas aprobadas pendientes de digitación"""
     if not es_backoffice(request.user):

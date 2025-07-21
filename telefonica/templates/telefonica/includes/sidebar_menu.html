@@ -75,24 +75,17 @@
                     </a>
                 {% endif %}
                 
-                <!-- Sección para Backoffice -->
-                {% if user|has_group:"backoffice" %}
+                <!-- Sección para Backoffice, Administradores y Superusuarios -->
+                {% if user|has_group:"backoffice" or user|has_group:"administrador" or user.is_superuser %}
                     <h6 class="text-muted small mt-3 mb-2 ps-2">BANDEJAS BACKOFFICE</h6>
                     <a class="list-group-item list-group-item-action bg-transparent text-white border-0 ps-3 py-2" href="{% url 'telefonica:bandeja_pendientes' %}" id="pendientesBackofficeLink">
                         <i class="bi bi-hourglass-split me-2"></i> Pendientes de Revisión
                         <span class="badge bg-warning rounded-pill float-end">{{ ventas_pendientes|default:'' }}</span>
                     </a>
                     
-                    <a class="list-group-item list-group-item-action bg-transparent text-white border-0 ps-3 py-2" href="{% url 'telefonica:bandeja_digitacion' %}" id="digitacionLink">
-                        <i class="bi bi-input-cursor me-2"></i> Para Digitación
-                        <span class="badge bg-info rounded-pill float-end">{{ ventas_digitacion|default:'' }}</span>
-                    </a>
+
                     <a class="list-group-item list-group-item-action bg-transparent text-white border-0 ps-3 py-2" href="{% url 'telefonica:bandeja_seguimiento' %}" id="seguimientoLink">
                         <i class="bi bi-clipboard-check me-2"></i> Seguimiento
-                    </a>
-                    <a class="list-group-item list-group-item-action bg-transparent text-white border-0 ps-3 py-2" href="{% url 'telefonica:bandeja_devueltas' %}" id="devueltasBackofficeLink">
-                        <i class="bi bi-arrow-return-left me-2"></i> Devueltas
-                        <span class="badge bg-danger rounded-pill float-end">{{ ventas_devueltas|default:'' }}</span>
                     </a>
                     
                     <h6 class="text-muted small mt-3 mb-2 ps-2">CONFIGURACIÓN</h6>
