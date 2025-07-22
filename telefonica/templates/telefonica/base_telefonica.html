@@ -75,6 +75,7 @@
         <a href="{% url 'telefonica:dashboard' %}"
            class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
             <i class="bi bi-speedometer2 me-2"></i> Dashboard
+        {% endif %}
         </a>-->
         <!-- Ventas -->
         <span class="menu-section">Ventas</span>
@@ -82,12 +83,10 @@
            class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'ventas_lista' %}active{% endif %}">
             <i class="bi bi-list-ul me-2"></i> Lista de Ventas
         </a>
-        {% endif %}
         {% if user|has_group:"asesor"%}
         <a href="{% url 'telefonica:ventas_lista' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'ventas_lista' %}active{% endif %}">
             <i class="bi bi-list-ul me-2"></i> Mis Ventas
         </a>
-        {% endif %}
         <div class="dropdown">
             <a class="list-group-item list-group-item-action bg-transparent text-white border-0 dropdown-toggle" 
                href="#" role="button" id="nuevaVentaDropdown" 
@@ -116,7 +115,7 @@
                 </li>
             </ul>
         </div>
-        {% if user|has_group:"asesor"%}
+        
         <!-- Agendamientos -->
         <span class="menu-section">Agendamientos</span>
         <a href="{% url 'telefonica:agendamiento_crear' %}"
@@ -147,7 +146,7 @@
             <i class="bi bi-clipboard-check me-2"></i> Seguimiento
         </a>
         {% endif %}
-        {% if user.is_superuser %}
+        {% if user.is_superuser or user|has_group:"administrador"%}
         <!-- Comisiones -->
         <span class="menu-section">Comisiones</span>
         <a href="{% url 'telefonica:comisiones_lista' %}"
