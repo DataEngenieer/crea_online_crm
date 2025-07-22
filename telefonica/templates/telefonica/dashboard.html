@@ -141,51 +141,19 @@
         {% endif %}
     </div>
     
-    <!-- Lista de ventas recientes -->
+    <!-- Gráfico de ventas por día -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Ventas Recientes</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Ventas por Día (Últimos 30 días)</h6>
         </div>
         <div class="card-body">
-            {% if ventas_recientes %}
-            <div class="table-responsive">
-                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Cliente</th>
-                            <th>Producto</th>
-                            <th>Fecha</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for venta in ventas_recientes %}
-                        <tr>
-                            <td>{{ venta.id }}</td>
-                            <td>{{ venta.cliente.nombre }} {{ venta.cliente.apellido }}</td>
-                            <td>{{ venta.producto }}</td>
-                            <td>{{ venta.fecha_creacion|date:"d/m/Y" }}</td>
-                            <td>
-                                <span class="badge {% if venta.estado_venta == 'pendiente_revision' %}bg-warning{% elif venta.estado_venta == 'aprobada' %}bg-success{% elif venta.estado_venta == 'devuelta' %}bg-danger{% elif venta.estado_venta == 'digitada' %}bg-info{% endif %}">
-                                    {{ venta.get_estado_venta_display }}
-                                </span>
-                            </td>
-                            <td>
-                                <a href="{% url 'telefonica:venta_detalle' venta.id %}" class="btn btn-info btn-sm">
-                                    <i class="bi bi-search"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="chart-container" style="position: relative; height:400px; width:100%">
+                <canvas id="ventasPorDiaChart"></canvas>
             </div>
-            {% else %}
-            <div class="alert alert-info">
+            {% if not fechas_ventas or fechas_ventas == '[]' %}
+            <div class="alert alert-info mt-3">
                 {% if es_asesor and not es_backoffice %}
-                    No tienes ventas recientes registradas. 
+                    No tienes ventas registradas en los últimos 30 días. 
                     <div class="dropdown d-inline-block">
                         <button class="btn btn-primary dropdown-toggle" type="button" id="nuevaVentaDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-plus-circle me-2"></i>Nueva Venta
@@ -203,13 +171,69 @@
                         </ul>
                     </div>
                 {% elif es_backoffice %}
-                    No hay ventas pendientes de revisión en este momento.
+                    No hay ventas registradas en los últimos 30 días.
                 {% else %}
-                    No hay ventas recientes para mostrar.
+                    No hay ventas para mostrar en el gráfico.
                 {% endif %}
             </div>
             {% endif %}
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Obtener datos del contexto
+        const fechas = {{ fechas_ventas|safe }};
+        const totales = {{ totales_ventas|safe }};
+        
+        if (fechas && fechas.length > 0) {
+            // Configurar el gráfico
+            const ctx = document.getElementById('ventasPorDiaChart').getContext('2d');
+            const ventasPorDiaChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: fechas,
+                    datasets: [{
+                        label: 'Cantidad de Ventas',
+                        data: totales,
+                        backgroundColor: 'rgba(197, 74, 176, 0.7)',
+                        borderColor: 'rgb(197, 74, 176)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0 // Solo mostrar números enteros
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Ventas por Día (Últimos 30 días)',
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}

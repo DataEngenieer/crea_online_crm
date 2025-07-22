@@ -41,10 +41,48 @@ def dashboard(request):
     es_backoffice = user.groups.filter(name='backoffice').exists()
     es_admin = user.groups.filter(name__iexact='Administrador').exists()
 
+    # Obtener datos para el gráfico de ventas por día
+    from django.db.models import Count
+    from django.db.models.functions import TruncDate
+    
+    # Obtener las ventas de los últimos 30 días
+    fecha_limite = timezone.now() - timezone.timedelta(days=30)
+    
+    # Agrupar ventas por día
+    if es_asesor and not es_backoffice and not es_admin and not user.is_superuser:
+        # Para asesores, solo sus ventas
+        ventas_por_dia = VentaPortabilidad.objects.filter(
+            agente=user,
+            fecha_creacion__gte=fecha_limite
+        ).annotate(
+            fecha=TruncDate('fecha_creacion')
+        ).values('fecha').annotate(
+            total=Count('id')
+        ).order_by('fecha')
+    else:
+        # Para backoffice, admin y superusuarios, todas las ventas
+        ventas_por_dia = VentaPortabilidad.objects.filter(
+            fecha_creacion__gte=fecha_limite
+        ).annotate(
+            fecha=TruncDate('fecha_creacion')
+        ).values('fecha').annotate(
+            total=Count('id')
+        ).order_by('fecha')
+    
+    # Preparar datos para el gráfico
+    fechas = []
+    totales = []
+    
+    for venta in ventas_por_dia:
+        fechas.append(venta['fecha'].strftime('%d/%m/%Y'))
+        totales.append(venta['total'])
+    
     context = {
         'es_asesor': es_asesor,
         'es_backoffice': es_backoffice,
-        'ventas_recientes': VentaPortabilidad.objects.none() # Default empty queryset
+        'ventas_recientes': VentaPortabilidad.objects.none(), # Default empty queryset
+        'fechas_ventas': json.dumps(fechas),
+        'totales_ventas': json.dumps(totales)
     }
 
     # --- Lógica para Asesores ---
