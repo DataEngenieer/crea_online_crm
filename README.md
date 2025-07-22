@@ -1,27 +1,69 @@
-# ASECOFIN
+# CREA Online CRM
 
-Sistema de gestión documental para la administración de comprobantes de pago y usuarios.
+Sistema integral de gestión para campañas de cartera, ventas de Telefónica, tickets de soporte, chat interno y control de calidad.
 
 ## 🚀 Características principales
 
-- **Gestión de Usuarios**
-  - Registro y autenticación de usuarios
-  - Roles: Administrador y Empleado
-  - Perfiles de usuario personalizables
+### Módulo Campaña de Cartera
+- **Gestión de Clientes**
+  - Base de datos de deudores
+  - Seguimiento de estados de contacto
+  - Registro de gestiones
+- **Acuerdos de Pago**
+  - Creación y seguimiento de acuerdos
+  - Cálculo de descuentos
+  - Registro de pagos
+- **Seguimientos**
+  - Notificaciones automáticas
+  - Calendario de seguimientos
 
-- **Gestión de Comprobantes**
-  - Carga y descarga de comprobantes
-  - Visualización de historial de actividades
-  - Separación automática de PDFs
+### Módulo Telefónica
+- **Gestión de Ventas**
+  - Portabilidad: Gestión completa del proceso de portabilidad
+  - PrePos: Ventas a clientes prepago que pasan a pospago
+  - Upgrade: Mejora de planes para clientes existentes
+- **Bandejas de Trabajo**
+  - Pendientes: Ventas en proceso de revisión
+  - Digitación: Ventas que requieren ingreso de datos
+  - Seguimiento: Control de estado de ventas
+  - Devueltas: Ventas con observaciones a corregir
+- **Gestión de Clientes**
+  - Base de datos de clientes PrePos y Upgrade
+  - Carga masiva de clientes
+  - Búsqueda y filtrado avanzado
+- **Agendamientos**
+  - Calendario de seguimiento a clientes
+  - Gestión de estados (agendado, venta, volver a llamar, etc.)
+  - Vista de calendario mensual
+- **Comisiones**
+  - Cálculo automático de comisiones por ventas
+  - Reportes por agente y período
 
-- **Dashboard Interactivo**
-  - Estadísticas de usuarios y actividad
-  - Gráficos de tendencias
-  - Resumen de acciones recientes
+### Módulo Chat
+- **Comunicación Interna**
+  - Chat entre usuarios del sistema
+  - Mensajes masivos de supervisores a asesores
+  - Notificación de mensajes no leídos
 
-- **Seguridad**
-  - Autenticación por correo electrónico
-  - Control de acceso basado en roles
+### Módulo Tickets
+- **Sistema de Soporte Interno**
+  - Creación y seguimiento de tickets
+  - Categorización por tipo y prioridad
+  - Asignación a responsables
+  - Seguimiento de tiempos de resolución
+- **Múltiples Aplicativos**
+  - Soporte para Cartera, Telefónica y Vicidial
+
+### Módulo Calidad
+- **Control de Calidad**
+  - Evaluación de gestiones
+  - Monitoreo de llamadas
+  - Reportes de calidad
+
+### Seguridad
+- **Autenticación por Roles**
+  - Agente, backoffice, supervisor, administrador
+  - Control de acceso basado en permisos
   - Registro de actividades
 
 ## 🛠️ Instalación
@@ -29,7 +71,7 @@ Sistema de gestión documental para la administración de comprobantes de pago y
 1. **Clonar el repositorio**
    ```bash
    git clone [URL_DEL_REPOSITORIO]
-   cd asecofin_crm
+   cd crea_online_crm
    ```
 
 2. **Configurar entorno virtual**
@@ -44,9 +86,9 @@ Sistema de gestión documental para la administración de comprobantes de pago y
    pip install -r requirements.txt
    ```
 
-4. **Configurar base de datos**
-   - Configura la base de datos en `asecofin_crm/settings.py`
-   - SQLite viene configurado por defecto para desarrollo
+4. **Configurar variables de entorno**
+   - Crea un archivo `.env` basado en `.env.example`
+   - Configura las variables necesarias (base de datos, correo, etc.)
 
 5. **Aplicar migraciones**
    ```bash
@@ -68,56 +110,70 @@ Sistema de gestión documental para la administración de comprobantes de pago y
 ## 🎨 Interfaz de Usuario
 
 - Diseño responsivo con Bootstrap 5
-- Paleta de colores corporativa (#006def)
-- Navegación intuitiva con barra lateral
+- Menú lateral personalizado según rol del usuario
 - Componentes modernos y accesibles
+- Notificaciones en tiempo real para seguimientos y mensajes
 
 ## 📊 Módulos Principales
 
-### Para Administradores
-- Gestión completa de usuarios
+### Módulo Core
+- Gestión de usuarios y perfiles
 - Dashboard con estadísticas
-- Herramientas de administración
-- Separación de PDFs
+- Seguimientos y notificaciones
+- Gestión de cartera y acuerdos de pago
+- Empleados y supervisores
 
-### Para Empleados
-- Visualización de comprobantes
-- Historial de descargas
-- Perfil de usuario
+### Módulo Telefónica
+- Gestión de ventas (Portabilidad, PrePos, Upgrade)
+- Administración de planes
+- Bandejas de trabajo
+- Agendamientos y calendario
+- Comisiones
+
+### Módulo Chat
+- Comunicación interna entre usuarios
+- Mensajes directos y masivos
+- Notificaciones de nuevos mensajes
+
+### Módulo Tickets
+- Sistema de soporte interno
+- Seguimiento de incidencias y requerimientos
+- Priorización y asignación de tickets
+
+### Módulo Calidad
+- Evaluación de gestiones
+- Monitoreo de calidad
+- Reportes de desempeño
 
 ## 📋 Requisitos del Sistema
 
 - Python 3.8+
 - Django 4.2+
-- Base de datos (SQLite, PostgreSQL o MySQL)
+- Base de datos PostgreSQL (recomendado) o SQLite
 - Navegador web moderno
 
 ## 📂 Manejo de archivos media en producción (Railway)
 
-- **Ruta persistente:** En Railway, los archivos subidos (por ejemplo, PDFs separados y originales) se almacenan en la ruta `/app/media`, que es persistente entre despliegues.
+- **Ruta persistente:** En Railway, los archivos subidos (confrontas, documentos, etc.) se almacenan en la ruta `/app/media`, que es persistente entre despliegues.
 - **Configuración en Django:**
   ```python
   MEDIA_URL = '/media/'
-  MEDIA_ROOT = '/app/media'
+  MEDIA_ROOT = os.getenv('MEDIA_ROOT', os.path.join(BASE_DIR, 'media'))
   ```
-- **Creación automática:** El sistema crea la carpeta `/app/media` al iniciar si no existe.
-- **Carga y acceso:** Todos los archivos subidos por los usuarios se guardan en subcarpetas dentro de `/app/media`.
-- **Servir archivos media en producción:**
-  - Railway **NO** sirve archivos media automáticamente. Se recomienda usar un almacenamiento externo (como S3) para proyectos de alta concurrencia.
-  - Para proyectos pequeños, puedes servir archivos media desde Django agregando en `urls.py` (solo para desarrollo o pruebas):
-    ```python
-    from django.conf import settings
-    from django.conf.urls.static import static
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    ```
-  - **¡No usar en producción real!** Para producción, usa un servidor web (Nginx, etc.) o almacenamiento externo.
+- **Creación automática:** El sistema crea la carpeta de medios al iniciar si no existe.
 - **Importante:**
   - Asegúrate de que tus rutas de guardado y lectura de archivos usen siempre `settings.MEDIA_ROOT`.
-  - Si necesitas acceso persistente a los archivos tras reinicios/despliegues, usa siempre la ruta `/app/media`.
+  - Si necesitas acceso persistente a los archivos tras reinicios/despliegues, usa siempre la ruta configurada en las variables de entorno.
+
+## 🔄 Sesiones y Autenticación
+
+- Duración de sesión: 12 horas (configurable)
+- Redirección automática al login cuando la sesión expira
+- Control de acceso basado en grupos de usuarios
 
 ## 📝 Licencia
 
-Este proyecto es de uso interno de ASECOFIN. Todos los derechos reservados.
+Este proyecto es de uso interno de SINERGY. Todos los derechos reservados.
 
 ---
 

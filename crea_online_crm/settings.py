@@ -61,7 +61,7 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
-ROOT_URLCONF = 'asecofin_crm.urls'
+ROOT_URLCONF = 'crea_online_crm.urls'
 
 TEMPLATES = [
     {
@@ -79,7 +79,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'asecofin_crm.wsgi.application'
+WSGI_APPLICATION = 'crea_online_crm.wsgi.application'
+
 
 
 # Database

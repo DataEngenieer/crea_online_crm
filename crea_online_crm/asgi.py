@@ -1,5 +1,5 @@
 """
-ASGI config for asecofin_crm project.
+ASGI config for crea_online_crm project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'asecofin_crm.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'crea_online_crm.settings')
 
 application = get_asgi_application()

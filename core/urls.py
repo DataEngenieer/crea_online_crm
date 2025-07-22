@@ -4,6 +4,7 @@ app_name = 'core'  # Necesario para definir el namespace de la aplicación
 from . import views
 from . import views_acuerdos
 from . import views_reportes
+from . import views_api
 from django.contrib.auth.views import (
     LoginView, LogoutView, PasswordResetView, PasswordResetDoneView, PasswordResetConfirmView, PasswordResetCompleteView
 )
@@ -53,6 +54,9 @@ urlpatterns = [
     
     # Cambio de módulo
     path('set_module/', views.cambiar_modulo, name='cambiar_modulo'),
+    
+    # API para verificación de sesión
+    path('api/check-session/', views_api.check_session, name='check_session'),
 ]
 
 if settings.DEBUG:

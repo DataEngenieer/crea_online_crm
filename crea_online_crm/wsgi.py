@@ -1,5 +1,5 @@
 """
-WSGI config for asecofin_crm project.
+WSGI config for crea_online_crm project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'asecofin_crm.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'crea_online_crm.settings')
 
 application = get_wsgi_application()
