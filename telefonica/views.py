@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, User
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.template.loader import render_to_string
 from django.http import JsonResponse, HttpResponseRedirect
@@ -407,11 +407,49 @@ def ventas_lista(request):
         ventas_portabilidad = ventas_portabilidad.filter(estado_venta=estado)
     
     # Filtrar por documento si se especifica
-    documento = request.GET.get('documento')
-    if documento and documento != '':
-        ventas_portabilidad = ventas_portabilidad.filter(documento__icontains=documento)
-        ventas_upgrade = ventas_upgrade.filter(documento__icontains=documento)
-        ventas_prepos = ventas_prepos.filter(documento__icontains=documento)
+    q = request.GET.get('q', '')
+    if q and q != '':
+        ventas_portabilidad = ventas_portabilidad.filter(
+            Q(documento__icontains=q) | 
+            Q(nombre_completo__icontains=q) | 
+            Q(numero__icontains=q) | 
+            Q(plan_adquiere__nombre_plan__icontains=q) | 
+            Q(plan_adquiere__codigo__icontains=q) | 
+            Q(plan_nombre__icontains=q) | 
+            Q(plan_codigo__icontains=q)
+        )
+        ventas_upgrade = ventas_upgrade.filter(
+            Q(documento__icontains=q) | 
+            Q(nombre_completo__icontains=q) | 
+            Q(numero__icontains=q) | 
+            Q(plan_adquiere__nombre_plan__icontains=q) | 
+            Q(plan_adquiere__codigo__icontains=q) | 
+            Q(plan_nombre__icontains=q) | 
+            Q(plan_codigo__icontains=q)
+        )
+        ventas_prepos = ventas_prepos.filter(
+            Q(documento__icontains=q) | 
+            Q(nombre_completo__icontains=q) | 
+            Q(numero__icontains=q) | 
+            Q(plan_adquiere__nombre_plan__icontains=q) | 
+            Q(plan_adquiere__codigo__icontains=q) | 
+            Q(plan_nombre__icontains=q) | 
+            Q(plan_codigo__icontains=q)
+        )
+    
+    # Filtrar por tipo de venta
+    tipo_venta = request.GET.get('tipo_venta')
+    
+    # Filtrar por agente
+    agente_id = request.GET.get('agente')
+    if agente_id and agente_id != '':
+        try:
+            agente = User.objects.get(id=agente_id)
+            ventas_portabilidad = ventas_portabilidad.filter(agente=agente)
+            ventas_upgrade = ventas_upgrade.filter(agente=agente)
+            ventas_prepos = ventas_prepos.filter(agente=agente)
+        except User.DoesNotExist:
+            pass
     
     # Filtrar por fechas
     fecha_desde = request.GET.get('fecha_desde')
@@ -431,53 +469,56 @@ def ventas_lista(request):
     # Crear una lista combinada de todas las ventas
     todas_ventas = []
     
-    # Añadir ventas de portabilidad
-    for venta in ventas_portabilidad:
-        todas_ventas.append({
-            'id': venta.id,
-            'numero': venta.numero,
-            'tipo_venta': 'portabilidad',
-            'nombre_completo': venta.nombre_completo,
-            'documento': venta.documento,
-            'plan_adquiere': venta.plan_adquiere,
-            'fecha_creacion': venta.fecha_creacion,
-            'estado_venta': venta.estado_venta,
-            'agente': venta.agente,
-            'backoffice': getattr(venta, 'backoffice', None),
-            'detalle_url': 'telefonica:detalle_venta_portabilidad'
-        })
+    # Añadir ventas de portabilidad (si no se filtra por tipo o si el tipo es portabilidad)
+    if not tipo_venta or tipo_venta == 'portabilidad':
+        for venta in ventas_portabilidad:
+            todas_ventas.append({
+                'id': venta.id,
+                'numero': venta.numero,
+                'tipo_venta': 'portabilidad',
+                'nombre_completo': venta.nombre_completo,
+                'documento': venta.documento,
+                'plan_adquiere': venta.plan_adquiere,
+                'fecha_creacion': venta.fecha_creacion,
+                'estado_venta': venta.estado_venta,
+                'agente': venta.agente,
+                'backoffice': getattr(venta, 'backoffice', None),
+                'detalle_url': 'telefonica:detalle_venta_portabilidad'
+            })
     
-    # Añadir ventas de upgrade
-    for venta in ventas_upgrade:
-        todas_ventas.append({
-            'id': venta.id,
-            'numero': venta.numero,
-            'tipo_venta': 'upgrade',
-            'nombre_completo': venta.nombre_completo,
-            'documento': venta.documento,
-            'plan_adquiere': venta.plan_adquiere,
-            'fecha_creacion': venta.fecha_creacion,
-            'estado_venta': 'pendiente_revision',  # Valor predeterminado
-            'agente': venta.agente,
-            'backoffice': None,
-            'detalle_url': 'telefonica:detalle_venta_upgrade'
-        })
+    # Añadir ventas de upgrade (si no se filtra por tipo o si el tipo es upgrade)
+    if not tipo_venta or tipo_venta == 'upgrade':
+        for venta in ventas_upgrade:
+            todas_ventas.append({
+                'id': venta.id,
+                'numero': venta.numero,
+                'tipo_venta': 'upgrade',
+                'nombre_completo': venta.nombre_completo,
+                'documento': venta.documento,
+                'plan_adquiere': venta.plan_adquiere,
+                'fecha_creacion': venta.fecha_creacion,
+                'estado_venta': 'pendiente_revision',  # Valor predeterminado
+                'agente': venta.agente,
+                'backoffice': None,
+                'detalle_url': 'telefonica:detalle_venta_upgrade'
+            })
     
-    # Añadir ventas de prepos
-    for venta in ventas_prepos:
-        todas_ventas.append({
-            'id': venta.id,
-            'numero': venta.numero,
-            'tipo_venta': 'prepago',
-            'nombre_completo': venta.nombre_completo,
-            'documento': venta.documento,
-            'plan_adquiere': venta.plan_adquiere,
-            'fecha_creacion': venta.fecha_creacion,
-            'estado_venta': 'pendiente_revision',  # Valor predeterminado
-            'agente': venta.agente,
-            'backoffice': None,
-            'detalle_url': 'telefonica:detalle_venta_prepago'
-        })
+    # Añadir ventas de prepos (si no se filtra por tipo o si el tipo es prepago)
+    if not tipo_venta or tipo_venta == 'prepago':
+        for venta in ventas_prepos:
+            todas_ventas.append({
+                'id': venta.id,
+                'numero': venta.numero,
+                'tipo_venta': 'prepago',
+                'nombre_completo': venta.nombre_completo,
+                'documento': venta.documento,
+                'plan_adquiere': venta.plan_adquiere,
+                'fecha_creacion': venta.fecha_creacion,
+                'estado_venta': 'pendiente_revision',  # Valor predeterminado
+                'agente': venta.agente,
+                'backoffice': None,
+                'detalle_url': 'telefonica:detalle_venta_prepago'
+            })
     
     # Ordenar todas las ventas por fecha de creación (más reciente primero)
     todas_ventas.sort(key=lambda x: x['fecha_creacion'], reverse=True)
@@ -498,10 +539,18 @@ def ventas_lista(request):
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
     
+    # Obtener lista de agentes para el filtro
+    agentes = User.objects.filter(groups__name='asesor').order_by('first_name', 'last_name')
+    
     return render(request, 'telefonica/ventas_lista.html', {
         'page_obj': page_obj,
-        'q': documento,
+        'q': q,  # Usar 'q' en lugar de 'documento' para coincidir con la plantilla
         'estado': estado,
+        'tipo_venta': tipo_venta,
+        'agente': agente_id,  # Usar 'agente' en lugar de 'agente_id' para coincidir con la plantilla
+        'agentes': agentes,  # Lista de agentes para el select
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
         'es_backoffice': is_backoffice_user or is_admin or is_superuser,  # Tratar admin/superuser como backoffice para la interfaz
         'total_ventas': total_ventas,
         'ventas_pendientes': ventas_pendientes,

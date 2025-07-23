@@ -1,0 +1,474 @@
+{% extends 'telefonica/base_telefonica.html' %}
+{% load static %}
+
+{% block title %}Reportes Telefónica - CRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-file-earmark-bar-graph me-2"></i>Reportes Telefónica
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Formulario para el tipo de reporte (GET) -->
+                    <form method="GET" id="tipoReporteForm" class="mb-3">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label for="tipo_reporte" class="form-label">Tipo de Reporte</label>
+                                <select name="tipo_reporte" id="tipo_reporte" class="form-select" onchange="this.form.submit()">
+                                    {% for valor, etiqueta in tipos_reporte %}
+                                        <option value="{{ valor }}" {% if valor == tipo_reporte %}selected{% endif %}>
+                                            {{ etiqueta }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Formulario principal (POST) -->
+                    <form method="POST" id="filtroForm" class="mb-4">
+                        {% csrf_token %}
+                        <input type="hidden" name="tipo_reporte" value="{{ tipo_reporte }}">
+                        
+                        <!-- Filtros de fecha -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <label for="fecha_inicio" class="form-label">Fecha Inicio</label>
+                                <input type="date" name="fecha_inicio" id="fecha_inicio" class="form-control" value="{{ fecha_inicio }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="fecha_fin" class="form-label">Fecha Fin</label>
+                                <input type="date" name="fecha_fin" id="fecha_fin" class="form-control" value="{{ fecha_fin }}">
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <div class="btn-group" role="group">
+                                    <button type="button" id="seleccionar-todos" class="btn btn-outline-secondary btn-sm">
+                                        <i class="bi bi-check-all me-1"></i> Seleccionar todos
+                                    </button>
+                                    <button type="button" id="deseleccionar-todos" class="btn btn-outline-secondary btn-sm">
+                                        <i class="bi bi-x-circle me-1"></i> Deseleccionar todos
+                                    </button>
+                                </div>
+                                <div class="ms-3">
+                                    <button type="submit" name="accion" value="aplicar" class="btn btn-sm btn-primary me-2 btn-aplicar-filtros">
+                                    <i class="bi bi-funnel me-1"></i> Aplicar Filtros
+                                </button>
+                                <button type="submit" name="accion" value="exportar" formaction="{% url 'telefonica:reportes_exportar' %}" class="btn btn-sm btn-success btn-export">
+                                    <i class="bi bi-file-earmark-excel me-1"></i> Exportar a Excel
+                                </button>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Selección de campos -->
+                        {% if campos_disponibles %}
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">
+                                            <i class="bi bi-list-check me-2"></i>Campos a Exportar
+                                            <span class="badge bg-primary ms-2" id="contador-campos">0</span>
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-2">
+                                            {% for campo, etiqueta in campos_disponibles %}
+                                            <div class="col-md-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input campo-exportar" type="checkbox" 
+                                                           name="campos" value="{{ campo }}" id="campo_{{ forloop.counter }}"
+                                                           {% if campo in campos_seleccionados %}checked{% endif %}>
+                                                    <label class="form-check-label" for="campo_{{ forloop.counter }}">
+                                                        {{ etiqueta }}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="card-footer text-end">
+                                        <button type="submit" name="accion" value="aplicar" class="btn btn-primary me-2 btn-aplicar">
+                                            <i class="bi bi-funnel me-1"></i> Aplicar Cambios
+                                        </button>
+                                        <button type="submit" formaction="{% url 'telefonica:reportes_exportar' %}" class="btn btn-success btn-export">
+                                            <i class="bi bi-file-earmark-excel me-1"></i> Exportar a Excel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </form>
+                    
+                    <!-- Resultados -->
+                    {% if datos %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-table me-2"></i>Vista Previa de Datos
+                                    </h6>
+                                    <div>
+                                        <span class="badge bg-info">{{ total_registros }} registro{{ total_registros|pluralize }}</span>
+                                        {% if mostrando_vista_previa %}
+                                            <span class="badge bg-warning">Mostrando primeros 100</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-striped">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    {% if tipo_reporte == 'ventas_portabilidad' %}
+                                                        <th>Número</th>
+                                                        <th>Documento</th>
+                                                        <th>Nombre</th>
+                                                        <th>Teléfono</th>
+                                                        <th>Plan</th>
+                                                        <th>Estado Venta</th>
+                                                        <th>Estado Logística</th>
+                                                        <th>Agente</th>
+                                                        <th>Fecha</th>
+                                                    {% elif tipo_reporte == 'ventas_prepos' %}
+                                                        <th>Número</th>
+                                                        <th>Documento</th>
+                                                        <th>Nombre</th>
+                                                        <th>Teléfono</th>
+                                                        <th>Plan</th>
+                                                        <th>Estado</th>
+                                                        <th>Agente</th>
+                                                        <th>Fecha</th>
+                                                    {% elif tipo_reporte == 'ventas_upgrade' %}
+                                                        <th>Número</th>
+                                                        <th>Documento</th>
+                                                        <th>Nombre</th>
+                                                        <th>Teléfono</th>
+                                                        <th>Plan</th>
+                                                        <th>Estado</th>
+                                                        <th>Agente</th>
+                                                        <th>Fecha</th>
+                                                    {% elif tipo_reporte == 'agendamientos' %}
+                                                        <th>Cliente</th>
+                                                        <th>Teléfono</th>
+                                                        <th>Tipo Venta</th>
+                                                        <th>Estado</th>
+                                                        <th>Fecha Llamar</th>
+                                                        <th>Agente</th>
+                                                        <th>Fecha Creación</th>
+                                                    {% elif tipo_reporte == 'comisiones' %}
+                                                        <th>Venta</th>
+                                                        <th>Cliente</th>
+                                                        <th>Agente</th>
+                                                        <th>Monto</th>
+                                                        <th>Estado</th>
+                                                        <th>Fecha Creación</th>
+                                                        <th>Fecha Pago</th>
+                                                    {% elif tipo_reporte == 'escalamientos' %}
+                                                        <th>Venta</th>
+                                                        <th>Cliente</th>
+                                                        <th>Tipo</th>
+                                                        <th>Descripción</th>
+                                                        <th>Fecha Escalamiento</th>
+                                                        <th>Solucionado</th>
+                                                    {% elif tipo_reporte == 'planes' %}
+                                                        <th>Código</th>
+                                                        <th>Nombre</th>
+                                                        <th>Tipo</th>
+                                                        <th>CFM</th>
+                                                        <th>Estado</th>
+                                                        <th>Fecha Creación</th>
+                                                    {% endif %}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for item in datos %}
+                                                <tr>
+                                                    {% if tipo_reporte == 'ventas_portabilidad' %}
+                                                        <td>{{ item.numero }}</td>
+                                                        <td>{{ item.documento }}</td>
+                                                        <td>{{ item.nombre_completo }}</td>
+                                                        <td>{{ item.telefono_legalizacion }}</td>
+                                                        <td>{{ item.plan_nombre|default:'-' }}</td>
+                                                        <td><span class="badge bg-secondary">{{ item.get_estado_venta_display }}</span></td>
+                                                        <td><span class="badge bg-info">{{ item.get_estado_logistica_display }}</span></td>
+                                                        <td>{{ item.agente.username|default:'-' }}</td>
+                                                        <td>{{ item.fecha_creacion|date:'d/m/Y H:i' }}</td>
+                                                    {% elif tipo_reporte == 'ventas_prepos' %}
+                                                        <td>{{ item.numero }}</td>
+                                                        <td>{{ item.documento }}</td>
+                                                        <td>{{ item.nombre_completo }}</td>
+                                                        <td>{{ item.telefono_legalizacion }}</td>
+                                                        <td>{{ item.plan_nombre|default:'-' }}</td>
+                                                        <td><span class="badge bg-secondary">{{ item.get_estado_venta_display }}</span></td>
+                                                        <td>{{ item.agente.username|default:'-' }}</td>
+                                                        <td>{{ item.fecha_creacion|date:'d/m/Y H:i' }}</td>
+                                                    {% elif tipo_reporte == 'ventas_upgrade' %}
+                                                        <td>{{ item.numero }}</td>
+                                                        <td>{{ item.documento }}</td>
+                                                        <td>{{ item.nombre_completo }}</td>
+                                                        <td>{{ item.telefono_legalizacion }}</td>
+                                                        <td>{{ item.plan_nombre|default:'-' }}</td>
+                                                        <td><span class="badge bg-secondary">{{ item.get_estado_venta_display }}</span></td>
+                                                        <td>{{ item.agente.username|default:'-' }}</td>
+                                                        <td>{{ item.fecha_creacion|date:'d/m/Y H:i' }}</td>
+                                                    {% elif tipo_reporte == 'agendamientos' %}
+                                                        <td>{{ item.nombre_cliente }}</td>
+                                                        <td>{{ item.telefono_contacto }}</td>
+                                                        <td>{{ item.get_tipo_venta_display }}</td>
+                                                        <td><span class="badge bg-warning">{{ item.get_Estado_agendamiento_display }}</span></td>
+                                                        <td>{{ item.fecha_volver_a_llamar|date:'d/m/Y' }} {{ item.hora_volver_a_llamar|time:'H:i' }}</td>
+                                                        <td>{{ item.agente.username|default:'-' }}</td>
+                                                        <td>{{ item.fecha_creacion|date:'d/m/Y H:i' }}</td>
+                                                    {% elif tipo_reporte == 'comisiones' %}
+                                                        <td>{{ item.venta.numero|default:'-' }}</td>
+                                                        <td>{{ item.venta.nombre_completo|default:'-' }}</td>
+                                                        <td>{{ item.agente.username|default:'-' }}</td>
+                                                        <td>${{ item.monto|floatformat:2 }}</td>
+                                                        <td><span class="badge bg-primary">{{ item.get_estado_display }}</span></td>
+                                                        <td>{{ item.fecha_creacion|date:'d/m/Y H:i' }}</td>
+                                                        <td>{{ item.fecha_pago|date:'d/m/Y'|default:'-' }}</td>
+                                                    {% elif tipo_reporte == 'escalamientos' %}
+                                                        <td>{{ item.venta.numero|default:'-' }}</td>
+                                                        <td>{{ item.venta.nombre_completo|default:'-' }}</td>
+                                                        <td>{{ item.get_tipo_escalamiento_display }}</td>
+                                                        <td>{{ item.descripcion|truncatechars:50 }}</td>
+                                                        <td>{{ item.fecha_escalamiento|date:'d/m/Y H:i' }}</td>
+                                                        <td>
+                                                            {% if item.solucionado %}
+                                                                <span class="badge bg-success">Sí</span>
+                                                            {% else %}
+                                                                <span class="badge bg-danger">No</span>
+                                                            {% endif %}
+                                                        </td>
+                                                    {% elif tipo_reporte == 'planes' %}
+                                                        <td>{{ item.codigo }}</td>
+                                                        <td>{{ item.nombre_plan }}</td>
+                                                        <td>{{ item.get_tipo_plan_display }}</td>
+                                                        <td>${{ item.CFM|floatformat:2 }}</td>
+                                                        <td><span class="badge bg-success">{{ item.get_estado_display }}</span></td>
+                                                        <td>{{ item.fecha_creacion|date:'d/m/Y H:i' }}</td>
+                                                    {% endif %}
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Función para actualizar el contador de campos seleccionados
+                        function actualizarContador() {
+                            const checkboxes = document.querySelectorAll('.campo-exportar:checked');
+                            const contador = document.getElementById('contador-campos');
+                            if (contador) {
+                                contador.textContent = checkboxes.length;
+                            }
+                        }
+                        
+                        // Agregar event listeners a todos los checkboxes
+                        const checkboxes = document.querySelectorAll('.campo-exportar');
+                        checkboxes.forEach(checkbox => {
+                            checkbox.addEventListener('change', actualizarContador);
+                        });
+                        
+                        // Botón para seleccionar/deseleccionar todos los campos
+                        const btnSeleccionarTodos = document.getElementById('seleccionar-todos');
+                        if (btnSeleccionarTodos) {
+                            btnSeleccionarTodos.addEventListener('click', function() {
+                                const checkboxes = document.querySelectorAll('.campo-exportar');
+                                const todosSeleccionados = Array.from(checkboxes).every(cb => cb.checked);
+                                
+                                checkboxes.forEach(checkbox => {
+                                    checkbox.checked = !todosSeleccionados;
+                                });
+                                
+                                actualizarContador();
+                                
+                                // Actualizar texto del botón
+                                btnSeleccionarTodos.innerHTML = todosSeleccionados ? 
+                                    '<i class="bi bi-check-all me-1"></i> Seleccionar todos' : 
+                                    '<i class="bi bi-x-circle me-1"></i> Deseleccionar todos';
+                            });
+                        }
+                        
+                        // Botón para deseleccionar todos los campos
+                        const btnDeseleccionarTodos = document.getElementById('deseleccionar-todos');
+                        if (btnDeseleccionarTodos) {
+                            btnDeseleccionarTodos.addEventListener('click', function() {
+                                const checkboxes = document.querySelectorAll('.campo-exportar');
+                                
+                                checkboxes.forEach(checkbox => {
+                                    checkbox.checked = false;
+                                });
+                                
+                                actualizarContador();
+                                
+                                // Actualizar texto del botón seleccionar todos
+                                if (btnSeleccionarTodos) {
+                                    btnSeleccionarTodos.innerHTML = '<i class="bi bi-check-all me-1"></i> Seleccionar todos';
+                                }
+                            });
+                        }
+                        
+                        // Manejar el botón de filtrar
+                        const btnFiltrar = document.querySelector('#btn-filtrar');
+                        if (btnFiltrar) {
+                            btnFiltrar.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                // Asegurarse de que los campos de fecha se envíen correctamente
+                                const fechaInicio = document.querySelector('input[name="fecha_inicio"]').value;
+                                const fechaFin = document.querySelector('input[name="fecha_fin"]').value;
+                                console.log('Filtrando con fechas:', fechaInicio, 'a', fechaFin);
+                                
+                                // Asegurarse de que el formulario tenga el método POST
+                                const form = document.getElementById('filtroForm');
+                                form.method = 'POST';
+                                form.submit();
+                            });
+                        }
+                        
+                        // Manejar el botón de aplicar cambios
+                        const btnAplicar = document.querySelector('.btn-aplicar');
+                        if (btnAplicar) {
+                            btnAplicar.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                // Asegurarse de que los campos de fecha se envíen correctamente
+                                const fechaInicio = document.querySelector('input[name="fecha_inicio"]').value;
+                                const fechaFin = document.querySelector('input[name="fecha_fin"]').value;
+                                console.log('Aplicando cambios con fechas:', fechaInicio, 'a', fechaFin);
+                                
+                                // Asegurarse de que el formulario tenga el método POST
+                                const form = this.closest('form');
+                                form.method = 'POST';
+                                form.submit();
+                            });
+                        }
+                        
+                        // Manejar el botón de aplicar filtros
+                        const btnAplicarFiltros = document.querySelector('.btn-aplicar-filtros');
+                        if (btnAplicarFiltros) {
+                            btnAplicarFiltros.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                // Asegurarse de que los campos de fecha se envíen correctamente
+                                const fechaInicio = document.querySelector('input[name="fecha_inicio"]').value;
+                                const fechaFin = document.querySelector('input[name="fecha_fin"]').value;
+                                console.log('Aplicando filtros con fechas:', fechaInicio, 'a', fechaFin);
+                                
+                                // Asegurarse de que el formulario tenga el método POST
+                                const form = this.closest('form');
+                                form.method = 'POST';
+                                form.submit();
+                            });
+                        }
+                        
+                        // Inicializar contador
+                        actualizarContador();
+                    });
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Inicializar componentes de Bootstrap
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Manejar exportación a Excel
+        document.querySelectorAll('.btn-export').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{% url "telefonica:reportes_exportar" %}';
+            
+            // Agregar token CSRF
+            var csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+            var inputCsrf = document.createElement('input');
+            inputCsrf.type = 'hidden';
+            inputCsrf.name = 'csrfmiddlewaretoken';
+            inputCsrf.value = csrfToken;
+            form.appendChild(inputCsrf);
+            
+            // Agregar tipo de reporte
+            var tipoReporte = document.querySelector('select[name="tipo_reporte"]').value;
+            var inputTipo = document.createElement('input');
+            inputTipo.type = 'hidden';
+            inputTipo.name = 'tipo_reporte';
+            inputTipo.value = tipoReporte;
+            form.appendChild(inputTipo);
+            
+            // Agregar fechas
+            var fechaInicio = document.querySelector('input[name="fecha_inicio"]').value;
+            var fechaFin = document.querySelector('input[name="fecha_fin"]').value;
+            
+            var inputFechaInicio = document.createElement('input');
+            inputFechaInicio.type = 'hidden';
+            inputFechaInicio.name = 'fecha_inicio';
+            inputFechaInicio.value = fechaInicio;
+            form.appendChild(inputFechaInicio);
+            
+            var inputFechaFin = document.createElement('input');
+            inputFechaFin.type = 'hidden';
+            inputFechaFin.name = 'fecha_fin';
+            inputFechaFin.value = fechaFin;
+            form.appendChild(inputFechaFin);
+            
+            // Agregar campos seleccionados
+            var camposSeleccionados = document.querySelectorAll('input[name="campos"]:checked');
+            camposSeleccionados.forEach(function(campo) {
+                var inputCampo = document.createElement('input');
+                inputCampo.type = 'hidden';
+                inputCampo.name = 'campos';
+                inputCampo.value = campo.value;
+                form.appendChild(inputCampo);
+            });
+            
+            console.log('Exportando con fechas:', fechaInicio, 'a', fechaFin);
+            console.log('Campos seleccionados:', camposSeleccionados.length);
+            
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+            });
+        });
+        
+        // Manejar botones de exportar a Excel
+        document.querySelectorAll('button[formaction="{% url "telefonica:reportes_exportar" %}"]').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                var fechaInicio = document.querySelector('input[name="fecha_inicio"]').value;
+                var fechaFin = document.querySelector('input[name="fecha_fin"]').value;
+                console.log('Exportando con fechas (botón):', fechaInicio, 'a', fechaFin);
+                
+                // Asegurarse de que el formulario tenga el método POST
+                var form = this.closest('form');
+                form.method = 'POST';
+                form.submit();
+            });
+        });
+    });
+</script>
+{% endblock %}

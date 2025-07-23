@@ -104,13 +104,23 @@ CAMPOS_DISPONIBLES = {
 
 @login_required
 def reportes(request):
-    # Obtener parámetros de filtro comunes
-    fecha_inicio = request.GET.get('fecha_inicio')
-    fecha_fin = request.GET.get('fecha_fin')
-    tipo_reporte = request.GET.get('tipo_reporte', 'clientes')
+    # Determinar si es una solicitud POST o GET
+    if request.method == 'POST':
+        # Obtener parámetros de filtro de POST
+        fecha_inicio = request.POST.get('fecha_inicio')
+        fecha_fin = request.POST.get('fecha_fin')
+        tipo_reporte = request.POST.get('tipo_reporte', 'clientes')
+        accion = request.POST.get('accion', '')
+        campos_seleccionados = request.POST.getlist('campos')
+    else:
+        # Obtener parámetros de filtro de GET
+        fecha_inicio = request.GET.get('fecha_inicio')
+        fecha_fin = request.GET.get('fecha_fin')
+        tipo_reporte = request.GET.get('tipo_reporte', 'clientes')
+        accion = ''
+        campos_seleccionados = request.GET.getlist('campos')
     
     # Obtener campos seleccionados o usar todos por defecto
-    campos_seleccionados = request.GET.getlist('campos')
     if not campos_seleccionados and tipo_reporte in CAMPOS_DISPONIBLES:
         campos_seleccionados = [campo[0] for campo in CAMPOS_DISPONIBLES[tipo_reporte]]
     
@@ -119,6 +129,9 @@ def reportes(request):
         fecha_fin = timezone.now().strftime('%Y-%m-%d')
     if not fecha_inicio:
         fecha_inicio = (timezone.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+        
+    print(f"Tipo de reporte: {tipo_reporte}, Fecha inicio: {fecha_inicio}, Fecha fin: {fecha_fin}, Acción: {accion}")
+    print(f"Campos seleccionados: {campos_seleccionados}")
     
     # Inicializar contexto
     context = {
@@ -167,20 +180,42 @@ def reportes(request):
         
         # Aplicar filtros
         if fecha_inicio and fecha_fin:
+            # Convertir las fechas de string a objetos date para asegurar un filtrado correcto
+            from datetime import datetime
+            fecha_ini = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+            fecha_fin_obj = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+            # Añadir un día a la fecha final para incluir todo el día en el filtro
+            fecha_fin_obj = fecha_fin_obj + timedelta(days=1)
+            
+            # Filtrar por fecha de registro
             clientes = clientes.filter(
-                fecha_registro__date__range=[fecha_inicio, fecha_fin]
+                fecha_registro__range=[fecha_ini, fecha_fin_obj]
             )
             
-        datos = clientes
+            print(f"Filtrando clientes por fecha: {fecha_ini} a {fecha_fin_obj}")
+            print(f"Total de clientes encontrados: {clientes.count()}")
+            
+        context['datos'] = clientes[:100]  # Limitar a 100 registros para la vista previa
+        context['total_registros'] = clientes.count()
         
     elif tipo_reporte == 'gestiones':
         # Lógica para reporte de gestiones
         gestiones = Gestion.objects.select_related('cliente').all()
         
         if fecha_inicio and fecha_fin:
+            # Convertir las fechas de string a objetos date
+            from datetime import datetime
+            fecha_ini = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+            fecha_fin_obj = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+            # Añadir un día a la fecha final para incluir todo el día en el filtro
+            fecha_fin_obj = fecha_fin_obj + timedelta(days=1)
+            
             gestiones = gestiones.filter(
-                fecha_hora_gestion__date__range=[fecha_inicio, fecha_fin]
+                fecha_hora_gestion__range=[fecha_ini, fecha_fin_obj]
             )
+            
+            print(f"Filtrando gestiones por fecha: {fecha_ini} a {fecha_fin_obj}")
+            print(f"Total de gestiones encontradas: {gestiones.count()}")
             
         context['datos'] = gestiones[:100]
         context['total_registros'] = gestiones.count()
@@ -190,9 +225,19 @@ def reportes(request):
         acuerdos = AcuerdoPago.objects.select_related('cliente').all()
         
         if fecha_inicio and fecha_fin:
+            # Convertir las fechas de string a objetos date
+            from datetime import datetime
+            fecha_ini = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+            fecha_fin_obj = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+            # Añadir un día a la fecha final para incluir todo el día en el filtro
+            fecha_fin_obj = fecha_fin_obj + timedelta(days=1)
+            
             acuerdos = acuerdos.filter(
-                fecha_creacion__date__range=[fecha_inicio, fecha_fin]
+                fecha_creacion__range=[fecha_ini, fecha_fin_obj]
             )
+            
+            print(f"Filtrando acuerdos por fecha: {fecha_ini} a {fecha_fin_obj}")
+            print(f"Total de acuerdos encontrados: {acuerdos.count()}")
             
         context['datos'] = acuerdos[:100]
         context['total_registros'] = acuerdos.count()
@@ -207,12 +252,17 @@ def reportes(request):
             # Convertir las fechas de string a objetos date
             from datetime import datetime
             fecha_ini = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
-            fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+            fecha_fin_obj = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+            # Añadir un día a la fecha final para incluir todo el día en el filtro
+            fecha_fin_obj = fecha_fin_obj + timedelta(days=1)
             
             # Usar range sin el lookup date__ ya que fecha_pago es DateField
             pagos = pagos.filter(
-                fecha_pago__range=[fecha_ini, fecha_fin]
+                fecha_pago__range=[fecha_ini, fecha_fin_obj]
             )
+            
+            print(f"Filtrando pagos por fecha: {fecha_ini} a {fecha_fin_obj}")
+            print(f"Total de pagos encontrados: {pagos.count()}")
             
         context['datos'] = pagos[:100]
         context['total_registros'] = pagos.count()
@@ -227,8 +277,18 @@ def exportar_excel(request):
         fecha_fin = request.POST.get('fecha_fin')
         campos_seleccionados = request.POST.getlist('campos')
     else:
-        # Si por alguna razón se accede por GET, redirigir a la página de reportes
-        return redirect('core:reportes')
+        # Si se accede por GET, obtener los parámetros de la URL
+        tipo_reporte = request.GET.get('tipo_reporte', 'clientes')
+        fecha_inicio = request.GET.get('fecha_inicio')
+        fecha_fin = request.GET.get('fecha_fin')
+        campos_seleccionados = request.GET.getlist('campos')
+        
+        # Si no hay parámetros, redirigir a la página de reportes
+        if not (tipo_reporte and (fecha_inicio or fecha_fin)):
+            return redirect('core:reportes')
+    
+    print(f"Exportando Excel - Tipo: {tipo_reporte}, Fecha inicio: {fecha_inicio}, Fecha fin: {fecha_fin}")
+    print(f"Campos seleccionados: {campos_seleccionados}")
     
     # Crear el libro de Excel
     wb = Workbook()
@@ -296,9 +356,20 @@ def exportar_excel(request):
         # Obtener datos
         queryset = Cliente.objects.all()
         if fecha_inicio and fecha_fin:
+            # Convertir las fechas de string a objetos date
+            from datetime import datetime
+            fecha_ini = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+            fecha_fin_obj = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+            # Añadir un día a la fecha final para incluir todo el día en el filtro
+            fecha_fin_obj = fecha_fin_obj + timedelta(days=1)
+            
+            # Usar range en lugar de date__range para asegurar un filtrado correcto
             queryset = queryset.filter(
-                fecha_registro__date__range=[fecha_inicio, fecha_fin]
+                fecha_registro__range=[fecha_ini, fecha_fin_obj]
             )
+            
+            print(f"Filtrando clientes por fecha: {fecha_ini} a {fecha_fin_obj}")
+            print(f"Total de clientes encontrados: {queryset.count()}")
         
         # Escribir encabezados
         for col_num, campo in enumerate(campos_seleccionados, 1):
@@ -374,8 +445,15 @@ def exportar_excel(request):
         queryset = Gestion.objects.select_related('cliente', 'usuario_gestion').prefetch_related('acuerdos')
         
         if fecha_inicio and fecha_fin:
+            # Convertir las fechas de string a objetos date
+            from datetime import datetime
+            fecha_ini = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+            fecha_fin_obj = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+            # Añadir un día a la fecha final para incluir todo el día en el filtro
+            fecha_fin_obj = fecha_fin_obj + timedelta(days=1)
+            
             queryset = queryset.filter(
-                fecha_hora_gestion__date__range=[fecha_inicio, fecha_fin]
+                fecha_hora_gestion__range=[fecha_ini, fecha_fin_obj]
             )
         
         # Forzar la carga de los acuerdos para evitar consultas adicionales
@@ -453,8 +531,15 @@ def exportar_excel(request):
     elif tipo_reporte == 'acuerdos':
         queryset = AcuerdoPago.objects.select_related('cliente').all()
         if fecha_inicio and fecha_fin:
+            # Convertir las fechas de string a objetos date
+            from datetime import datetime
+            fecha_ini = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+            fecha_fin_obj = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+            # Añadir un día a la fecha final para incluir todo el día en el filtro
+            fecha_fin_obj = fecha_fin_obj + timedelta(days=1)
+            
             queryset = queryset.filter(
-                fecha_creacion__date__range=[fecha_inicio, fecha_fin]
+                fecha_creacion__range=[fecha_ini, fecha_fin_obj]
             )
         
         # Escribir encabezados
@@ -477,11 +562,13 @@ def exportar_excel(request):
             # Convertir las fechas de string a objetos date
             from datetime import datetime
             fecha_ini = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
-            fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+            fecha_fin_obj = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+            # Añadir un día a la fecha final para incluir todo el día en el filtro
+            fecha_fin_obj = fecha_fin_obj + timedelta(days=1)
             
             # Usar range sin el lookup date__ ya que fecha_pago es DateField
             queryset = queryset.filter(
-                fecha_pago__range=[fecha_ini, fecha_fin]
+                fecha_pago__range=[fecha_ini, fecha_fin_obj]
             )
         
         # Escribir encabezados

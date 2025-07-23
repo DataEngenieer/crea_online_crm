@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, views_clientes
+from . import views, views_clientes, views_reportes
 import json
 
 app_name = 'telefonica'
@@ -75,7 +75,11 @@ urlpatterns = [
     path('clientes/prepos/carga/', views_clientes.carga_clientes_prepos, name='carga_clientes_prepos'),
     path('clientes/prepos/plantilla/', views_clientes.descargar_plantilla_prepos, name='descargar_plantilla_prepos'),
     
-    # API para autocompletado
+    # Reportes
+    path('reportes/', views_reportes.reportes, name='reportes'),
+    path('reportes/exportar/', views_reportes.exportar_excel, name='reportes_exportar'),
+    
+    # APIs
     path('api/clientes/upgrade/buscar/', views_clientes.buscar_cliente_upgrade_por_documento, name='buscar_cliente_upgrade'),
     path('api/clientes/prepos/buscar/', views_clientes.buscar_cliente_prepos_por_telefono, name='buscar_cliente_prepos'),
 ]

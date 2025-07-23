@@ -15,7 +15,7 @@
                 </div>
                 <div class="card-body">
                     <!-- Formulario para el tipo de reporte (GET) -->
-                    <form method="get" id="tipoReporteForm" class="mb-3">
+                    <form method="GET" id="tipoReporteForm" class="mb-3">
                         <div class="row g-3">
                             <div class="col-md-3">
                                 <label class="form-label">Tipo de Reporte</label>
@@ -31,7 +31,7 @@
                     </form>
                     
                     <!-- Formulario principal (POST) -->
-                    <form method="post" id="filtroForm" class="mb-4">
+                    <form method="POST" id="filtroForm" class="mb-4">
                         {% csrf_token %}
                         <input type="hidden" name="tipo_reporte" value="{{ tipo_reporte }}">
                         <div class="row g-3">
@@ -44,7 +44,7 @@
                                 <input type="date" name="fecha_fin" class="form-control" value="{{ fecha_fin|default:'' }}">
                             </div>
                             <div class="col-md-3 d-flex align-items-end">
-                                <button type="submit" name="accion" value="filtrar" class="btn btn-primary me-2">
+                                <button type="submit" name="accion" value="filtrar" class="btn btn-primary me-2" id="btn-filtrar">
                                     <i class="bi bi-funnel me-1"></i> Filtrar
                                 </button>
                             </div>
@@ -58,12 +58,12 @@
                                     <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="seleccionar-todos">
                                         <i class="bi bi-check-all me-1"></i> Seleccionar todos
                                     </button>
-                                    <button type="submit" name="accion" value="aplicar" class="btn btn-sm btn-primary me-2">
-                                        <i class="bi bi-funnel me-1"></i> Aplicar Filtros
-                                    </button>
-                                    <button type="submit" name="accion" value="exportar" formaction="{% url 'core:reportes_exportar' %}" class="btn btn-sm btn-success">
-                                        <i class="bi bi-file-earmark-excel me-1"></i> Exportar a Excel
-                                    </button>
+                                    <button type="submit" name="accion" value="aplicar" class="btn btn-sm btn-primary me-2 btn-aplicar-filtros">
+                                    <i class="bi bi-funnel me-1"></i> Aplicar Filtros
+                                </button>
+                                <button type="submit" name="accion" value="exportar" formaction="{% url 'core:reportes_exportar' %}" class="btn btn-sm btn-success btn-export">
+                                    <i class="bi bi-file-earmark-excel me-1"></i> Exportar a Excel
+                                </button>
                                 </div>
                             </div>
                             </div>
@@ -71,17 +71,17 @@
                         
                         <div class="card mb-4">
                             <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">
-                                    <i class="bi bi-list-check me-2"></i>Seleccione los campos a exportar
-                                </h5>
-                                <div>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="seleccionar-todos">
-                                        <i class="bi bi-check2-square me-1"></i> Seleccionar todos
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="deseleccionar-todos">
-                                        <i class="bi bi-square me-1"></i> Deseleccionar todos
-                                    </button>
-                                </div>
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-list-check me-2"></i>Seleccione los campos a exportar
+                                    </h5>
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="seleccionar-todos">
+                                            <i class="bi bi-check2-square me-1"></i> Seleccionar todos
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" id="deseleccionar-todos">
+                                            <i class="bi bi-square me-1"></i> Deseleccionar todos
+                                        </button>
+                                    </div>
                             </div>
                             <div class="card-body">
                                 <div class="row">
@@ -106,10 +106,10 @@
                                         <span id="contador-campos">0</span> campos seleccionados
                                     </div>
                                     <div>
-                                        <button type="submit" class="btn btn-primary" name="accion" value="aplicar">
+                                        <button type="submit" class="btn btn-primary btn-aplicar" name="accion" value="aplicar">
                                             <i class="bi bi-funnel me-1"></i> Aplicar Cambios
                                         </button>
-                                        <button type="submit" formaction="{% url 'core:reportes_exportar' %}" class="btn btn-success">
+                                        <button type="submit" formaction="{% url 'core:reportes_exportar' %}" class="btn btn-success btn-export">
                                             <i class="bi bi-file-earmark-excel me-1"></i> Exportar a Excel
                                         </button>
                                     </div>
@@ -187,6 +187,76 @@
                             });
                         }
                         
+                        // Botón para deseleccionar todos los campos
+                        const btnDeseleccionarTodos = document.getElementById('deseleccionar-todos');
+                        if (btnDeseleccionarTodos) {
+                            btnDeseleccionarTodos.addEventListener('click', function() {
+                                const checkboxes = document.querySelectorAll('.campo-exportar');
+                                
+                                checkboxes.forEach(checkbox => {
+                                    checkbox.checked = false;
+                                });
+                                
+                                actualizarContador();
+                                
+                                // Actualizar texto del botón seleccionar todos
+                                if (btnSeleccionarTodos) {
+                                    btnSeleccionarTodos.innerHTML = '<i class="bi bi-check-all me-1"></i> Seleccionar todos';
+                                }
+                            });
+                        }
+                        
+                        // Manejar el botón de filtrar
+                        const btnFiltrar = document.querySelector('#btn-filtrar');
+                        if (btnFiltrar) {
+                            btnFiltrar.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                // Asegurarse de que los campos de fecha se envíen correctamente
+                                const fechaInicio = document.querySelector('input[name="fecha_inicio"]').value;
+                                const fechaFin = document.querySelector('input[name="fecha_fin"]').value;
+                                console.log('Filtrando con fechas:', fechaInicio, 'a', fechaFin);
+                                
+                                // Asegurarse de que el formulario tenga el método POST
+                                const form = document.getElementById('filtroForm');
+                                form.method = 'POST';
+                                form.submit();
+                            });
+                        }
+                        
+                        // Manejar el botón de aplicar cambios
+                        const btnAplicar = document.querySelector('.btn-aplicar');
+                        if (btnAplicar) {
+                            btnAplicar.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                // Asegurarse de que los campos de fecha se envíen correctamente
+                                const fechaInicio = document.querySelector('input[name="fecha_inicio"]').value;
+                                const fechaFin = document.querySelector('input[name="fecha_fin"]').value;
+                                console.log('Aplicando cambios con fechas:', fechaInicio, 'a', fechaFin);
+                                
+                                // Asegurarse de que el formulario tenga el método POST
+                                const form = this.closest('form');
+                                form.method = 'POST';
+                                form.submit();
+                            });
+                        }
+                        
+                        // Manejar el botón de aplicar filtros
+                        const btnAplicarFiltros = document.querySelector('.btn-aplicar-filtros');
+                        if (btnAplicarFiltros) {
+                            btnAplicarFiltros.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                // Asegurarse de que los campos de fecha se envíen correctamente
+                                const fechaInicio = document.querySelector('input[name="fecha_inicio"]').value;
+                                const fechaFin = document.querySelector('input[name="fecha_fin"]').value;
+                                console.log('Aplicando filtros con fechas:', fechaInicio, 'a', fechaFin);
+                                
+                                // Asegurarse de que el formulario tenga el método POST
+                                const form = this.closest('form');
+                                form.method = 'POST';
+                                form.submit();
+                            });
+                        }
+                        
                         // Inicializar contador
                         actualizarContador();
                     });
@@ -209,21 +279,20 @@
         });
         
         // Manejar exportación a Excel
-        document.querySelector('.btn-export').addEventListener('click', function(e) {
+        document.querySelectorAll('.btn-export').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
             e.preventDefault();
             var form = document.createElement('form');
-            form.method = 'GET';
+            form.method = 'POST';
             form.action = '{% url "core:reportes_exportar" %}';
             
-            // Agregar parámetros actuales
-            var params = new URLSearchParams(window.location.search);
-            params.forEach(function(value, key) {
-                var input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = key;
-                input.value = value;
-                form.appendChild(input);
-            });
+            // Agregar token CSRF
+            var csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+            var inputCsrf = document.createElement('input');
+            inputCsrf.type = 'hidden';
+            inputCsrf.name = 'csrfmiddlewaretoken';
+            inputCsrf.value = csrfToken;
+            form.appendChild(inputCsrf);
             
             // Agregar tipo de reporte
             var tipoReporte = document.querySelector('select[name="tipo_reporte"]').value;
@@ -233,9 +302,54 @@
             inputTipo.value = tipoReporte;
             form.appendChild(inputTipo);
             
+            // Agregar fechas
+            var fechaInicio = document.querySelector('input[name="fecha_inicio"]').value;
+            var fechaFin = document.querySelector('input[name="fecha_fin"]').value;
+            
+            var inputFechaInicio = document.createElement('input');
+            inputFechaInicio.type = 'hidden';
+            inputFechaInicio.name = 'fecha_inicio';
+            inputFechaInicio.value = fechaInicio;
+            form.appendChild(inputFechaInicio);
+            
+            var inputFechaFin = document.createElement('input');
+            inputFechaFin.type = 'hidden';
+            inputFechaFin.name = 'fecha_fin';
+            inputFechaFin.value = fechaFin;
+            form.appendChild(inputFechaFin);
+            
+            // Agregar campos seleccionados
+            var camposSeleccionados = document.querySelectorAll('input[name="campos"]:checked');
+            camposSeleccionados.forEach(function(campo) {
+                var inputCampo = document.createElement('input');
+                inputCampo.type = 'hidden';
+                inputCampo.name = 'campos';
+                inputCampo.value = campo.value;
+                form.appendChild(inputCampo);
+            });
+            
+            console.log('Exportando con fechas:', fechaInicio, 'a', fechaFin);
+            console.log('Campos seleccionados:', camposSeleccionados.length);
+            
             document.body.appendChild(form);
             form.submit();
             document.body.removeChild(form);
+            });
+        });
+        
+        // Manejar botones de exportar a Excel
+        document.querySelectorAll('button[formaction="{% url "core:reportes_exportar" %}"]').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                var fechaInicio = document.querySelector('input[name="fecha_inicio"]').value;
+                var fechaFin = document.querySelector('input[name="fecha_fin"]').value;
+                console.log('Exportando con fechas (botón):', fechaInicio, 'a', fechaFin);
+                
+                // Asegurarse de que el formulario tenga el método POST
+                var form = this.closest('form');
+                form.method = 'POST';
+                form.submit();
+            });
         });
     });
 </script>

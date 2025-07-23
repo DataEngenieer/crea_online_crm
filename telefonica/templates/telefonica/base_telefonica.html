@@ -70,20 +70,23 @@
 {% block sidebar_menu %}
     <!-- Menú lateral de navegación para el módulo Telefónica -->
     <nav class="list-group list-group-flush sidebar-menu-telefonica">
-        <!-- Dashboard 
-        {% if user.is_superuser or user|has_group:"backoffice"%}
+        <!-- Dashboard -->
+        {% if user.is_superuser or user|has_group:"administrador"%}
         <a href="{% url 'telefonica:dashboard' %}"
            class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
             <i class="bi bi-speedometer2 me-2"></i> Dashboard
         {% endif %}
-        </a>-->
+        </a>
         <!-- Ventas -->
+         
         <span class="menu-section">Ventas</span>
+        {% if user|has_group:"administrador" or user.is_superuser %}
         <a href="{% url 'telefonica:ventas_lista' %}"
            class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'ventas_lista' %}active{% endif %}">
             <i class="bi bi-list-ul me-2"></i> Lista de Ventas
         </a>
-        {% if user|has_group:"asesor"%}
+        {% endif %}
+        {% if user|has_group:"asesor" or user|has_group:"administrador"%}
         <a href="{% url 'telefonica:ventas_lista' %}" class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'ventas_lista' %}active{% endif %}">
             <i class="bi bi-list-ul me-2"></i> Mis Ventas
         </a>
@@ -147,14 +150,18 @@
         </a>
         {% endif %}
         {% if user.is_superuser or user|has_group:"administrador"%}
-        <!-- Comisiones -->
+        <!-- Comisiones 
         <span class="menu-section">Comisiones</span>
         <a href="{% url 'telefonica:comisiones_lista' %}"
            class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'comisiones_lista' %}active{% endif %}">
             <i class="bi bi-cash-stack me-2"></i> Lista de Comisiones
-        </a>
+        </a>-->
         <!-- Administración -->
         <span class="menu-section">Administración</span>
+        <a href="{% url 'telefonica:reportes' %}" 
+           class="list-group-item list-group-item-action bg-transparent text-white border-0 {% if request.resolver_match.url_name == 'reportes' %}active{% endif %}">
+            <i class="bi bi-file-earmark-bar-graph me-2"></i> Reportes
+        </a>
         <a href="{% url 'telefonica:planes_portabilidad_lista' %}" 
            class="list-group-item list-group-item-action bg-transparent text-white border-0">
             <i class="bi bi-card-list me-2"></i> Gestionar Planes
@@ -163,6 +170,7 @@
            class="list-group-item list-group-item-action bg-transparent text-white border-0">
             <i class="bi bi-people-fill me-2"></i> Gestionar Clientes
         </a>
+        
         {% endif %}
     </nav>
 {% endblock %}

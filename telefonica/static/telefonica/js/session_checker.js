@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log("Inicializando verificador de sesión");
     
     // Verificar la sesión cada minuto (60000 ms)
-    setInterval(checkSession, 700000);
+    setInterval(checkSession, 1700000);
     
     // También verificar al cargar la página
     checkSession();

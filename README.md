@@ -38,6 +38,13 @@ Sistema integral de gestión para campañas de cartera, ventas de Telefónica, t
 - **Comisiones**
   - Cálculo automático de comisiones por ventas
   - Reportes por agente y período
+- **Reportería Avanzada**
+  - Exportación a Excel de todos los módulos
+  - Filtros por fechas y campos personalizables
+  - Selección automática de todos los campos disponibles
+  - Reportes de ventas (Portabilidad, PrePos, Upgrade)
+  - Reportes de agendamientos y comisiones
+  - Reportes de escalamientos y planes
 
 ### Módulo Chat
 - **Comunicación Interna**
@@ -129,6 +136,11 @@ Sistema integral de gestión para campañas de cartera, ventas de Telefónica, t
 - Bandejas de trabajo
 - Agendamientos y calendario
 - Comisiones
+- **Sistema de Reportes**
+  - Exportación masiva a Excel
+  - Filtros avanzados por fecha y tipo
+  - Campos personalizables para exportación
+  - Reportes consolidados de todas las operaciones
 
 ### Módulo Chat
 - Comunicación interna entre usuarios
