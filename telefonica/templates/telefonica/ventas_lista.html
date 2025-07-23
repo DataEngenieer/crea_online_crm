@@ -283,48 +283,18 @@
                         <table class="table table-hover align-middle" id="ventasTable" width="100%" cellspacing="0">
                             <thead class="table-dark">
                                 <tr>
-
-                                    <th><i class="fas fa-hashtag me-1"></i>Número</th>
-                                    <th><i class="fas fa-user me-1"></i>Cliente</th>
-                                    <th><i class="fas fa-id-card me-1"></i>Documento</th>
-                                    <th><i class="fas fa-mobile-alt me-1"></i>Plan</th>
-                                    <th><i class="fas fa-calendar me-1"></i>Fecha</th>
-                                    <th><i class="fas fa-flag me-1"></i>Estado</th>
+                                    <th><i class="fas fa-calendar me-1"></i>Fecha Creación</th>
+                                    <th style="width: 120px;"><i class="fas fa-phone me-1"></i>Teléfono</th>
+                                    <th style="width: 250px;"><i class="fas fa-user me-1"></i>Cliente</th>
                                     <th><i class="fas fa-user-tie me-1"></i>Agente</th>
-                                    {% if es_backoffice %}
-                                    <th><i class="fas fa-cogs me-1"></i>Backoffice</th>
-                                    {% endif %}
-                                    <th><i class="fas fa-tags me-1"></i>Tipo</th>
+                                    <th style="width: 180px;"><i class="fas fa-mobile-alt me-1"></i>Plan / CFM</th>
+                                    <th style="width: 80px; font-size: 0.8rem;"><i class="fas fa-tags me-1"></i>Tipo</th>
                                     <th class="text-center"><i class="fas fa-tools me-1"></i>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for venta in page_obj %}
                                 <tr class="venta-row" data-venta-id="{{ venta.id }}">
-
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px; font-size: 0.8rem;">
-                                                {{ venta.numero|slice:":2" }}
-                                            </div>
-                                            <div>
-                                                <div class="fw-bold">{{ venta.numero }}</div>
-                                                <small class="text-muted">ID: {{ venta.id }}</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div>
-                                            <div class="fw-bold text-dark">{{ venta.nombre_completo }}</div>
-                                            <small class="text-muted">Cliente</small>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-light text-dark border">{{ venta.documento }}</span>
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold text-primary">{{ venta.plan_adquiere }}</div>
-                                    </td>
                                     <td>
                                         <div>
                                             <div class="fw-bold">{{ venta.fecha_creacion|date:"d/m/Y" }}</div>
@@ -332,31 +302,13 @@
                                         </div>
                                     </td>
                                     <td>
-                                        {% if venta.estado_venta == 'pendiente_revision' %}
-                                        <span class="badge badge-modern bg-warning text-dark">
-                                            <i class="fas fa-clock me-1"></i>Pendiente
-                                        </span>
-                                        {% elif venta.estado_venta == 'devuelta' %}
-                                        <span class="badge badge-modern bg-danger">
-                                            <i class="fas fa-times me-1"></i>Devuelta
-                                        </span>
-                                        {% elif venta.estado_venta == 'aprobada' %}
-                                        <span class="badge badge-modern bg-success">
-                                            <i class="fas fa-check me-1"></i>Aprobada
-                                        </span>
-                                        {% elif venta.estado_venta == 'digitada' %}
-                                        <span class="badge badge-modern bg-info">
-                                            <i class="fas fa-keyboard me-1"></i>Digitada
-                                        </span>
-                                        {% elif venta.estado_venta == 'rechazada' %}
-                                        <span class="badge badge-modern bg-secondary">
-                                            <i class="fas fa-ban me-1"></i>Rechazada
-                                        </span>
-                                        {% elif venta.estado_venta == 'completada' %}
-                                        <span class="badge badge-modern bg-primary">
-                                            <i class="fas fa-check-circle me-1"></i>Completada
-                                        </span>
-                                        {% endif %}
+                                        <span class="badge bg-light text-dark border">{{ venta.telefono_legalizacion|default:"Sin teléfono" }}</span>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ venta.nombre_completo }}</div>
+                                            <small class="text-muted">{{ venta.documento }}</small>
+                                        </div>
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
@@ -369,35 +321,30 @@
                                             </div>
                                         </div>
                                     </td>
-                                    {% if es_backoffice %}
                                     <td>
-                                        {% if venta.backoffice %}
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar-sm bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px; font-size: 0.7rem;">
-                                                {{ venta.backoffice.username|slice:":2"|upper }}
-                                            </div>
-                                            <div>
-                                                <div class="fw-bold">{{ venta.backoffice.get_full_name|default:venta.backoffice.username }}</div>
-                                                <small class="text-muted">@{{ venta.backoffice.username }}</small>
-                                            </div>
+                                        <div>
+                                            <div class="fw-bold text-primary">{{ venta.plan_adquiere }}</div>
+                                            <small class="text-muted">
+                                                {% if venta.plan_cfm %}
+                                                    CFM: ${{ venta.plan_cfm|floatformat:0 }}
+                                                {% else %}
+                                                    CFM: No disponible
+                                                {% endif %}
+                                            </small>
                                         </div>
-                                        {% else %}
-                                        <span class="text-muted">-</span>
-                                        {% endif %}
                                     </td>
-                                    {% endif %}
-                                    <td>
+                                    <td style="width: 80px;">
                                         {% if venta.tipo_venta == 'portabilidad' %}
-                                        <span class="badge badge-modern bg-primary">
-                                            <i class="fas fa-exchange-alt me-1"></i>Portabilidad
+                                        <span class="badge badge-modern bg-primary" style="font-size: 0.7rem;">
+                                            <i class="fas fa-exchange-alt me-1"></i>Porta
                                         </span>
                                         {% elif venta.tipo_venta == 'upgrade' %}
-                                        <span class="badge badge-modern bg-success">
+                                        <span class="badge badge-modern bg-success" style="font-size: 0.7rem;">
                                             <i class="fas fa-arrow-up me-1"></i>Upgrade
                                         </span>
                                         {% elif venta.tipo_venta == 'prepago' %}
-                                        <span class="badge badge-modern bg-info">
-                                            <i class="fas fa-mobile me-1"></i>Pre a Pos
+                                        <span class="badge badge-modern bg-info" style="font-size: 0.7rem;">
+                                            <i class="fas fa-mobile me-1"></i>Prepos
                                         </span>
                                         {% endif %}
                                     </td>
@@ -417,7 +364,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="{% if es_backoffice %}11{% else %}10{% endif %}" class="text-center py-5">
+                                    <td colspan="8" class="text-center py-5">
                                         <div class="d-flex flex-column align-items-center">
                                             <i class="fas fa-search fa-3x text-muted mb-3"></i>
                                             <h5 class="text-muted">No se encontraron ventas</h5>
@@ -443,9 +390,6 @@
                             <div class="btn-group">
                                 <button class="btn btn-sm btn-outline-primary" onclick="exportSelected()">
                                     <i class="fas fa-download me-1"></i>Exportar
-                                </button>
-                                <button class="btn btn-sm btn-outline-info" onclick="printSelected()">
-                                    <i class="fas fa-print me-1"></i>Imprimir
                                 </button>
                                 <button class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">
                                     <i class="fas fa-times me-1"></i>Cancelar
@@ -496,6 +440,7 @@
                         </nav>
                     </div>
                     {% endif %}
+
                 </div>
             </div>
         </div>
@@ -550,26 +495,11 @@ $(document).ready(function() {
         language: {
             url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json'
         },
-        dom: 'Bfrtip',
-        buttons: [
-            {
-                extend: 'excel',
-                text: '<i class="fas fa-file-excel"></i> Excel',
-                className: 'btn btn-success btn-sm'
-            },
-            {
-                extend: 'pdf',
-                text: '<i class="fas fa-file-pdf"></i> PDF',
-                className: 'btn btn-danger btn-sm'
-            },
-            {
-                extend: 'print',
-                text: '<i class="fas fa-print"></i> Imprimir',
-                className: 'btn btn-info btn-sm'
-            }
-        ],
+        dom: 'rt',
+
         columnDefs: [
-            { orderable: false, targets: [0, -1] } // Deshabilitar ordenamiento en checkbox y acciones
+            { orderable: false, targets: [5, 6, 7] }, // Deshabilitar ordenamiento para las columnas de Tipo, Estado y Acciones
+            { className: "text-center", targets: [7] } // Centrar la columna de Acciones
         ]
     });
     
@@ -631,17 +561,7 @@ function exportSelected() {
     }
 }
 
-function printSelected() {
-    var selectedIds = [];
-    $('.venta-checkbox:checked').each(function() {
-        selectedIds.push($(this).val());
-    });
-    
-    if (selectedIds.length > 0) {
-        var url = '{% url "telefonica:ventas_lista" %}?print=true&ids=' + selectedIds.join(',');
-        window.open(url, '_blank');
-    }
-}
+
 
 function clearSelection() {
     $('.venta-checkbox').prop('checked', false);
