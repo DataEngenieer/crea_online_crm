@@ -1,0 +1,700 @@
+{% extends 'calidad/base_calidad.html' %}
+{% load static %}
+{% block titulo %}{{ titulo }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kpi-card {
+        transition: all 0.3s ease;
+        border-radius: 12px;
+        min-height: 180px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    .animated-value {
+        font-weight: bold;
+        animation: pulse-opacity 1.5s infinite;
+    }
+    
+    @keyframes pulse-opacity {
+        0% { opacity: 0.7; }
+        50% { opacity: 1; }
+        100% { opacity: 0.7; }
+    }
+    
+    /* Efecto de pulso para los cambios de valor */
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .pulse {
+        animation: pulse 0.3s ease-in-out;
+        color: #28a745;
+    }
+
+    .metric-title {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .chart-container {
+        position: relative;
+        height: 280px;
+        border-radius: 12px;
+        overflow: hidden;
+        visibility: hidden; /* Inicialmente oculto para animación */
+    }
+    .time-display {
+        font-family: monospace;
+        font-weight: 600;
+    }
+    .stats-card {
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .section-title {
+        border-left: 4px solid #4e73df;
+        padding-left: 10px;
+        margin-bottom: 20px;
+        margin-top: 30px;
+        font-size: 1.2rem;
+    }
+    /* Estilos para filtros */
+    .filter-container {
+        background: rgba(255,255,255,0.9);
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+</style>
+{% endblock %}
+
+{% block content_calidad %}
+<div class="container-fluid py-4">
+    <!-- Cabecera con título y filtros -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i class="bi bi-soundwave me-2 text-primary"></i>{{ subtitulo }}</h2>
+        <div class="filter-container d-flex gap-3 align-items-center">
+            <div>
+                <label class="form-label small">Rango de fechas</label>
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" id="dateRangePicker" placeholder="Seleccionar rango...">
+                    <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+                </div>
+            </div>
+            <div>
+                <label class="form-label small">Agente</label>
+                <select class="form-select form-select-sm" id="filterAgente">
+                    <option value="">Todos</option>
+                    {% for agente in agentes_disponibles %}
+                        <option value="{{ agente }}" {% if agente == agente_filtro %}selected{% endif %}>{{ agente }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button class="btn btn-sm btn-primary mt-3" id="btnAplicarFiltros">
+                <i class="bi bi-funnel-fill me-1"></i>Aplicar
+            </button>
+            <button class="btn btn-sm btn-outline-secondary mt-3 ms-2" id="btnLimpiarFiltros">
+                <i class="bi bi-x-circle me-1"></i>Limpiar
+            </button>
+        </div>
+    </div>
+
+    <!-- Resumen general - Tarjetas KPI principales -->
+    <h5 class="section-title">Resumen General</h5>
+    <div class="row g-4">
+        <!-- KPI 1: Total Registros -->
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card kpi-card text-white shadow-sm border-0 p-4" style="background: linear-gradient(135deg, #4e73df, #224abe);">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="metric-title text-white-50">AUDIOS PROCESADOS</h6>
+                        <h3 class="fw-bold display-5 mb-0"><span id="kpiRegistros" class="animated-value">{{ total_registros }}</span></h3>
+                        <p class="small text-white-50 mt-2 mb-0">Total de registros</p>
+                    </div>
+                    <div class="rounded-circle bg-white bg-opacity-25 p-3">
+                        <i class="bi bi-file-earmark-music fs-3 text-white"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- KPI 2: Duración Total (formato hh:mm:ss) -->
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card kpi-card text-white shadow-sm border-0 p-4" style="background: linear-gradient(135deg, #1cc88a, #0e7d55);">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="metric-title text-white-50">TIEMPO TOTAL LLAMADAS</h6>
+                        <div class="mb-1">
+                            <h3 class="fw-bold mb-0 display-5"><span id="kpiHorasFormateado" class="time-display animated-value">00:00:00</span></h3>
+                        </div>
+                        <p class="small text-white-50 mt-2 mb-0">Horas: <span id="kpiHoras">{{ duracion_total_horas }}</span> | Segundos: <span id="kpiSegundos">{{ duracion_total_seg }}</span></p>
+                    </div>
+                    <div class="rounded-circle bg-white bg-opacity-25 p-3">
+                        <i class="bi bi-clock-history fs-3 text-white"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- KPI 3: Costo Total -->
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card kpi-card text-white shadow-sm border-0 p-4" style="background: linear-gradient(135deg, #f6c23e, #c59b1a);">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="metric-title text-white-50">COSTO TOTAL</h6>
+                        <h3 class="fw-bold display-5 mb-0">$<span id="kpiCostoTotal" class="animated-value">0</span></h3>
+                        <div class="progress mt-2" style="height: 6px;">
+                            <div class="progress-bar bg-white" role="progressbar" style="width: 75%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-1">
+                            <span class="small text-white-50">Transcripción: $<span id="costoTranscripcion">{{ costo_transcripcion_total|floatformat:2 }}</span></span>
+                            <span class="small text-white-50">Análisis: $<span id="costoAnalisis">{{ costo_analisis_total|floatformat:2 }}</span></span>
+                        </div>
+                    </div>
+                    <div class="rounded-circle bg-white bg-opacity-25 p-3">
+                        <i class="bi bi-currency-dollar fs-3 text-white"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- KPI 4: Promedios -->
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card kpi-card text-white shadow-sm border-0 p-4" style="background: linear-gradient(135deg, #e83e8c, #b52e6a);">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="metric-title text-white-50">PROMEDIO POR LLAMADA</h6>
+                        <h3 class="fw-bold mb-0"><span id="kpiPromDurFormatted" class="time-display animated-value">00:00</span></h3>
+                        <p class="small text-white-50 mt-2 mb-0">Costo: <span id="kpiPromCost">{{ costo_promedio|floatformat:2 }}</span></p>
+                    </div>
+                    <div class="rounded-circle bg-white bg-opacity-25 p-3">
+                        <i class="bi bi-bar-chart-line fs-3 text-white"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas detalladas -->
+    <h5 class="section-title mt-5">Estadísticas Detalladas</h5>
+    <div class="row g-4">
+        <!-- Tarjetas de estadísticas en 2 filas de 3 columnas -->
+        <div class="col-12 col-lg-4">
+            <div class="card stats-card shadow-sm border-0 p-3">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle p-3 bg-light me-3">
+                        <i class="bi bi-mic-fill text-primary fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small mb-1">Costo Transcripción</h6>
+                        <h3 class="fw-bold mb-0">${{ costo_transcripcion_total|floatformat:2 }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="card stats-card shadow-sm border-0 p-3">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle p-3 bg-light me-3">
+                        <i class="bi bi-cpu text-success fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small mb-1">Costo Análisis</h6>
+                        <h3 class="fw-bold mb-0">${{ costo_analisis_total|floatformat:2 }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="card stats-card shadow-sm border-0 p-3">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle p-3 bg-light me-3">
+                        <i class="bi bi-currency-dollar text-warning fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small mb-1">Costo Por Hora</h6>
+                        <h3 class="fw-bold mb-0">${{ costo_por_hora|default:"0.00"|floatformat:2 }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="card stats-card shadow-sm border-0 p-3">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle p-3 bg-light me-3">
+                        <i class="bi bi-file-text text-info fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small mb-1">Tokens Analizados</h6>
+                        <h3 class="fw-bold mb-0">{{ tokens_analisis_total|default:"0" }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 col-lg-4">
+            <div class="card stats-card shadow-sm border-0 p-3">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle p-3 bg-light me-3">
+                        <i class="bi bi-clock-history text-secondary fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small mb-1">Tiempo Promedio</h6>
+                        <h3 class="fw-bold mb-0" id="tiempoPromedioFormateado">00:00</h3>
+                        <small class="text-muted">{{ duracion_promedio_seg|default:"0" }} segundos</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 col-lg-4">
+            <div class="card stats-card shadow-sm border-0 p-3">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle p-3 bg-light me-3">
+                        <i class="bi bi-calendar3 text-danger fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small mb-1">Última Actualización</h6>
+                        <h3 class="fw-bold mb-0" id="fechaActualizacion">{{ fecha_ultima_actualizacion|date:"d/m/Y" }}</h3>
+                        <small class="text-muted">{{ fecha_ultima_actualizacion|time:"H:i" }} hrs</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Gráficas de tendencias -->
+    <h5 class="section-title mt-5">Análisis de Tendencias</h5>
+    <div class="row g-4">
+        <!-- Gráfica de costos -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-primary bg-gradient text-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-graph-up-arrow me-2"></i>Tendencia de Costos
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-primary bg-opacity-25" type="button" id="dropdownCostos" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dropdownCostos">
+                                <li><a class="dropdown-item" href="#">Ver detalles</a></li>
+                                <li><a class="dropdown-item" href="#">Exportar datos</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="chart-container">
+                        <canvas id="chartCosto"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gráfica de duración -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-success bg-gradient text-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-soundwave me-2"></i>Duración Procesada por Mes
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-success bg-opacity-25" type="button" id="dropdownDuracion" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dropdownDuracion">
+                                <li><a class="dropdown-item" href="#">Ver detalles</a></li>
+                                <li><a class="dropdown-item" href="#">Exportar datos</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="chart-container">
+                        <canvas id="chartDuracion"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Librerías adicionales -->
+<!-- Ya no usamos CountUp.js, implementamos nuestra propia animación -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Serialización segura de datos -->
+{{ etiquetas_meses|json_script:"labels-json" }}
+{{ costo_total_mes|json_script:"costos-json" }}
+{{ duracion_horas_mes|json_script:"duraciones-json" }}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --------- Inicialización de componentes ---------
+        // Selector de fechas
+        const dateRangePicker = flatpickr("#dateRangePicker", {
+            mode: "range",
+            dateFormat: "d/m/Y",
+            locale: {
+                firstDayOfWeek: 1,
+                weekdays: {
+                    shorthand: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                    longhand: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+                },
+                months: {
+                    shorthand: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+                    longhand: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+                },
+            },
+            maxDate: "today"
+        });
+        
+        // Establecer valores iniciales de los filtros si existen
+        {% if fecha_inicio_filtro and fecha_fin_filtro %}
+            dateRangePicker.setDate(['{{ fecha_inicio_filtro }}', '{{ fecha_fin_filtro }}']);
+        {% elif fecha_inicio_filtro %}
+            dateRangePicker.setDate('{{ fecha_inicio_filtro }}');
+        {% endif %}
+        
+        // --------- Funcionalidad de filtros ---------
+        document.getElementById('btnAplicarFiltros').addEventListener('click', function() {
+            const fechasSeleccionadas = dateRangePicker.selectedDates;
+            const agenteSeleccionado = document.getElementById('filterAgente').value;
+            
+            // Construir URL con parámetros de filtro
+            const url = new URL(window.location.href);
+            url.search = ''; // Limpiar parámetros existentes
+            
+            if (fechasSeleccionadas.length > 0) {
+                const fechaInicio = fechasSeleccionadas[0];
+                url.searchParams.set('fecha_inicio', fechaInicio.toLocaleDateString('es-ES'));
+                
+                if (fechasSeleccionadas.length > 1) {
+                    const fechaFin = fechasSeleccionadas[1];
+                    url.searchParams.set('fecha_fin', fechaFin.toLocaleDateString('es-ES'));
+                }
+            }
+            
+            if (agenteSeleccionado) {
+                url.searchParams.set('agente', agenteSeleccionado);
+            }
+            
+            // Redirigir con los filtros aplicados
+             window.location.href = url.toString();
+         });
+         
+         // Botón limpiar filtros
+         document.getElementById('btnLimpiarFiltros').addEventListener('click', function() {
+             // Limpiar el selector de fechas
+             dateRangePicker.clear();
+             
+             // Limpiar el selector de agente
+             document.getElementById('filterAgente').value = '';
+             
+             // Redirigir sin parámetros de filtro
+             const url = new URL(window.location.href);
+             url.search = '';
+             window.location.href = url.toString();
+         });
+
+        // --------- Funciones de utilidad ---------
+        // Formateador de tiempo (segundos a formato hh:mm:ss)
+        function formatearTiempo(segundos) {
+            const horas = Math.floor(segundos / 3600);
+            const minutos = Math.floor((segundos % 3600) / 60);
+            const segs = Math.floor(segundos % 60);
+            
+            const horasStr = horas.toString().padStart(2, '0');
+            const minutosStr = minutos.toString().padStart(2, '0');
+            const segsStr = segs.toString().padStart(2, '0');
+            
+            return `${horasStr}:${minutosStr}:${segsStr}`;
+        }
+        
+        // Formateador de tiempo corto (segundos a formato mm:ss)
+        function formatearTiempoCorto(segundos) {
+            const minutos = Math.floor(segundos / 60);
+            const segs = Math.floor(segundos % 60);
+            
+            const minutosStr = minutos.toString().padStart(2, '0');
+            const segsStr = segs.toString().padStart(2, '0');
+            
+            return `${minutosStr}:${segsStr}`;
+        }
+
+        // --------- KPI animados ---------
+        function animarKpi(id, valor, prefix='') {
+            const el = document.getElementById(id);
+            if (!el) return;
+            
+            // Implementación propia de animación numérica
+            const valorFinal = parseFloat(valor);
+            const duracion = 1500; // milisegundos
+            const pasos = 60;
+            const incremento = valorFinal / pasos;
+            let valorActual = 0;
+            let paso = 0;
+            
+            // Función para formatear el número
+            const formatearNumero = (num) => {
+                // Determinar el número de decimales
+                const decimales = Number.isInteger(valorFinal) ? 0 : 2;
+                return prefix + num.toFixed(decimales);
+            };
+            
+            // Iniciar animación
+            const intervalo = setInterval(() => {
+                paso++;
+                valorActual = paso * incremento;
+                
+                if (paso >= pasos) {
+                    clearInterval(intervalo);
+                    valorActual = valorFinal; // Asegurar que el valor final sea exacto
+                }
+                
+                el.textContent = formatearNumero(valorActual);
+                
+                // Agregar efecto de pulso cada vez que cambia el valor
+                el.classList.add('pulse');
+                setTimeout(() => {
+                    el.classList.remove('pulse');
+                }, 50);
+                
+            }, duracion / pasos);
+        }
+        
+        // Animación de KPIs numéricos
+        // Usamos variables intermedias para evitar problemas con comillas anidadas
+        const totalRegistrosStr = '{{ total_registros|default:"0" }}';
+        const costoTotalGlobalStr = '{{ costo_total_global|floatformat:2|default:"0" }}';
+        const costoPromedioStr = '{{ costo_promedio|floatformat:2|default:"0" }}';
+        
+        const totalRegistros = parseFloat(totalRegistrosStr);
+        const costoTotalGlobal = parseFloat(costoTotalGlobalStr);
+        const costoPromedio = parseFloat(costoPromedioStr);
+        
+        if (document.getElementById('kpiRegistros')) {
+            animarKpi('kpiRegistros', totalRegistros);
+        }
+        if (document.getElementById('kpiCostoTotal')) {
+            animarKpi('kpiCostoTotal', costoTotalGlobal);
+        }
+        if (document.getElementById('kpiPromCost')) {
+            animarKpi('kpiPromCost', costoPromedio, '$');
+        }
+        
+        // Formateo de tiempos
+        const segundosTotalesStr = '{{ duracion_total_seg|default:"0" }}';
+        const segundosPromedioStr = '{{ duracion_promedio_seg|default:"0" }}';
+        
+        const segundosTotales = parseInt(segundosTotalesStr);
+        const segundosPromedio = parseInt(segundosPromedioStr);
+        
+        // Actualizar display de tiempo formateado
+        if (document.getElementById('kpiHorasFormateado')) {
+            document.getElementById('kpiHorasFormateado').textContent = formatearTiempo(segundosTotales);
+        }
+        if (document.getElementById('kpiPromDurFormatted')) {
+            document.getElementById('kpiPromDurFormatted').textContent = formatearTiempoCorto(segundosPromedio);
+        }
+        if (document.getElementById('tiempoPromedioFormateado')) {
+            document.getElementById('tiempoPromedioFormateado').textContent = formatearTiempoCorto(segundosPromedio);
+        }
+
+        // --------- Datos para gráficas ---------
+        // Cuando usamos json_script, debemos procesar correctamente los datos
+        let etiquetas = [];
+        let costos = [];
+        let duraciones = [];
+        
+        try {
+            // Asegurarse de que se obtengan arrays y no strings
+            const etiquetasText = document.getElementById('labels-json').textContent;
+            const costosText = document.getElementById('costos-json').textContent;
+            const duracionesText = document.getElementById('duraciones-json').textContent;
+            
+            // Primera parseamos el contenido a JavaScript
+            etiquetas = JSON.parse(etiquetasText);
+            costos = JSON.parse(costosText);
+            duraciones = JSON.parse(duracionesText);
+            
+            // Si todavía son strings (ocurre con json_script), hacemos otro parse
+            if (typeof etiquetas === 'string') etiquetas = JSON.parse(etiquetas);
+            if (typeof costos === 'string') costos = JSON.parse(costos);
+            if (typeof duraciones === 'string') duraciones = JSON.parse(duraciones);
+            
+            console.log('Datos para gráficas procesados:', { etiquetas, costos, duraciones });
+        } catch (error) {
+            console.error('Error al procesar datos para gráficas:', error);
+            // Usar datos de muestra en caso de error
+            etiquetas = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
+            costos = [1.5, 2.3, 1.9, 3.2, 2.8, 3.5];
+            duraciones = [0.5, 0.8, 0.6, 1.2, 1.0, 1.4];
+        }
+        
+        // Hacer visibles los contenedores de gráficos
+        const chartContainers = document.querySelectorAll('.chart-container');
+        chartContainers.forEach(container => {
+            container.style.display = 'block';
+            container.style.height = '300px';
+            container.classList.add('animate__animated', 'animate__fadeIn');
+        });
+
+        // --------- Gráficas con Chart.js ---------
+        // Configuración de colores
+        Chart.defaults.font.family = '"Nunito", "Segoe UI", Roboto, Arial, sans-serif';
+        Chart.defaults.color = '#6c757d';
+        
+        // Gráfica de tendencia de costos
+        const ctxCosto = document.getElementById('chartCosto').getContext('2d');
+        new Chart(ctxCosto, {
+            type: 'line',
+            data: { 
+                labels: etiquetas, 
+                datasets: [{ 
+                    label: 'Costo total USD', 
+                    data: costos, 
+                    fill: true, 
+                    borderColor: '#4e73df', 
+                    backgroundColor: 'rgba(78, 115, 223, 0.1)', 
+                    borderWidth: 3,
+                    pointBackgroundColor: '#4e73df',
+                    pointBorderColor: '#fff',
+                    pointHoverRadius: 6,
+                    tension: 0.4
+                }]
+            },
+            options: { 
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {display: false},
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleFont: {weight: 'bold'},
+                        callbacks: {
+                            label: function(context) {
+                                return `$${context.raw.toFixed(2)}`;
+                            }
+                        }
+                    }
+                }, 
+                scales: { 
+                    y: {
+                        beginAtZero: true,
+                        grid: {color: 'rgba(0,0,0,0.05)'},
+                        ticks: {
+                            callback: function(value) {
+                                return `$${value}`;
+                            }
+                        }
+                    }, 
+                    x: {
+                        grid: {display: false}
+                    }
+                } 
+            }
+        });
+
+        // Gráfica de duración por mes
+        const ctxDur = document.getElementById('chartDuracion').getContext('2d');
+        new Chart(ctxDur, {
+            type: 'bar',
+            data: { 
+                labels: etiquetas, 
+                datasets: [{ 
+                    label: 'Horas de audio', 
+                    data: duraciones, 
+                    backgroundColor: 'rgba(28, 200, 138, 0.7)',
+                    borderWidth: 1,
+                    borderColor: '#1cc88a',
+                    hoverBackgroundColor: '#1cc88a',
+                    barThickness: 25
+                }]
+            },
+            options: { 
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {display: false},
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        callbacks: {
+                            label: function(context) {
+                                const horas = context.raw;
+                                return `${horas} horas`;
+                            }
+                        }
+                    }
+                }, 
+                scales: { 
+                    y: {
+                        beginAtZero: true,
+                        grid: {color: 'rgba(0,0,0,0.05)'},
+                        title: {
+                            display: true,
+                            text: 'Horas',
+                            color: '#6c757d'
+                        }
+                    }, 
+                    x: {
+                        grid: {display: false}
+                    }
+                } 
+            }
+        });
+
+        // Mostrar efectos visuales de entrada
+        const cards = document.querySelectorAll('.kpi-card, .stats-card');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.classList.add('animate__animated');
+                card.classList.add('animate__fadeInUp');
+                card.style.visibility = 'visible';
+            }, 100 + index * 150);
+        });
+        
+        // Aplicar efectos a las gráficas
+        const charts = document.querySelectorAll('.chart-container');
+        charts.forEach((chart, index) => {
+            setTimeout(() => {
+                chart.classList.add('animate__animated');
+                chart.classList.add('animate__fadeIn');
+                chart.style.visibility = 'visible';
+            }, 500 + index * 200);
+        });
+    });
+</script>
+{% endblock %}

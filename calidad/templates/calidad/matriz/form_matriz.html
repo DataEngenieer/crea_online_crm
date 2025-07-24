@@ -1,0 +1,55 @@
+{% extends 'calidad/base_calidad.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content_calidad %}
+<div class="container py-4">
+    <h2>{{ titulo }}</h2>
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="mb-3">
+            {{ form.tipologia.label_tag }} {{ form.tipologia }}
+            {{ form.tipologia.errors }}
+        </div>
+        <div class="mb-3">
+            {{ form.categoria.label_tag }} {{ form.categoria }}
+            {{ form.categoria.errors }}
+        </div>
+        <div class="mb-3">
+            {{ form.indicador.label_tag }} {{ form.indicador }}
+            {{ form.indicador.errors }}
+        </div>
+        <div class="mb-3">
+            {{ form.ponderacion.label_tag }} {{ form.ponderacion }}
+            {{ form.ponderacion.errors }}
+        </div>
+        <div class="mb-3 form-check">
+            {{ form.activo }} {{ form.activo.label_tag }}
+            {{ form.activo.errors }}
+        </div>
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'calidad:lista_matriz' %}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Aquí puedes agregar cualquier JavaScript adicional que necesites
+    // Por ejemplo, para cargar dinámicamente las categorías basadas en la tipología seleccionada
+    $(document).ready(function() {
+        // Ejemplo de cómo podrías cargar categorías dinámicamente
+        $('#id_tipologia').change(function() {
+            var tipologiaId = $(this).val();
+            if (tipologiaId) {
+                // Aquí iría la lógica para cargar las categorías
+                // mediante una petición AJAX
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -85,6 +85,8 @@ class LoginAuditoriaView(LoginView):
         # Redirigir al dashboard correspondiente
         if selected_module == 'telefonica':
             return redirect('telefonica:dashboard')
+        elif selected_module == 'calidad':
+            return redirect('calidad:dashboard')
         return redirect('core:dashboard')
     
     def form_invalid(self, form):

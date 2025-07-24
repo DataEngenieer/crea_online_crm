@@ -1,0 +1,63 @@
+{% extends 'calidad/base_calidad.html' %}
+{% load static %}
+
+{% block title %}Portal de Calidad - ASECOFIN{% endblock %}
+
+{% block extra_css %}
+<style>
+    .sidebar-gradient {
+        background: linear-gradient(180deg, #1e3c72 0%, #2a5298 100%);
+    }
+    .navbar {
+        box-shadow: 0 2px 4px rgba(0,0,0,.1);
+    }
+    .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid rgba(0,0,0,.125);
+        font-weight: 600;
+    }
+    .bg-primary-light {
+        background-color: rgba(13, 110, 253, 0.1);
+    }
+    .nav-pills .nav-link.active {
+        background-color: #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content_calidad %}
+<!-- Main content -->
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+    <!-- Mensajes -->
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Contenido específico de la página -->
+    {% block content_calidad %}
+{% endblock %}
+</main>
+
+{% block extra_js %}
+<script>
+    // Activar tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %}

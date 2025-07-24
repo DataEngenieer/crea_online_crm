@@ -1,0 +1,96 @@
+:root {
+    --calidad-primary: #28a745;
+    --calidad-secondary: #6c757d;
+    --calidad-success: #28a745;
+    --calidad-info: #17a2b8;
+    --calidad-warning: #ffc107;
+    --calidad-danger: #dc3545;
+    --calidad-light: #f8f9fa;
+    --calidad-dark: #343a40;
+}
+
+/* Botones específicos de calidad */
+.btn-calidad {
+    background-color: var(--calidad-primary);
+    border-color: var(--calidad-primary);
+    color: white;
+}
+
+.btn-calidad:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+    color: white;
+}
+
+.btn-outline-calidad {
+    color: var(--calidad-primary);
+    border-color: var(--calidad-primary);
+}
+
+.btn-outline-calidad:hover {
+    background-color: var(--calidad-primary);
+    border-color: var(--calidad-primary);
+    color: white;
+}
+
+/* Cards y componentes */
+.card-calidad {
+    border-left: 4px solid var(--calidad-primary);
+}
+
+.text-calidad {
+    color: var(--calidad-primary) !important;
+}
+
+.bg-calidad {
+    background-color: var(--calidad-primary) !important;
+}
+
+/* Sidebar gradient específico para calidad */
+.sidebar-gradient {
+    background: linear-gradient(135deg, var(--calidad-primary) 0%, #1e7e34 100%);
+}
+
+/* Formularios */
+.form-control:focus {
+    border-color: var(--calidad-primary);
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+/* Alertas personalizadas */
+.alert-calidad {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+/* Tablas */
+.table-calidad thead th {
+    background-color: var(--calidad-primary);
+    color: white;
+    border-color: var(--calidad-primary);
+}
+
+/* Badges */
+.badge-calidad {
+    background-color: var(--calidad-primary);
+}
+
+/* Enlaces */
+a.text-calidad:hover {
+    color: #1e7e34 !important;
+}
+
+/* Navegación activa */
+.list-group-item.active {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .btn-calidad {
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+    }
+}

@@ -1,0 +1,217 @@
+{% extends 'calidad/base_calidad.html' %}
+{% load static %}
+
+{% block title %}Mi Dashboard - Calidad{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'calidad/css/auditorias.css' %}" rel="stylesheet">
+<style>
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 1.5rem;
+        color: white;
+        margin-bottom: 1rem;
+        transition: transform 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    .alert-warning {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        border: none;
+        color: white;
+    }
+    .alert-info {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        border: none;
+        color: white;
+    }
+    .alert-success {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        border: none;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">Mi Dashboard de Calidad</h1>
+                    <p class="text-muted">Bienvenido, {{ user.get_full_name|default:user.username }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'calidad:mis_auditorias' %}" class="btn btn-primary">
+                        <i class="fas fa-list"></i> Ver Mis Auditorías
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas principales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ total_auditorias }}</div>
+                <div class="stat-label">
+                    <i class="fas fa-clipboard-list"></i> Total Auditorías
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="stat-number">{{ indicadores_pendientes }}</div>
+                <div class="stat-label">
+                    <i class="fas fa-exclamation-triangle"></i> Pendientes de Respuesta
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="stat-number">{{ respuestas_seguimiento }}</div>
+                <div class="stat-label">
+                    <i class="fas fa-eye"></i> En Seguimiento
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="stat-number">{{ promedio_puntaje }}%</div>
+                <div class="stat-label">
+                    <i class="fas fa-chart-line"></i> Promedio de Calidad
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas importantes -->
+    {% if indicadores_pendientes > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning d-flex align-items-center" role="alert">
+                <i class="fas fa-exclamation-triangle me-3 fs-4"></i>
+                <div>
+                    <h5 class="alert-heading mb-1">Tienes {{ indicadores_pendientes }} indicador{{ indicadores_pendientes|pluralize:"es" }} pendiente{{ indicadores_pendientes|pluralize }} de respuesta</h5>
+                    <p class="mb-0">Es importante que respondas a los indicadores no cumplidos para demostrar tu compromiso con la mejora continua.</p>
+                </div>
+                <a href="{% url 'calidad:mis_auditorias' %}?estado_respuesta=pendientes" class="btn btn-light ms-auto">
+                    Ver Pendientes
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if compromisos_proximos > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info d-flex align-items-center" role="alert">
+                <i class="fas fa-clock me-3 fs-4"></i>
+                <div>
+                    <h5 class="alert-heading mb-1">Tienes {{ compromisos_proximos }} compromiso{{ compromisos_proximos|pluralize }} próximo{{ compromisos_proximos|pluralize }} a vencer</h5>
+                    <p class="mb-0">Revisa tus compromisos de mejora que vencen en los próximos 7 días.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Auditorías recientes -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history"></i> Mis Auditorías Recientes
+                    </h5>
+                    <a href="{% url 'calidad:mis_auditorias' %}" class="btn btn-sm btn-outline-primary">
+                        Ver Todas
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if auditorias_recientes %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Evaluador</th>
+                                        <th>Puntaje</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for auditoria in auditorias_recientes %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ auditoria.fecha_llamada|date:"d/m/Y" }}</strong><br>
+                                            <small class="text-muted">{{ auditoria.tipo_monitoreo|capfirst }}</small>
+                                        </td>
+                                        <td>
+                                            {{ auditoria.evaluador.get_full_name|default:auditoria.evaluador.username }}
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if auditoria.puntaje_total >= 80 %}bg-success{% elif auditoria.puntaje_total >= 60 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                {{ auditoria.puntaje_total }}%
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% with indicadores_no_cumplidos=auditoria.respuestas.all|length respuestas_asesor=auditoria.respuestas_asesor.all|length %}
+                                                {% if indicadores_no_cumplidos == 0 %}
+                                                    <span class="badge bg-success">Excelente</span>
+                                                {% elif respuestas_asesor > 0 %}
+                                                    <span class="badge bg-info">Respondido</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">Pendiente</span>
+                                                {% endif %}
+                                            {% endwith %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'calidad:mi_auditoria_detalle' auditoria.pk %}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i> Ver
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No tienes auditorías registradas</h5>
+                            <p class="text-muted">Las auditorías aparecerán aquí cuando sean creadas por el equipo de calidad.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Actualizar estadísticas cada 5 minutos
+    setInterval(function() {
+        location.reload();
+    }, 300000);
+</script>
+{% endblock %}

@@ -1,0 +1,690 @@
+{% extends 'calidad/base_calidad.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    /* Estilos generales */
+    .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+        margin-bottom: 2rem;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        overflow: hidden;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+        color: white;
+        border: none;
+        border-radius: 10px 10px 0 0 !important;
+        padding: 1.25rem 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .card-header h5 {
+        margin: 0;
+        font-weight: 600;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .card-header::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 200%;
+        background: rgba(255, 255, 255, 0.1);
+        transform: rotate(30deg);
+        z-index: 1;
+    }
+    
+    /* Estilos para la barra de progreso */
+    .progress {
+        height: 10px;
+        border-radius: 5px;
+        background-color: #f0f4f8;
+        overflow: visible;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .progress-bar {
+        position: relative;
+        border-radius: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        text-shadow: 0 0 2px rgba(0,0,0,0.3);
+        transition: width 0.6s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        height: 10px;
+    }
+    
+    .progress-value {
+        position: absolute;
+        right: 5px;
+        color: white;
+        font-size: 10px;
+        line-height: 10px;
+    }
+    
+    /* Estilos para la tabla */
+    .table {
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .table thead th {
+        background-color: #f8fafc;
+        border: none;
+        border-bottom: 2px solid #e9ecef;
+        font-weight: 600;
+        color: #4a5568;
+        padding: 1rem 1.25rem;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+    }
+    
+    .table tbody td {
+        padding: 1rem 1.25rem;
+        vertical-align: middle;
+        border-top: 1px solid #f1f5f9;
+    }
+    
+    .table tbody tr:first-child td {
+        border-top: none;
+    }
+    
+    .table-hover tbody tr {
+        transition: background-color 0.2s ease;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(75, 108, 183, 0.05);
+    }
+    
+    /* Estilos para los filtros */
+    .filter-card {
+        margin-bottom: 2rem;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+    
+    .filter-card .card-header {
+        background-color: #f8f9fc;
+        border-bottom: 1px solid #e3e6f0;
+        padding: 0.75rem 1.25rem;
+    }
+    
+    /* Estilos para la paginación */
+    .pagination .page-item.active .page-link {
+        background-color: #4e73df;
+        border-color: #4e73df;
+    }
+    
+    .pagination .page-link {
+        color: #4e73df;
+        font-size: 0.8rem;
+        padding: 0.3rem 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block title %}Auditorías de Calidad - Asecofin{% endblock title %}
+
+{% block titulo_auditorias %}
+    <i class="fas fa-clipboard-check me-2"></i> Auditorías de Calidad
+{% endblock titulo_auditorias %}
+
+{% block botones_adicionales %}
+    {% if perms.calidad.add_auditoria %}
+    <a href="{% url 'calidad:crear_auditoria' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> Nueva Auditoría
+    </a>
+    {% endif %}
+{% endblock botones_adicionales %}
+
+{% block content_calidad %}
+<div class="card filter-card mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-filter text-primary me-2"></i>Filtros de Búsqueda</h5>
+        <span class="badge bg-primary">{{ total_auditorias }} auditorías encontradas</span>
+    </div>
+    <div class="card-body p-3">
+        <form method="get" id="filtroForm" class="row g-2 align-items-end">
+            <!-- Fila 1: Búsqueda general -->
+            <div class="col-md-4">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control form-control-sm" id="busqueda" name="q" 
+                           placeholder="Buscar por agente o evaluador..." value="{{ request.GET.q }}">
+                </div>
+            </div>
+            
+            <!-- Filtros en línea -->
+            <div class="col-md-2">
+                <select name="agente" id="id_agente" class="form-select form-select-sm">
+                    <option value="">Todos los agentes</option>
+                    {% for agente in agentes %}
+                    <option value="{{ agente.id }}" {% if request.GET.agente == agente.id|stringformat:'s' %}selected{% endif %}>
+                        {{ agente.get_short_name|default:agente.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <select name="evaluador" id="id_evaluador" class="form-select form-select-sm">
+                    <option value="">Todos los evaluadores</option>
+                    {% for evaluador in evaluadores %}
+                    <option value="{{ evaluador.id }}" {% if request.GET.evaluador == evaluador.id|stringformat:'s' %}selected{% endif %}>
+                        {{ evaluador.get_short_name|default:evaluador.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+                
+                <!-- Filtros de área y sede eliminados -->
+                
+                <!-- Rango de fechas -->
+                <div class="col-md-3">
+                    <label for="id_fecha_inicio" class="form-label">Fecha desde</label>
+                    <input type="date" name="fecha_inicio" id="id_fecha_inicio" class="form-control" value="{{ request.GET.fecha_inicio }}">
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="id_fecha_fin" class="form-label">Fecha hasta</label>
+                    <input type="date" name="fecha_fin" id="id_fecha_fin" class="form-control" value="{{ request.GET.fecha_fin }}">
+                </div>
+                
+                <!-- Ordenar por -->
+                <div class="col-md-3">
+                    <label for="filterOrden" class="form-label">Ordenar por</label>
+                    <select name="orden" id="filterOrden" class="form-select">
+                        <option value="-fecha_llamada" {% if request.GET.orden == '-fecha_llamada' or not request.GET.orden %}selected{% endif %}>Fecha de llamada (más reciente)</option>
+                        <option value="fecha_llamada" {% if request.GET.orden == 'fecha_llamada' %}selected{% endif %}>Fecha de llamada (más antigua)</option>
+                        <option value="-fecha_creacion" {% if request.GET.orden == '-fecha_creacion' %}selected{% endif %}>Fecha de creación (más reciente)</option>
+                        <option value="fecha_creacion" {% if request.GET.orden == 'fecha_creacion' %}selected{% endif %}>Fecha de creación (más antigua)</option>
+                        <option value="agente__first_name" {% if request.GET.orden == 'agente__first_name' %}selected{% endif %}>Agente (A-Z)</option>
+                        <option value="-agente__first_name" {% if request.GET.orden == '-agente__first_name' %}selected{% endif %}>Agente (Z-A)</option>
+                        <option value="-puntaje_total" {% if request.GET.orden == '-puntaje_total' %}selected{% endif %}>Puntaje (mayor a menor)</option>
+                        <option value="puntaje_total" {% if request.GET.orden == 'puntaje_total' %}selected{% endif %}>Puntaje (menor a mayor)</option>
+                        <option value="evaluador__first_name" {% if request.GET.orden == 'evaluador__first_name' %}selected{% endif %}>Evaluador (A-Z)</option>
+                        <option value="-evaluador__first_name" {% if request.GET.orden == '-evaluador__first_name' %}selected{% endif %}>Evaluador (Z-A)</option>
+                    </select>
+                </div>
+                
+                <!-- Botones de acción -->
+                <div class="col-12 d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i> Aplicar Filtros
+                    </button>
+                    <a href="{% url 'calidad:lista_auditorias' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo me-1"></i> Limpiar Filtros
+                    </a>
+                </div>
+            </div>
+        </form>
+
+        {% if auditorias %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="80">ID</th>
+                            <th>Agente</th>
+                            <th width="200">Puntuación</th>
+                            <th>Evaluador</th>
+                            <!-- Columna Área / Sede eliminada -->
+                            <th width="120">Fecha</th>
+                            <th width="100">Tipo</th>
+                            <th width="150" class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for auditoria in auditorias %}
+                        <tr>
+                            <td>#{{ auditoria.id }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar avatar-sm me-2">
+                                        <span class="avatar-text rounded-circle bg-primary text-white">
+                                            {{ auditoria.agente.first_name|first|upper }}{{ auditoria.agente.last_name|first|upper }}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ auditoria.agente.get_full_name }}</div>
+                                        <small class="text-muted">{{ auditoria.numero_telefono }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="align-middle">
+                                {% if auditoria.speech %}
+                                    {# Mostrar puntaje proveniente del análisis IA #}
+                                    {% with puntaje=auditoria.puntaje_ia|default:"-" %}
+                                        <div class="d-flex flex-column align-items-start">
+                                            <span class="fs-5 fw-semibold">{{ puntaje }}</span>
+                                            <span class="badge bg-info mt-1">IA</span>
+                                        </div>
+                                    {% endwith %}
+                                {% else %}
+                                    {# Mostrar puntaje total manual #}
+                                    <div class="d-flex flex-column align-items-start">
+                                        <span class="fs-5 fw-semibold">{{ auditoria.puntaje_total|floatformat:1 }}%</span>
+                                        <span class="badge bg-secondary mt-1">Manual</span>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ auditoria.evaluador.get_full_name }}</small>
+                            </td>
+                            <!-- Celda de área y sede eliminada -->
+                            <td class="text-center">
+                                <small>{{ auditoria.fecha_llamada|date:"d/m/Y" }}</small>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-{% if auditoria.get_tipo_monitoreo_display|lower == 'grabación' %}info{% else %}primary{% endif %}" 
+                                      data-bs-toggle="tooltip" 
+                                      title="{{ auditoria.get_tipo_monitoreo_display }}">
+                                    <i class="fas {% if auditoria.get_tipo_monitoreo_display|lower == 'grabación' %}fa-microphone{% else %}fa-headset{% endif %}"></i>
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center gap-1">
+                                    <a href="{% url 'calidad:detalle_auditoria' auditoria.id %}" 
+                                       class="btn btn-sm btn-icon btn-outline-primary rounded-circle" 
+                                       data-bs-toggle="tooltip" 
+                                       title="Ver detalle">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if perms.calidad.change_auditoria %}
+                                    <a href="{% url 'calidad:editar_auditoria' auditoria.id %}" 
+                                       class="btn btn-sm btn-icon btn-outline-warning rounded-circle" 
+                                       data-bs-toggle="tooltip" 
+                                       title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if user.is_superuser or user.groups.all.0.name == "Administrador" %}
+                                    <button type="button" 
+                                            class="btn btn-sm btn-icon btn-outline-danger rounded-circle" 
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top"
+                                            title="Eliminar"
+                                            onclick="confirmarEliminarAuditoria('{{ auditoria.id }}');">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            {% if is_paginated %}
+            <div class="card-footer bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="text-muted small">
+                        Mostrando <span class="fw-bold">{{ page_obj.start_index }}</span> a 
+                        <span class="fw-bold">{{ page_obj.end_index }}</span> de 
+                        <span class="fw-bold">{{ page_obj.paginator.count }}</span> resultados
+                    </div>
+                    
+                    <nav aria-label="Navegación de páginas">
+                        <ul class="pagination pagination-sm mb-0">
+                            <!-- Primera página -->
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Primera">
+                                        <i class="fas fa-angle-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Anterior">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="fas fa-angle-double-left"></i></span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="fas fa-angle-left"></i></span>
+                                </li>
+                            {% endif %}
+                            
+                            <!-- Números de página -->
+                            {% for i in page_obj.paginator.page_range %}
+                                {% if page_obj.number == i %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ i }}</span>
+                                    </li>
+                                {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">{{ i }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            <!-- Siguiente y última página -->
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}" aria-label="Siguiente">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}" aria-label="Última">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="fas fa-angle-right"></i></span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="fas fa-angle-double-right"></i></span>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> No se encontraron auditorías con los filtros seleccionados.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal de confirmación para eliminar -->
+<div class="modal fade" id="confirmarEliminarModal" tabindex="-1" aria-labelledby="confirmarEliminarModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmarEliminarModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>¡Atención!</strong> Esta acción no se puede deshacer.
+                </div>
+                <p>¿Está seguro de que desea eliminar esta auditoría? Se eliminarán todos los registros asociados, incluyendo los detalles de evaluación.</p>
+                <ul class="list-group list-group-flush mb-3">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Agente evaluado:</span>
+                        <strong id="modalAgente">-</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Fecha de la llamada:</span>
+                        <strong id="modalFecha">-</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Evaluador:</span>
+                        <strong id="modalEvaluador">-</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Puntuación:</span>
+                        <span class="badge" id="modalPuntuacion">-</span>
+                    </li>
+                </ul>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="confirmarEliminarCheck">
+                    <label class="form-check-label" for="confirmarEliminarCheck">
+                        Confirmo que deseo eliminar esta auditoría
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancelar
+                </button>
+                <button type="button" id="btnConfirmarEliminar" class="btn btn-danger" disabled>
+                    <i class="fas fa-trash me-1"></i> Eliminar Auditoría
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// Variables globales
+if (typeof auditoriaActualId === 'undefined') {
+    let auditoriaActualId = null;
+}
+
+// Función para confirmar eliminación de auditoría
+function confirmarEliminarAuditoria(auditoriaId) {
+    auditoriaActualId = auditoriaId;
+    const modal = new bootstrap.Modal(document.getElementById('confirmarEliminarModal'));
+    const btnConfirmar = document.getElementById('btnConfirmarEliminar');
+    
+    // Deshabilitar el botón de confirmación inicialmente
+    btnConfirmar.disabled = true;
+    document.getElementById('confirmarEliminarCheck').checked = false;
+    
+    // Obtener detalles de la auditoría vía AJAX
+    fetch(`/calidad/api/auditorias/${auditoriaId}/`)
+        .then(response => response.json())
+        .then(data => {
+            // Actualizar el modal con los detalles
+            document.getElementById('modalAgente').textContent = data.agente_nombre || '-';
+            document.getElementById('modalFecha').textContent = data.fecha_llamada_formateada || '-';
+            document.getElementById('modalEvaluador').textContent = data.evaluador_nombre || '-';
+            
+            const puntuacionBadge = document.getElementById('modalPuntuacion');
+            puntuacionBadge.textContent = data.porcentaje_aprobacion ? `${data.porcentaje_aprobacion}%` : '-';
+            
+            // Establecer color según el porcentaje
+            const porcentaje = parseFloat(data.porcentaje_aprobacion) || 0;
+            puntuacionBadge.className = 'badge ' + (
+                porcentaje >= 90 ? 'bg-success' :
+                porcentaje >= 70 ? 'bg-warning' : 'bg-danger'
+            );
+            
+            // Mostrar el modal
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error al cargar detalles de la auditoría:', error);
+            // Mostrar mensaje de error
+            Swal.fire({
+                title: 'Error',
+                text: 'No se pudieron cargar los detalles de la auditoría. Por favor, intente nuevamente.',
+                icon: 'error',
+                confirmButtonText: 'Aceptar'
+            });
+        });
+    
+    // Configurar el evento de confirmación
+    btnConfirmar.onclick = function() {
+        fetch(`/calidad/auditorias/${auditoriaId}/eliminar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Mostrar mensaje de éxito y recargar la página
+                Swal.fire({
+                    title: '¡Eliminada!',
+                    text: 'La auditoría ha sido eliminada correctamente.',
+                    icon: 'success',
+                    confirmButtonText: 'Aceptar'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                throw new Error(data.message || 'Error al eliminar la auditoría');
+            }
+        })
+        .catch(error => {
+            console.error('Error al eliminar la auditoría:', error);
+            Swal.fire({
+                title: 'Error',
+                text: 'Ocurrió un error al intentar eliminar la auditoría. Por favor, intente nuevamente.',
+                icon: 'error',
+                confirmButtonText: 'Aceptar'
+            });
+        });
+    };
+}
+
+// Función para obtener el token CSRF
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Función para actualizar la URL con los parámetros del formulario
+function actualizarURL() {
+    const form = document.querySelector('form[method="get"]');
+    const formData = new FormData(form);
+    const params = new URLSearchParams();
+    
+    // Agregar solo los campos con valor
+    for (const [key, value] of formData.entries()) {
+        if (value) {
+            params.append(key, value);
+        }
+    }
+    
+    // Actualizar la URL sin recargar la página
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.pushState({}, '', newUrl);
+}
+
+// Inicialización cuando el documento está listo
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Habilitar/deshabilitar botón de confirmación de eliminación
+    const confirmarCheck = document.getElementById('confirmarEliminarCheck');
+    if (confirmarCheck) {
+        confirmarCheck.addEventListener('change', function() {
+            const btnConfirmar = document.getElementById('btnConfirmarEliminar');
+            if (btnConfirmar) {
+                btnConfirmar.disabled = !this.checked;
+            }
+        });
+    }
+    
+    // Configurar datepickers para los filtros de fecha
+    if (typeof $ !== 'undefined') {
+        $('input[type="date"]').attr('max', new Date().toISOString().split('T')[0]);
+        
+        // Configurar select2 para los filtros de selección múltiple
+        if ($.fn.select2) {
+            $('select[multiple]').select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Seleccione una o más opciones',
+                allowClear: true,
+                width: '100%'
+            });
+        }
+        
+        // Manejar cambios en los filtros
+        $('select, input').not('button, [type="submit"], [type="checkbox"]').on('change', function() {
+            actualizarURL();
+        });
+    }
+    
+    // Inicializar tooltips de Bootstrap
+    const tooltipTriggerList2 = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList2.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Mantener los parámetros de filtro en los enlaces de paginación
+    document.querySelectorAll('.pagination a').forEach(function(link) {
+        const url = new URL(link.href);
+        const searchParams = new URLSearchParams(window.location.search);
+        
+        // Mantener todos los parámetros de búsqueda
+        searchParams.forEach(function(value, key) {
+            if (key !== 'page' && !url.searchParams.has(key)) {
+                url.searchParams.append(key, value);
+            }
+        });
+        
+        link.href = url.toString();
+    });
+    
+    // Validar fechas del filtro
+    const formFiltro = document.getElementById('filtroForm');
+    if (formFiltro) {
+        formFiltro.addEventListener('submit', function(e) {
+            const fechaInicio = document.getElementById('id_fecha_inicio');
+            const fechaFin = document.getElementById('id_fecha_fin');
+            
+            if (fechaInicio.value && fechaFin.value && new Date(fechaInicio.value) > new Date(fechaFin.value)) {
+                e.preventDefault();
+                alert('La fecha de inicio no puede ser mayor a la fecha de fin');
+                return false;
+            }
+        });
+    }
+    
+    // Configurar datepickers para los filtros de fecha
+    if (typeof $ !== 'undefined') {
+        $('input[type="date"]').attr('max', new Date().toISOString().split('T')[0]);
+        
+        // Manejar cambios en los filtros
+        $('select, input').not('button, [type="submit"], [type="checkbox"]').on('change', function() {
+            actualizarURL();
+        });
+    }
+    
+    // Mostrar mensaje de eliminación exitosa
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('deleted') === 'true') {
+        // Mostrar notificación de éxito
+        const toast = new bootstrap.Toast(document.getElementById('toastEliminado'));
+        toast.show();
+        
+        // Limpiar el parámetro de la URL
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+    }
+});
+</script>
+{% endblock extra_js %}
+
+{% endblock content_calidad %}

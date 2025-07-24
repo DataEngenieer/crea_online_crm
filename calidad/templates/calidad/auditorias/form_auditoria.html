@@ -1,0 +1,778 @@
+{% extends 'calidad/base_calidad.html' %}
+{% load static %}
+
+{% block title %}{{ titulo|default:'Nueva Auditoría de Calidad' }} - Asecofin{% endblock %}
+
+{% block titulo_pagina %}
+    <i class="fas fa-{% if accion == 'editar' %}edit{% else %}plus{% endif %} me-2"></i> {{ titulo|default:'Nueva Auditoría de Calidad' }}
+{% endblock %}
+
+{% block botones_adicionales %}
+    <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{% url 'calidad:lista_auditorias' %}{% endif %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Volver al listado
+    </a>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'calidad/css/auditorias.css' %}">
+<style>
+    /* Estilos para el encabezado de la sección de evaluación */
+    .evaluacion-header {
+        position: relative;
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+        cursor: pointer;
+    }
+
+    .evaluacion-header:hover {
+        background-color: rgba(0, 0, 0, 0.02) !important;
+    }
+
+    .evaluacion-header::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    /* Estilos para el ícono de flecha */
+    #evaluacionToggleIcon {
+        transition: transform 0.3s ease;
+        font-size: 0.9em;
+        width: 1.25em;
+        text-align: center;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: auto;
+        font-weight: 400;
+    }
+</style>
+{% endblock %}
+
+{% block content_calidad %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clipboard-check me-2"></i> {{ titulo }}
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <form method="post" id="formAuditoria" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <!-- PRUEBA: ESTE ES EL TEMPLATE EN USO -->
+                        <!-- Errores generales del formulario -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger m-3">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="container px-0">
+                            <!-- DATOS BÁSICOS -->
+                            <div class="card shadow-sm mb-3">
+                                <div class="card-header bg-light py-2 px-3">
+                                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Datos Básicos</h6>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="row g-3">
+                                        <!-- Fila 1 -->
+                                        <div class="col-md-4">
+                                            <label for="{{ form.agente.id_for_label }}" class="form-label small fw-bold mb-1">
+                                                <i class="fas fa-user-tie me-1"></i> {{ form.agente.label }}
+                                            </label>
+                                            {{ form.agente }}
+                                        </div>
+                                        
+                                        <div class="col-md-2">
+                                            <label for="{{ form.numero_telefono.id_for_label }}" class="form-label small fw-bold mb-1">
+                                                <i class="fas fa-phone me-1"></i> Teléfono
+                                            </label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-light">
+                                                    <i class="fas fa-hashtag text-muted"></i>
+                                                </span>
+                                                {{ form.numero_telefono }}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-2">
+                                            <label for="{{ form.fecha_llamada.id_for_label }}" class="form-label small fw-bold mb-1">
+                                                <i class="far fa-calendar-alt me-1"></i> Fecha
+                                            </label>
+                                            <div class="input-group input-group-sm">
+                                                {{ form.fecha_llamada }}
+                                            </div>
+                                        </div>
+                        
+                                        <!-- Campos area y sede eliminados del formulario -->
+                                        
+                                        <div class="col-md-2">
+                                            <label for="evaluador_display" class="form-label small fw-bold mb-1">
+                                                <i class="fas fa-user-check me-1"></i> Evaluador
+                                            </label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" id="evaluador_display" class="form-control form-control-sm bg-light" 
+                                                       value="{{ request.user.get_full_name|default:request.user.username }}" 
+                                                       readonly>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-2">
+                                            <label for="{{ form.tipo_monitoreo.id_for_label }}" class="form-label small fw-bold mb-1">
+                                                <i class="fas fa-phone-laptop me-1"></i> Monitoreo
+                                            </label>
+                                            <div class="input-group input-group-sm">
+                                                {{ form.tipo_monitoreo }}
+                                            </div>
+                                        </div>
+                                        
+
+                                        <!-- Sección Speech Analytics -->
+                                        <div class="col-md-4" id="speech-audio-section" style="display:none;">
+                                            <label for="id_audio" class="form-label small fw-bold mb-1">
+                                                <i class="fas fa-microphone me-1"></i> Archivo de audio (requerido para Speech Analytics)
+                                            </label>
+                                            <div class="input-group input-group-sm">
+                                                {{ speech_form.audio }}
+                                            </div>
+                                            {% if speech_form.audio.errors %}
+                                                <div class="text-danger small">{{ speech_form.audio.errors }}</div>
+                                            {% endif %}
+                                            <div class="form-text">Solo formatos MP3, WAV, OGG, M4A, MPEG. Tamaño máximo: 25MB</div>
+                                        </div>
+                                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                            <!-- EVALUACIÓN DE INDICADORES -->
+                            <div class="card shadow-sm mb-4">
+                                <div class="card-header bg-light d-flex justify-content-between align-items-center evaluacion-header" data-bs-toggle="collapse" href="#evaluacionIndicadores" role="button" aria-expanded="true" aria-controls="evaluacionIndicadores">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-chevron-down me-2" id="evaluacionToggleIcon"></i>
+                                        <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Evaluación de Indicadores</h5>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-3">Puntuación Total: <span id="puntuacion-total" class="badge bg-secondary fs-6">0.00</span></span>
+                                        <span class="me-2">Porcentaje: <span id="porcentaje-total" class="badge bg-primary fs-6">0%</span></span>
+                                    </div>
+                                </div>
+                                <div class="collapse show" id="evaluacionIndicadores">
+                                    <div class="card-body">
+                                        {% if indicadores_por_tipologia %}
+                                        <div class="accordion" id="acordeonIndicadores">
+                                            {% for tipologia, datos in indicadores_por_tipologia.items %}
+                                            <div class="accordion-item border-{{ datos.color }} mb-3">
+                                                <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                                                    <button class="accordion-button bg-{{ datos.color }} bg-opacity-10 text-{{ datos.color }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="true" aria-controls="collapse{{ forloop.counter }}">
+                                                        <i class="fas fa-folder-open me-2"></i>
+                                                        <strong>{{ datos.nombre }}</strong>
+                                                        <span class="ms-2 badge bg-{{ datos.color }}">{{ datos.indicadores|length }} indicadores</span>
+                                                    </button>
+                                                </h2>
+                                                <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse show" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#acordeonIndicadores">
+                                                    <div class="accordion-body">
+                                                        <div class="table-responsive">
+                                                            <table class="table table-hover align-middle">
+                                                                <thead class="table-light">
+                                                                    <tr>
+                                                                        <th>Indicador</th>
+                                                                        <th class="text-center">Ponderación</th>
+                                                                        <th class="text-center">Cumple</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {% for indicador in datos.indicadores %}
+                                                                    <tr>
+                                                                        <td>
+                                                                            <div class="fw-bold">{{ indicador.categoria }}</div>
+                                                                            <div class="text-muted small">{{ indicador.indicador }}</div>
+                                                                            <input type="hidden" name="indicador_id" id="indicador_id_{{ indicador.id }}" value="{{ indicador.id }}">
+                                                                        </td>
+                                                                        <td class="text-center align-middle" style="width:140px;">
+                                                                            <span class="badge bg-{{ datos.color }}">{{ indicador.ponderacion }}%</span>
+                                                                        </td>
+                                                                        <td class="text-center align-middle" style="width:140px;">
+                                                                            <div class="d-flex flex-column align-items-center">
+                                                                                <!-- Botones de estado con tres opciones -->
+                                                                                <div class="btn-group btn-group-sm w-100 justify-content-center" role="group" aria-label="Opciones de cumplimiento">
+                                                                                    <input type="radio" class="btn-check" name="indicador_{{ indicador.id }}_estado" 
+                                                                                           id="cumple_{{ indicador.id }}" value="cumple" 
+                                                                                           data-indicador-id="{{ indicador.id }}"
+                                                                                           onchange="actualizarEstadoIndicador(this)">
+                                                                                    <label class="btn btn-outline-success" for="cumple_{{ indicador.id }}" 
+                                                                                           style="border-top-right-radius: 0; border-bottom-right-radius: 0;">
+                                                                                        <i class="fas fa-check"></i>
+                                                                                    </label>
+
+                                                                                    <input type="radio" class="btn-check" name="indicador_{{ indicador.id }}_estado" 
+                                                                                           id="sin_seleccionar_{{ indicador.id }}" value="sin_seleccionar" 
+                                                                                           data-indicador-id="{{ indicador.id }}" checked
+                                                                                           onchange="actualizarEstadoIndicador(this)">
+                                                                                    <label class="btn btn-outline-secondary" for="sin_seleccionar_{{ indicador.id }}"
+                                                                                           style="border-radius: 0;">
+                                                                                        <i class="fas fa-minus"></i>
+                                                                                    </label>
+
+                                                                                    <input type="radio" class="btn-check" name="indicador_{{ indicador.id }}_estado" 
+                                                                                           id="no_cumple_{{ indicador.id }}" value="no_cumple" 
+                                                                                           data-indicador-id="{{ indicador.id }}"
+                                                                                           onchange="actualizarEstadoIndicador(this)">
+                                                                                    <label class="btn btn-outline-danger" for="no_cumple_{{ indicador.id }}"
+                                                                                           style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                                                                                        <i class="fas fa-times"></i>
+                                                                                    </label>
+                                                                                </div>
+                                                                                
+                                                                                <!-- Texto descriptivo del estado -->
+                                                                                <div class="mt-2 text-center">
+                                                                                    <span class="badge bg-secondary bg-opacity-10 text-secondary d-inline-flex align-items-center py-1 px-2 rounded-pill" 
+                                                                                          id="estado-texto-{{ indicador.id }}">
+                                                                                        <i class="fas fa-minus-circle me-1"></i> Sin seleccionar
+                                                                                    </span>
+                                                                                </div>
+                                                                                
+                                                                                <!-- Input oculto para el valor real del indicador -->
+                                                                                <input type="hidden" name="indicador_{{ indicador.id }}" id="indicador_valor_{{ indicador.id }}" value="" data-ponderacion="{{ indicador.ponderacion }}">
+                                                                                
+                                                                                <!-- Campo de observaciones con animación -->
+                                                                                <div class="mt-3 observaciones-container fade-in w-100" id="observaciones-container-{{ indicador.id }}" style="display: none;">
+                                                                                    <div class="card border-0 shadow-sm">
+                                                                                        <div class="card-body p-2">
+                                                                                            <label for="observaciones_{{ indicador.id }}" class="form-label small text-muted mb-1 d-flex align-items-center">
+                                                                                                <i class="fas fa-comment-dots me-2 text-primary"></i> Explica por qué no cumple:
+                                                                                            </label>
+                                                                                            <textarea class="form-control form-control-sm" 
+                                                                                                    name="observaciones_{{ indicador.id }}" 
+                                                                                                    id="observaciones_{{ indicador.id }}"
+                                                                                                    placeholder="Detalla el motivo por el cual no se cumple este indicador" 
+                                                                                                    rows="2"
+                                                                                                    style="font-size: 0.9rem; resize: vertical;"></textarea>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                    {% endfor %}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="alert alert-info mb-0">
+                                            <i class="fas fa-info-circle me-2"></i> No hay indicadores disponibles para mostrar.
+                                        </div>
+                                    {% endif %}
+                                    </div>
+                                </div> <!-- Cierre del div.collapse -->
+                            </div>
+                        </div>
+                        
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4 p-4">
+                            <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{% url 'calidad:lista_auditorias' %}{% endif %}" 
+                               class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-times me-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submit-button">
+                                <i class="fas fa-save me-1"></i> {{ submit_text|default:'Guardar' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal de Carga -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <h5 class="mt-3 mb-0">Procesando Auditoría</h5>
+                <p class="text-muted">Esto puede tardar unos momentos. Por favor, espere.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content_calidad %}
+
+{% block extra_js %}
+<script>
+// Función para mostrar/ocultar la sección de carga de audio
+function toggleAudioSection(mostrar) {
+    const audioSection = document.getElementById('audio-config-section');
+    if (audioSection) {
+        audioSection.style.display = mostrar ? 'block' : 'none';
+    }
+}
+
+// Inicializar el estado de la página al cargar
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar la visibilidad de la sección de audio
+    const speechCheckbox = document.getElementById('{{ form.es_speech_analytics.id_for_label }}');
+    if (speechCheckbox) {
+        toggleAudioSection(speechCheckbox.checked);
+        
+        // Manejar cambios en el checkbox
+        speechCheckbox.addEventListener('change', function() {
+            toggleAudioSection(this.checked);
+        });
+    }
+    
+    // Inicializar los checkboxes de los indicadores
+    inicializarCheckboxesIndicadores();
+    
+    // Calcular la puntuación total inicial
+    calcularPuntuacionTotal();
+    
+    // Obtener el token CSRF
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // ¿Esta cadena de cookie comienza con el nombre que queremos?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    // Inicializar Select2 para el campo de agente
+    // IMPORTANTE: Esta inicialización debe estar en el template, no en un archivo .js externo, para que Django procese correctamente la URL.
+    $('#{{ form.agente.id_for_label }}').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        dropdownParent: $('#formAuditoria'),
+        placeholder: 'Buscar agente por nombre, apellido o usuario...',
+        allowClear: true,
+        language: {
+            noResults: function() {
+                return 'No se encontraron resultados';
+            },
+            searching: function() {
+                return 'Buscando...';
+            },
+            inputTooShort: function(args) {
+                return 'Ingrese al menos ' + args.minimum + ' caracteres';
+            },
+            errorLoading: function() {
+                return 'No se pudieron cargar los resultados';
+            }
+        },
+        ajax: {
+            url: '{% url "calidad:api_buscar_usuarios" %}',
+            dataType: 'json',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            delay: 300,
+            data: function (params) {
+                return {
+                    q: params.term, // término de búsqueda
+                    page: params.page || 1
+                };
+            },
+            processResults: function (data, params) {
+                // Si hay un error en la respuesta, mostrarlo
+                if (data.error) {
+                    console.error('Error en la búsqueda:', data.error);
+                    return {
+                        results: []
+                    };
+                }
+                
+                // Asegurarse de que los resultados tengan el formato correcto
+                var results = [];
+                if (data.results && Array.isArray(data.results)) {
+                    results = data.results.map(function(item) {
+                        return {
+                            id: item.id,
+                            text: item.text || (item.first_name + ' ' + (item.last_name || '')),
+                            username: item.username || ''
+                        };
+                    });
+                }
+                
+                return {
+                    results: results,
+                    pagination: {
+                        more: data.pagination && data.pagination.more
+                    }
+                };
+            },
+            error: function(xhr, status, error) {
+                console.error('Error en la solicitud AJAX:', status, error);
+                console.error('Respuesta del servidor:', xhr.responseText);
+                
+                // Mostrar mensaje de error al usuario
+                if (xhr.status === 403) {
+                    console.error('No tiene permisos para realizar esta acción');
+                } else if (xhr.status === 404) {
+                    console.error('El servicio de búsqueda no está disponible');
+                } else if (xhr.status >= 500) {
+                    console.error('Error del servidor. Por favor, intente más tarde');
+                }
+                
+                // Devolver un arreglo vacío para evitar errores en la interfaz
+                return {
+                    results: [],
+                    pagination: { more: false }
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 2,
+        templateResult: formatUser,
+        templateSelection: formatUserSelection
+    });
+    
+    // Función para formatear la visualización de usuarios en Select2
+    function formatUser(user) {
+        if (!user) return '';
+        if (!user.id) return user.text || 'Seleccionar...';
+        
+        var displayText = user.text || '';
+        var username = user.username || '';
+        
+        // Crear el contenedor principal
+        var $container = $(
+            '<div class="d-flex align-items-center">' +
+                '<div class="flex-shrink-0 me-2">' +
+                    '<i class="fas fa-user-circle fa-lg"></i>' +
+                '</div>' +
+                '<div class="flex-grow-1">' +
+                    '<div class="fw-semibold">' + displayText + '</div>' +
+                    (username ? '<div class="small text-muted">@' + username + '</div>' : '') +
+                '</div>' +
+            '</div>'
+        );
+        
+        return $container;
+    }
+
+    // Asegura que el usuario seleccionado se muestre correctamente en el input
+    function formatUserSelection(user) {
+        if (!user) return '';
+        // Si hay nombre y apellido, úsalos
+        if (user.first_name || user.last_name) {
+            let nombre = (user.first_name || '') + ' ' + (user.last_name || '');
+            if (nombre.trim() !== '') return nombre.trim();
+        }
+        // Si hay texto (del option inicial o AJAX), úsalo
+        if (user.text) return user.text;
+        // Si hay username, úsalo
+        if (user.username) return user.username;
+        // Si es un string plano (caso raro)
+        if (typeof user === 'string') return user;
+        return '';
+    }
+
+});
+
+// Inicializar el estado del ícono y los estados de los indicadores cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuración del ícono de evaluación
+    const evaluacionToggleIcon = document.getElementById('evaluacionToggleIcon');
+    const evaluacionIndicadores = document.getElementById('evaluacionIndicadores');
+    
+    if (evaluacionToggleIcon && evaluacionIndicadores) {
+        if (!evaluacionIndicadores.classList.contains('show')) {
+            evaluacionToggleIcon.classList.add('fa-rotate-180');
+        }
+        
+        // Manejar el evento de clic en el encabezado de evaluación
+        const evaluacionHeader = document.querySelector('[data-bs-target="#evaluacionIndicadores"]');
+        if (evaluacionHeader) {
+            evaluacionHeader.addEventListener('click', function() {
+                evaluacionToggleIcon.classList.toggle('fa-rotate-180');
+            });
+        }
+    }
+    
+    // Inicializar todos los estados como "sin seleccionar"
+    document.querySelectorAll('[id^="sin_seleccionar_"]').forEach(radio => {
+        if (radio.checked) {
+            actualizarEstadoIndicador(radio);
+        }
+    });
+});
+
+// Función para actualizar el estado del indicador (ámbito global)
+function actualizarEstadoIndicador(radio) {
+    const indicadorId = radio.dataset.indicadorId;
+    const valor = radio.value;
+    const estadoTexto = document.getElementById(`estado-texto-${indicadorId}`);
+    const inputOculto = document.getElementById(`indicador_valor_${indicadorId}`);
+    const observacionesContainer = document.getElementById(`observaciones-container-${indicadorId}`);
+
+    inputOculto.value = valor === 'sin_seleccionar' ? '' : valor;
+
+    if (valor === 'cumple') {
+        estadoTexto.innerHTML = '<i class="fas fa-check-circle me-1 text-success"></i> Cumple';
+        estadoTexto.className = 'badge bg-success bg-opacity-10 text-success d-inline-flex align-items-center py-1 px-2 rounded-pill';
+        if (observacionesContainer) observacionesContainer.style.display = 'none';
+    } else if (valor === 'no_cumple') {
+        estadoTexto.innerHTML = '<i class="fas fa-times-circle me-1 text-danger"></i> No Cumple';
+        estadoTexto.className = 'badge bg-danger bg-opacity-10 text-danger d-inline-flex align-items-center py-1 px-2 rounded-pill';
+        if (observacionesContainer) observacionesContainer.style.display = 'block';
+    } else {
+        estadoTexto.innerHTML = '<i class="fas fa-minus-circle me-1 text-secondary"></i> Sin seleccionar';
+        estadoTexto.className = 'badge bg-secondary bg-opacity-10 text-secondary d-inline-flex align-items-center py-1 px-2 rounded-pill';
+        if (observacionesContainer) observacionesContainer.style.display = 'none';
+    }
+
+    calcularPuntuacionTotal();
+}
+
+// Función para inicializar los checkboxes de indicadores (ámbito global)
+function inicializarCheckboxesIndicadores() {
+    document.querySelectorAll('.indicador-cumple').forEach(checkbox => {
+        actualizarEstadoCheckbox(checkbox);
+        checkbox.addEventListener('change', function() {
+            actualizarEstadoCheckbox(this);
+            calcularPuntuacionTotal();
+        });
+    });
+}
+
+// Función para calcular la puntuación total ponderada
+function calcularPuntuacionTotal() {
+    let totalPuntos = 0;
+    let totalPonderacion = 0;
+    let totalIndicadores = 0;
+    let indicadoresEvaluados = 0;
+    
+    // Recorrer todos los inputs ocultos de los indicadores
+    document.querySelectorAll('input[id^="indicador_valor_"]').forEach(input => {
+        const ponderacion = parseFloat(input.dataset.ponderacion) || 0;
+        const valor = input.value;
+        
+        // Solo sumar a la ponderación total si el indicador tiene un valor asignado
+        if (valor !== '') {
+            totalPonderacion += ponderacion;
+            totalIndicadores++;
+            
+            // Sumar puntos solo si cumple
+            if (valor === 'cumple') {
+                totalPuntos += ponderacion;
+                indicadoresEvaluados++;
+            } else if (valor === 'no_cumple') {
+                indicadoresEvaluados++;
+            }
+        }
+    });
+    
+    // Calcular porcentaje (solo si hay indicadores evaluados)
+    let porcentaje = 0;
+    if (totalPonderacion > 0 && indicadoresEvaluados > 0) {
+        porcentaje = (totalPuntos / totalPonderacion) * 100;
+    }
+    
+    // Actualizar la interfaz
+    const puntuacionElement = document.getElementById('puntuacion-total');
+    const porcentajeElement = document.getElementById('porcentaje-total');
+    
+    if (puntuacionElement) {
+        puntuacionElement.textContent = totalPuntos.toFixed(2);
+        // Cambiar el color según el porcentaje
+        if (porcentaje >= 90) {
+            puntuacionElement.className = 'badge bg-success fs-6';
+        } else if (porcentaje >= 70) {
+            puntuacionElement.className = 'badge bg-warning text-dark fs-6';
+        } else {
+            puntuacionElement.className = 'badge bg-danger fs-6';
+        }
+    }
+    
+    if (porcentajeElement) {
+        porcentajeElement.textContent = porcentaje.toFixed(2) + '%';
+        // Sincronizar el color con el de la puntuación
+        if (porcentaje >= 90) {
+            porcentajeElement.className = 'badge bg-success fs-6';
+        } else if (porcentaje >= 70) {
+            porcentajeElement.className = 'badge bg-warning text-dark fs-6';
+        } else {
+            porcentajeElement.className = 'badge bg-danger fs-6';
+        }
+    }
+    
+    // Mostrar advertencia si hay indicadores sin evaluar
+    const advertenciaElement = document.getElementById('advertencia-evaluacion');
+    if (advertenciaElement) {
+        if (indicadoresEvaluados < totalIndicadores) {
+            advertenciaElement.classList.remove('d-none');
+        } else {
+            advertenciaElement.classList.add('d-none');
+        }
+    }
+}
+
+// Manejar la previsualización del archivo de audio
+document.addEventListener('DOMContentLoaded', function() {
+    const audioInput = document.getElementById('id_audio');
+    if (audioInput) {
+        // Crear elementos para la previsualización si no existen
+        let audioPreviewContainer = document.querySelector('#speech-audio-section');
+        let audioPreview = document.querySelector('#audio-preview');
+        
+        if (!audioPreview && audioPreviewContainer) {
+            // Crear el contenedor de previsualización
+            audioPreview = document.createElement('div');
+            audioPreview.id = 'audio-preview';
+            audioPreview.style.display = 'none';
+            audioPreview.className = 'mt-2';
+            
+            // Crear el reproductor de audio
+            const audioPlayer = document.createElement('audio');
+            audioPlayer.controls = true;
+            audioPlayer.className = 'w-100';
+            
+            // Agregar el reproductor al contenedor
+            audioPreview.appendChild(audioPlayer);
+            
+            // Agregar el contenedor después del input
+            audioPreviewContainer.appendChild(audioPreview);
+        }
+        
+        audioInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // Verificar que sea un archivo de audio
+            console.log('Tipo de archivo:', file.type);
+            // Aceptar tipos de audio comunes y MPEG específicamente
+            const validAudioTypes = ['audio/', 'video/mpeg', 'audio/mpeg'];
+            const isValidType = validAudioTypes.some(type => file.type.startsWith(type) || file.type === type);
+            
+            if (!isValidType) {
+                alert('Por favor, seleccione un archivo de audio válido (MP3, WAV, MPEG, etc).');
+                this.value = ''; // Limpiar el input
+                return;
+            }
+            
+            // Mostrar el reproductor de audio
+            audioPreview = document.querySelector('#audio-preview');
+            if (!audioPreview) return;
+            
+            const audioPlayer = audioPreview.querySelector('audio');
+            if (!audioPlayer) return;
+            
+            const audioURL = URL.createObjectURL(file);
+            audioPlayer.src = audioURL;
+            audioPreview.style.display = 'block';
+            
+            // Limpiar la URL del objeto cuando ya no sea necesaria
+            audioPlayer.onloadedmetadata = function() {
+                URL.revokeObjectURL(audioURL);
+            };
+        });
+    }
+});
+
+
+// Función para expandir/colapsar todos los indicadores
+function toggleTodosIndicadores(expandir) {
+    const cards = document.querySelectorAll('#indicadores-container .card');
+    cards.forEach(card => {
+        const collapse = card.querySelector('.collapse');
+        if (collapse) {
+            if (expandir) {
+                new bootstrap.Collapse(collapse, { toggle: true });
+            } else {
+                bootstrap.Collapse.getInstance(collapse)?.hide();
+            }
+        }
+    });
+}
+
+$(document).ready(function() {
+    // --- Lógica del Modal de Carga ---
+    $('#formAuditoria').on('submit', function(e) {
+        console.log('Formulario enviado. Validando...');
+        
+        // Validar que el formulario es válido antes de mostrar el modal
+        if (!this.checkValidity()) {
+            console.log('Formulario no válido. Mostrando errores...');
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).addClass('was-validated');
+            return false;
+        }
+
+        // Validar que si es Speech Analytics, se haya subido un archivo
+        var tipoMonitoreo = $('#id_tipo_monitoreo').val();
+        console.log('Tipo de monitoreo al enviar:', tipoMonitoreo);
+        
+        if (tipoMonitoreo === 'speech') {
+            var archivoAudio = $('#id_audio').val();
+            console.log('Archivo de audio seleccionado:', archivoAudio);
+            
+            if (!archivoAudio) {
+                console.log('Error: No se ha seleccionado ningún archivo de audio');
+                e.preventDefault();
+                alert('Por favor, seleccione un archivo de audio para continuar con Speech Analytics.');
+                return false;
+            }
+        }
+
+        console.log('Mostrando modal de carga...');
+        // Mostrar el modal de carga
+        $('#loadingModal').modal('show');
+        
+        // Deshabilitar el botón de envío para evitar múltiples envíos
+        $('#submit-button').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...');
+        
+        console.log('Enviando formulario...');
+        // Enviar el formulario programáticamente.
+        // Se usa el método nativo para evitar un bucle de eventos de submit.
+        this.submit();
+    });
+
+    function toggleSpeechSection() {
+        var tipo = $('#id_tipo_monitoreo').val();
+        console.log('Tipo de monitoreo seleccionado:', tipo);
+        
+        if (tipo === 'speech') {
+            console.log('Mostrando sección de audio de Speech Analytics');
+            $('#speech-audio-section').show();
+            $('#evaluacionIndicadores').closest('.card').hide();
+            // Hacer que el campo de audio sea requerido
+            $('#id_audio').prop('required', true);
+        } else {
+            console.log('Ocultando sección de audio de Speech Analytics');
+            $('#speech-audio-section').hide();
+            $('#evaluacionIndicadores').closest('.card').show();
+            // Quitar el atributo required si no es Speech Analytics
+            $('#id_audio').prop('required', false);
+        }
+    }
+    $('#id_tipo_monitoreo').on('change', toggleSpeechSection);
+    toggleSpeechSection();
+});
+</script>
+{% endblock extra_js %}

@@ -127,7 +127,7 @@ body {
     background: rgba(255,255,255,0.25) !important;
     color: #212529 !important;
     border-radius: 0.375rem;
-    margin: 0.125rem 0.5rem;
+    /* Eliminado margin para evitar cambio de tamaño en hover */
 }
 
 .bg-white.rounded.p-2.text-dark {

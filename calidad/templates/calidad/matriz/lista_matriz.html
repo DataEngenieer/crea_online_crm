@@ -1,0 +1,363 @@
+{% extends 'calidad/base_calidad.html' %}
+{% load static humanize %}
+
+{% block title %}Matriz de Calidad{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card-header {
+        background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+        color: white;
+        border: none;
+        border-radius: 10px 10px 0 0 !important;
+        padding: 1.25rem 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .card-header h5 {
+        margin: 0;
+        font-weight: 600;
+        position: relative;
+        z-index: 2;
+    }
+    .card-header::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 200%;
+        background: rgba(255, 255, 255, 0.1);
+        transform: rotate(30deg);
+        z-index: 1;
+    }
+    .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+        margin-bottom: 2rem;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        overflow: hidden;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+    }
+    .table {
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .table thead th {
+        background-color: #f8fafc;
+        border: none;
+        border-bottom: 1px solid #e9ecef;
+        font-weight: 600;
+        color: #495057;
+        padding: 1rem 1.5rem;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+    }
+    .table tbody td {
+        padding: 1.25rem 1.5rem;
+        vertical-align: middle;
+        border-top: 1px solid #f1f3f9;
+    }
+    .table tbody tr:first-child td {
+        border-top: none;
+    }
+    .table-hover tbody tr {
+        transition: background-color 0.2s ease;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(75, 108, 183, 0.05);
+    }
+    /* Badges */
+    .badge {
+        padding: 0.5em 0.8em;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        border-radius: 50px;
+        font-size: 0.8rem;
+    }
+    .badge-success {
+        background-color: #10b981;
+    }
+    .badge-secondary {
+        background-color: #64748b;
+    }
+    
+    /* Botones */
+    .btn {
+        border-radius: 8px;
+        padding: 0.5rem 1.25rem;
+        font-weight: 500;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn i {
+        font-size: 0.9em;
+    }
+    .btn-sm {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+        border-radius: 6px;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+        border: none;
+        box-shadow: 0 4px 6px -1px rgba(75, 108, 183, 0.2), 0 2px 4px -1px rgba(75, 108, 183, 0.1);
+    }
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #3a5a9c 0%, #121f3d 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(75, 108, 183, 0.3), 0 4px 6px -2px rgba(75, 108, 183, 0.15);
+    }
+    .btn-primary:active {
+        transform: translateY(0);
+    }
+    
+    /* Botones outline */
+    .btn-outline-primary {
+        color: #4b6cb7;
+        border: 1.5px solid #4b6cb7;
+        background: transparent;
+    }
+    .btn-outline-primary:hover {
+        background-color: rgba(75, 108, 183, 0.1);
+        color: #3a5a9c;
+        border-color: #3a5a9c;
+        transform: translateY(-2px);
+    }
+    .btn-outline-success {
+        color: #10b981;
+        border: 1.5px solid #10b981;
+        background: transparent;
+    }
+    .btn-outline-success:hover {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: #0d9f72;
+        border-color: #0d9f72;
+        transform: translateY(-2px);
+    }
+    .btn-outline-danger {
+        color: #ef4444;
+        border: 1.5px solid #ef4444;
+        background: transparent;
+    }
+    .btn-outline-danger:hover {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: #dc2626;
+        border-color: #dc2626;
+        transform: translateY(-2px);
+    }
+    
+    /* Formularios */
+    .form-control, .form-select {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.6rem 1rem;
+        transition: all 0.2s ease;
+        font-size: 0.95rem;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #4b6cb7;
+        box-shadow: 0 0 0 3px rgba(75, 108, 183, 0.15);
+    }
+    .form-label {
+        font-weight: 500;
+        color: #475569;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    /* Alertas */
+    .alert {
+        border: none;
+        border-radius: 10px;
+        padding: 1rem 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    }
+    .alert-info {
+        background-color: #f0f9ff;
+        color: #0369a1;
+        border-left: 4px solid #0ea5e9;
+    }
+</style>
+{% endblock %}
+
+{% block content_calidad %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary">Matriz de Calidad</h2>
+        <a href="{% url 'calidad:crear_editar_matriz' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i> Nuevo Indicador
+        </a>
+    </div>
+
+    <!-- Filtro de Tipología y Estado -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3" id="filtroForm">
+                <div class="col-md-4">
+                    <label for="tipologia" class="form-label">Filtrar por Tipología</label>
+                    <select name="tipologia" id="tipologia" class="form-select" onchange="this.form.submit()">
+                        <option value="">Todas las tipologías</option>
+                        {% for valor, nombre in TIPOLOGIA_CHOICES %}
+                            <option value="{{ valor }}" {% if tipologia_actual == valor %}selected{% endif %}>
+                                {{ nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="mostrarInactivos" name="mostrar_inactivos" value="true" {% if mostrar_inactivos %}checked{% endif %} onchange="this.form.submit()">
+                        <label class="form-check-label" for="mostrarInactivos">Mostrar elementos inactivos</label>
+                    </div>
+                </div>
+                <!-- Campo oculto para mantener el estado del checkbox cuando está desmarcado -->
+                <input type="hidden" name="mostrar_inactivos" value="false" id="hiddenMostrarInactivos">
+            </form>
+        </div>
+    </div>
+
+    <!-- Indicadores agrupados por tipología -->
+    {% for tipologia, data in indicadores_por_tipologia.items %}
+        {% if data.indicadores %}
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">{{ data.nombre }}</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Categoría</th>
+                                    <th>Indicador</th>
+                                    <th class="text-center">Ponderación</th>
+                                    <th class="text-center">Estado</th>
+                                    <th class="text-end">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for indicador in data.indicadores %}
+                                <tr>
+                                    <td>{{ indicador.categoria }}</td>
+                                    <td>{{ indicador.indicador }}</td>
+                                    <td class="text-center">{{ indicador.ponderacion }}%</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-{% if indicador.activo %}success{% else %}secondary{% endif %}">
+                                            {{ indicador.activo|yesno:"Activo,Inactivo" }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{% url 'calidad:editar_matriz' id=indicador.id %}" 
+                                           class="btn btn-sm btn-outline-primary" 
+                                           title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-sm {% if indicador.activo %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                                                onclick="toggleMatrizActivo({{ indicador.id }}, this)"
+                                                title="{% if indicador.activo %}Desactivar{% else %}Activar{% endif %}">
+                                            <i class="fas {% if indicador.activo %}fa-times{% else %}fa-check{% endif %}"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% empty %}
+        <div class="alert alert-info">
+            No hay indicadores registrados.
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Función para manejar el toggle de activo/inactivo
+function toggleMatrizActivo(matrizId, button) {
+    if (confirm('¿Está seguro de cambiar el estado de este indicador?')) {
+        fetch(`/calidad/matriz/toggle-activo/${matrizId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFTOKEN': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Actualizar el botón y el estado en la interfaz
+                const icon = button.querySelector('i');
+                const badge = button.closest('tr').querySelector('.badge');
+                
+                if (data.activo) {
+                    // Si se activó
+                    button.classList.remove('btn-outline-success');
+                    button.classList.add('btn-outline-danger');
+                    button.title = 'Desactivar';
+                    icon.classList.remove('fa-check');
+                    icon.classList.add('fa-times');
+                    badge.classList.remove('bg-secondary');
+                    badge.classList.add('bg-success');
+                    badge.textContent = 'Activo';
+                } else {
+                    // Si se desactivó
+                    button.classList.remove('btn-outline-danger');
+                    button.classList.add('btn-outline-success');
+                    button.title = 'Activar';
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-check');
+                    badge.classList.remove('bg-success');
+                    badge.classList.add('bg-secondary');
+                    badge.textContent = 'Inactivo';
+                }
+                
+                // Mostrar mensaje de éxito
+                const toast = new bootstrap.Toast(document.getElementById('toastMessage'));
+                document.getElementById('toastMessage').querySelector('.toast-body').textContent = data.message;
+                toast.show();
+            } else {
+                throw new Error(data.message || 'Error al actualizar el estado');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al actualizar el estado: ' + error.message);
+        });
+    }
+}
+
+// Manejar el checkbox de mostrar inactivos
+document.addEventListener('DOMContentLoaded', function() {
+    const checkbox = document.getElementById('mostrarInactivos');
+    const hiddenField = document.getElementById('hiddenMostrarInactivos');
+    const form = document.getElementById('filtroForm');
+    
+    // Deshabilitar el campo oculto si el checkbox está marcado
+    if (checkbox) {
+        checkbox.addEventListener('change', function() {
+            hiddenField.disabled = this.checked;
+        });
+        
+        // Inicializar el estado del campo oculto
+        hiddenField.disabled = checkbox.checked;
+    }
+});
+</script>
+{% endblock %}

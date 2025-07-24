@@ -1,0 +1,182 @@
+{% extends 'calidad/base_calidad.html' %}
+
+{% block title %}Depuración de Permisos - Asecofin{% endblock %}
+
+{% block titulo_pagina %}
+    <i class="fas fa-bug me-2"></i> Depuración de Permisos
+{% endblock %}
+
+{% block content_calidad %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Información del Usuario</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Usuario:</strong> {{ user.username }}</p>
+                <p><strong>Nombre completo:</strong> {{ user.get_full_name|default:user.username }}</p>
+                <p><strong>Email:</strong> {{ user.email|default:"No especificado" }}</p>
+                <p>
+                    <strong>Es superusuario:</strong> 
+                    <span class="badge {% if user.is_superuser %}bg-success{% else %}bg-secondary{% endif %}">
+                        {{ user.is_superuser|yesno:"Sí,No" }}
+                    </span>
+                </p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Grupos:</strong></p>
+                <ul class="list-group mb-3">
+                    {% for group in user_groups %}
+                        <li class="list-group-item">{{ group.name }}</li>
+                    {% empty %}
+                        <li class="list-group-item text-muted">El usuario no pertenece a ningún grupo</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Permisos de Matriz de Calidad</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Permiso</th>
+                        <th class="text-center">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Agregar Matriz de Calidad (add_matrizcalidad)</td>
+                        <td class="text-center">
+                            <span class="badge {% if has_add_permission %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ has_add_permission|yesno:"Sí,No" }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Cambiar Matriz de Calidad (change_matrizcalidad)</td>
+                        <td class="text-center">
+                            <span class="badge {% if has_change_permission %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ has_change_permission|yesno:"Sí,No" }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Eliminar Matriz de Calidad (delete_matrizcalidad)</td>
+                        <td class="text-center">
+                            <span class="badge {% if has_delete_permission %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ has_delete_permission|yesno:"Sí,No" }}
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0">Todos los Permisos del Usuario</h5>
+    </div>
+    <div class="card-body">
+        {% if user_permissions %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre del Permiso</th>
+                            <th>Código</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for perm in user_permissions %}
+                            <tr>
+                                <td>{{ perm|title }}</td>
+                                <td><code>{{ perm }}</code></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-warning mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                El usuario no tiene permisos asignados directamente o a través de grupos.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if model_permissions %}
+<div class="card mt-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">Permisos del Modelo MatrizCalidad</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Código</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for perm in model_permissions %}
+                        <tr>
+                            <td>{{ perm.id }}</td>
+                            <td>{{ perm.name }}</td>
+                            <td><code>{{ perm.codename }}</code></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card mt-4">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0">Solución de Problemas</h5>
+    </div>
+    <div class="card-body">
+        <h6>Si falta el permiso 'add_matrizcalidad':</h6>
+        <ol>
+            <li>Verifica que el usuario pertenezca al grupo 'Calidad' o 'Administrador'</li>
+            <li>Asegúrate de que el grupo tenga el permiso 'add_matrizcalidad'</li>
+            <li>Si usas permisos personalizados, verifica la configuración en el modelo</li>
+        </ol>
+        
+        <h6 class="mt-4">Para asignar permisos:</h6>
+        <pre class="bg-light p-3 rounded">
+# En la consola de Django
+from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
+from calidad.models_speech import MatrizCalidad
+
+# Obtener el tipo de contenido para el modelo
+content_type = ContentType.objects.get_for_model(MatrizCalidad)
+
+# Obtener o crear el grupo
+grupo, created = Group.objects.get_or_create(name='Calidad')
+
+# Asignar permisos al grupo
+add_perm = Permission.objects.get(codename='add_matrizcalidad', content_type=content_type)
+change_perm = Permission.objects.get(codename='change_matrizcalidad', content_type=content_type)
+delete_perm = Permission.objects.get(codename='delete_matrizcalidad', content_type=content_type)
+
+grupo.permissions.add(add_perm, change_perm, delete_perm)
+        </pre>
+    </div>
+</div>
+{% endblock %}

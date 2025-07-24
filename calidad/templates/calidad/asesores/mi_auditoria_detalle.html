@@ -1,0 +1,378 @@
+{% extends 'calidad/base_calidad.html' %}
+{% load static %}
+
+{% block title %}Detalle de Auditoría - Calidad{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'calidad/css/auditorias.css' %}" rel="stylesheet">
+<style>
+    .auditoria-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 2rem;
+        color: white;
+        margin-bottom: 2rem;
+    }
+    .indicador-card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+        transition: transform 0.2s;
+    }
+    .indicador-card:hover {
+        transform: translateY(-2px);
+    }
+    .indicador-cumple {
+        border-left: 4px solid #28a745;
+    }
+    .indicador-no-cumple {
+        border-left: 4px solid #dc3545;
+    }
+    .respuesta-asesor {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+        border-left: 4px solid #007bff;
+    }
+    .compromiso-card {
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+    }
+    .btn-responder {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 0.5rem 1.5rem;
+        color: white;
+        transition: all 0.3s;
+    }
+    .btn-responder:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    .audio-player {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header de la auditoría -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="auditoria-header">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h1 class="h3 mb-2">Auditoría del {{ auditoria.fecha_llamada|date:"d/m/Y" }}</h1>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Evaluador:</strong> {{ auditoria.evaluador.get_full_name|default:auditoria.evaluador.username }}</p>
+                                <p class="mb-1"><strong>Tipo:</strong> {{ auditoria.tipo_monitoreo|capfirst }}</p>
+                                <p class="mb-0"><strong>Teléfono:</strong> {{ auditoria.numero_telefono }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Fecha de Evaluación:</strong> {{ auditoria.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                                <p class="mb-1"><strong>Observaciones:</strong></p>
+                                <p class="mb-0">{{ auditoria.observaciones|default:"Sin observaciones" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="text-center">
+                            <h2 class="display-4 mb-0">{{ auditoria.puntaje_total }}%</h2>
+                            <p class="mb-2">Puntaje Total</p>
+                            {% if auditoria.puntaje_total >= 80 %}
+                                <span class="badge bg-success fs-6">Excelente</span>
+                            {% elif auditoria.puntaje_total >= 60 %}
+                                <span class="badge bg-warning fs-6">Bueno</span>
+                            {% else %}
+                                <span class="badge bg-danger fs-6">Necesita Mejorar</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <a href="{% url 'calidad:mis_auditorias' %}" class="btn btn-light">
+                            <i class="fas fa-arrow-left"></i> Volver a Mis Auditorías
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio de la llamada -->
+    {% if auditoria.archivo_audio %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-volume-up"></i> Audio de la Llamada</h5>
+                </div>
+                <div class="card-body">
+                    <div class="audio-player">
+                        <audio controls class="w-100">
+                            <source src="{{ auditoria.archivo_audio.url }}" type="audio/mpeg">
+                            Tu navegador no soporta el elemento de audio.
+                        </audio>
+                        <div class="mt-2">
+                            <a href="{{ auditoria.archivo_audio.url }}" class="btn btn-sm btn-outline-primary" download>
+                                <i class="fas fa-download"></i> Descargar Audio
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Resumen de indicadores -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h3 class="text-success">{{ indicadores_cumplidos|length }}</h3>
+                    <p class="text-muted mb-0">Indicadores Cumplidos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-danger">
+                <div class="card-body">
+                    <h3 class="text-danger">{{ indicadores_no_cumplidos|length }}</h3>
+                    <p class="text-muted mb-0">Indicadores No Cumplidos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-info">
+                <div class="card-body">
+                    <h3 class="text-info">{{ respuestas_asesor|length }}</h3>
+                    <p class="text-muted mb-0">Respuestas Enviadas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Indicadores No Cumplidos -->
+    {% if indicadores_no_cumplidos %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        Indicadores No Cumplidos 
+                        <span class="badge bg-light text-danger ms-2">{{ indicadores_no_cumplidos|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for respuesta in indicadores_no_cumplidos %}
+                        <div class="indicador-card indicador-no-cumple card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h6 class="card-title text-danger">
+                                            <i class="fas fa-times-circle"></i> 
+                                            {{ respuesta.indicador.nombre }}
+                                        </h6>
+                                        <p class="card-text">{{ respuesta.indicador.descripcion }}</p>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <small class="text-muted">
+                                                    <strong>Categoría:</strong> {{ respuesta.indicador.categoria.nombre }}
+                                                </small>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted">
+                                                    <strong>Ponderación:</strong> {{ respuesta.indicador.ponderacion }}%
+                                                </small>
+                                            </div>
+                                        </div>
+                                        {% if respuesta.observaciones %}
+                                            <div class="mt-2">
+                                                <small class="text-muted">
+                                                    <strong>Observaciones del evaluador:</strong><br>
+                                                    {{ respuesta.observaciones }}
+                                                </small>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        {% with respuesta_asesor=respuesta.respuesta_asesor %}
+                                            {% if respuesta_asesor %}
+                                                <span class="badge bg-info mb-2">Respondido</span><br>
+                                                <a href="{% url 'calidad:editar_respuesta' respuesta_asesor.pk %}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i> Editar Respuesta
+                                                </a>
+                                            {% else %}
+                                                <span class="badge bg-warning mb-2">Pendiente</span><br>
+                                                <a href="{% url 'calidad:responder_indicador' respuesta.pk %}" 
+                                                   class="btn btn-sm btn-responder">
+                                                    <i class="fas fa-reply"></i> Responder
+                                                </a>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Respuesta del asesor -->
+                                {% with respuesta_asesor=respuesta.respuesta_asesor %}
+                                    {% if respuesta_asesor %}
+                                        <div class="respuesta-asesor">
+                                            <h6 class="text-primary">
+                                                <i class="fas fa-user"></i> Tu Respuesta
+                                                <small class="text-muted">({{ respuesta_asesor.fecha_respuesta|date:"d/m/Y H:i" }})</small>
+                                            </h6>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <strong>Tipo de Respuesta:</strong> 
+                                                    <span class="badge bg-secondary">{{ respuesta_asesor.get_tipo_respuesta_display }}</span>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <strong>Estado:</strong> 
+                                                    {% if respuesta_asesor.tipo_respuesta == 'compromiso' %}
+                                                        {% if respuesta_asesor.fecha_compromiso %}
+                                                            {% if respuesta_asesor.fecha_compromiso > today %}
+                                                                <span class="badge bg-warning">En seguimiento</span>
+                                                            {% else %}
+                                                                <span class="badge bg-danger">Vencido</span>
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    {% else %}
+                                                        <span class="badge bg-info">Respondido</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="mt-2">
+                                                <strong>Respuesta:</strong><br>
+                                                {{ respuesta_asesor.respuesta }}
+                                            </div>
+                                            {% if respuesta_asesor.compromiso %}
+                                                <div class="compromiso-card mt-2">
+                                                    <h6 class="text-warning mb-2">
+                                                        <i class="fas fa-handshake"></i> Compromiso de Mejora
+                                                    </h6>
+                                                    <p class="mb-2">{{ respuesta_asesor.compromiso }}</p>
+                                                    {% if respuesta_asesor.fecha_compromiso %}
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-calendar"></i> 
+                                                            Fecha compromiso: {{ respuesta_asesor.fecha_compromiso|date:"d/m/Y" }}
+                                                            {% if respuesta_asesor.fecha_compromiso > today %}
+                                                                ({{ respuesta_asesor.fecha_compromiso|timeuntil }} restantes)
+                                                            {% else %}
+                                                                (Vencido hace {{ respuesta_asesor.fecha_compromiso|timesince }})
+                                                            {% endif %}
+                                                        </small>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Indicadores Cumplidos -->
+    {% if indicadores_cumplidos %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-check-circle"></i> 
+                        Indicadores Cumplidos 
+                        <span class="badge bg-light text-success ms-2">{{ indicadores_cumplidos|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for respuesta in indicadores_cumplidos %}
+                            <div class="col-md-6 mb-3">
+                                <div class="indicador-card indicador-cumple card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title text-success">
+                                            <i class="fas fa-check-circle"></i> 
+                                            {{ respuesta.indicador.nombre }}
+                                        </h6>
+                                        <p class="card-text">{{ respuesta.indicador.descripcion }}</p>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <small class="text-muted">
+                                                    <strong>Categoría:</strong><br>
+                                                    {{ respuesta.indicador.categoria.nombre }}
+                                                </small>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted">
+                                                    <strong>Ponderación:</strong><br>
+                                                    {{ respuesta.indicador.ponderacion }}%
+                                                </small>
+                                            </div>
+                                        </div>
+                                        {% if respuesta.observaciones %}
+                                            <div class="mt-2">
+                                                <small class="text-muted">
+                                                    <strong>Observaciones:</strong><br>
+                                                    {{ respuesta.observaciones }}
+                                                </small>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Mensaje si no hay indicadores -->
+    {% if not indicadores_cumplidos and not indicadores_no_cumplidos %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-clipboard-list fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">No hay indicadores evaluados</h4>
+                    <p class="text-muted">Esta auditoría no tiene indicadores evaluados aún.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Confirmar antes de editar respuesta
+    document.querySelectorAll('a[href*="editar_respuesta"]').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            if (!confirm('¿Estás seguro de que deseas editar esta respuesta?')) {
+                e.preventDefault();
+            }
+        });
+    });
+</script>
+{% endblock %}

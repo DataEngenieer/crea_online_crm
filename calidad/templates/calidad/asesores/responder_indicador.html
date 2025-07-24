@@ -1,0 +1,382 @@
+{% extends 'calidad/base_calidad.html' %}
+{% load static %}
+
+{% block title %}Responder Indicador - Calidad{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'calidad/css/auditorias.css' %}" rel="stylesheet">
+<style>
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 2rem;
+        color: white;
+        margin-bottom: 2rem;
+    }
+    .indicador-info {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border-left: 4px solid #dc3545;
+    }
+    .form-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    .btn-submit {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 0.75rem 2rem;
+        color: white;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    .compromiso-section {
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+        display: none;
+    }
+    .form-floating label {
+        color: #6c757d;
+    }
+    .form-floating .form-control:focus ~ label {
+        color: #667eea;
+    }
+    .form-floating .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .help-text {
+        background: #e3f2fd;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #2196f3;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="form-header">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h1 class="h3 mb-2">Responder a Indicador No Cumplido</h1>
+                        <p class="mb-0">Proporciona tu respuesta y compromiso de mejora para este indicador</p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <a href="{% url 'calidad:mi_auditoria_detalle' detalle_auditoria.auditoria.pk %}" 
+                           class="btn btn-light">
+                            <i class="fas fa-arrow-left"></i> Volver al Detalle
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información del indicador -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="indicador-info">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5 class="text-danger mb-3">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            {{ detalle_auditoria.indicador.nombre }}
+                        </h5>
+                        <p class="mb-2"><strong>Descripción:</strong> {{ detalle_auditoria.indicador.descripcion }}</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Categoría:</strong> {{ detalle_auditoria.indicador.categoria.nombre }}</p>
+                                <p class="mb-1"><strong>Ponderación:</strong> {{ detalle_auditoria.indicador.ponderacion }}%</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Auditoría:</strong> {{ detalle_auditoria.auditoria.fecha_llamada|date:"d/m/Y" }}</p>
+                                <p class="mb-1"><strong>Evaluador:</strong> {{ detalle_auditoria.auditoria.evaluador.get_full_name|default:detalle_auditoria.auditoria.evaluador.username }}</p>
+                            </div>
+                        </div>
+                        {% if detalle_auditoria.observaciones %}
+                            <div class="mt-2">
+                                <p class="mb-1"><strong>Observaciones del evaluador:</strong></p>
+                                <p class="text-muted mb-0">{{ detalle_auditoria.observaciones }}</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="alert alert-danger mb-0">
+                            <h4 class="alert-heading">No Cumple</h4>
+                            <p class="mb-0">Este indicador requiere tu atención y respuesta</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información de ayuda -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="help-text">
+                <h6 class="text-primary mb-2">
+                    <i class="fas fa-info-circle"></i> Instrucciones para responder
+                </h6>
+                <ul class="mb-0">
+                    <li><strong>Explicación:</strong> Describe qué sucedió y por qué no se cumplió el indicador</li>
+                    <li><strong>Justificación:</strong> Proporciona el contexto o razones válidas si las hay</li>
+                    <li><strong>Compromiso:</strong> Si eliges comprometerte, describe las acciones específicas que tomarás para mejorar</li>
+                    <li><strong>Fecha de compromiso:</strong> Establece una fecha realista para implementar las mejoras</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de respuesta -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card form-card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit"></i> Formulario de Respuesta
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="respuestaForm">
+                        {% csrf_token %}
+                        
+                        <!-- Tipo de respuesta -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Tipo de Respuesta *</label>
+                                <div class="row">
+                                    {% for choice in form.tipo_respuesta %}
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                {{ choice.tag }}
+                                                <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                                    {{ choice.choice_label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                {% if form.tipo_respuesta.help_text %}
+                                    <small class="form-text text-muted">{{ form.tipo_respuesta.help_text }}</small>
+                                {% endif %}
+                                {% if form.tipo_respuesta.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.tipo_respuesta.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Respuesta -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    {{ form.respuesta }}
+                                    <label for="{{ form.respuesta.id_for_label }}">{{ form.respuesta.label }} *</label>
+                                </div>
+                                {% if form.respuesta.help_text %}
+                                    <small class="form-text text-muted mt-1">{{ form.respuesta.help_text }}</small>
+                                {% endif %}
+                                {% if form.respuesta.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.respuesta.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Sección de compromiso -->
+                        <div class="compromiso-section" id="compromisoSection">
+                            <h6 class="text-warning mb-3">
+                                <i class="fas fa-handshake"></i> Compromiso de Mejora
+                            </h6>
+                            
+                            <!-- Compromiso -->
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <div class="form-floating">
+                                        {{ form.compromiso }}
+                                        <label for="{{ form.compromiso.id_for_label }}">{{ form.compromiso.label }}</label>
+                                    </div>
+                                    {% if form.compromiso.help_text %}
+                                        <small class="form-text text-muted mt-1">{{ form.compromiso.help_text }}</small>
+                                    {% endif %}
+                                    {% if form.compromiso.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.compromiso.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Fecha de compromiso -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        {{ form.fecha_compromiso }}
+                                        <label for="{{ form.fecha_compromiso.id_for_label }}">{{ form.fecha_compromiso.label }}</label>
+                                    </div>
+                                    {% if form.fecha_compromiso.help_text %}
+                                        <small class="form-text text-muted mt-1">{{ form.fecha_compromiso.help_text }}</small>
+                                    {% endif %}
+                                    {% if form.fecha_compromiso.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.fecha_compromiso.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 d-flex align-items-center">
+                                    <div class="alert alert-info mb-0">
+                                        <small>
+                                            <i class="fas fa-calendar"></i> 
+                                            La fecha debe ser posterior a hoy ({{ today|date:"d/m/Y" }})
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Errores generales del formulario -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Botones -->
+                        <div class="row mt-4">
+                            <div class="col-12 text-end">
+                                <a href="{% url 'calidad:mi_auditoria_detalle' detalle_auditoria.auditoria.pk %}" 
+                                   class="btn btn-outline-secondary me-2">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-submit">
+                                    <i class="fas fa-paper-plane"></i> Enviar Respuesta
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tipoRespuestaInputs = document.querySelectorAll('input[name="tipo_respuesta"]');
+        const compromisoSection = document.getElementById('compromisoSection');
+        const compromisoTextarea = document.getElementById('{{ form.compromiso.id_for_label }}');
+        const fechaCompromisoInput = document.getElementById('{{ form.fecha_compromiso.id_for_label }}');
+        
+        // Función para mostrar/ocultar sección de compromiso
+        function toggleCompromisoSection() {
+            const selectedValue = document.querySelector('input[name="tipo_respuesta"]:checked')?.value;
+            
+            if (selectedValue === 'compromiso') {
+                compromisoSection.style.display = 'block';
+                compromisoTextarea.required = true;
+                fechaCompromisoInput.required = true;
+            } else {
+                compromisoSection.style.display = 'none';
+                compromisoTextarea.required = false;
+                fechaCompromisoInput.required = false;
+                compromisoTextarea.value = '';
+                fechaCompromisoInput.value = '';
+            }
+        }
+        
+        // Agregar event listeners
+        tipoRespuestaInputs.forEach(function(input) {
+            input.addEventListener('change', toggleCompromisoSection);
+        });
+        
+        // Verificar estado inicial
+        toggleCompromisoSection();
+        
+        // Validación del formulario
+        document.getElementById('respuestaForm').addEventListener('submit', function(e) {
+            const selectedTipo = document.querySelector('input[name="tipo_respuesta"]:checked')?.value;
+            const respuesta = document.getElementById('{{ form.respuesta.id_for_label }}').value.trim();
+            
+            if (!selectedTipo) {
+                e.preventDefault();
+                alert('Por favor selecciona un tipo de respuesta.');
+                return;
+            }
+            
+            if (!respuesta) {
+                e.preventDefault();
+                alert('Por favor proporciona una respuesta.');
+                return;
+            }
+            
+            if (selectedTipo === 'compromiso') {
+                const compromiso = compromisoTextarea.value.trim();
+                const fechaCompromiso = fechaCompromisoInput.value;
+                
+                if (!compromiso) {
+                    e.preventDefault();
+                    alert('Por favor describe tu compromiso de mejora.');
+                    return;
+                }
+                
+                if (!fechaCompromiso) {
+                    e.preventDefault();
+                    alert('Por favor establece una fecha para tu compromiso.');
+                    return;
+                }
+                
+                // Validar que la fecha sea futura
+                const today = new Date();
+                const selectedDate = new Date(fechaCompromiso);
+                
+                if (selectedDate <= today) {
+                    e.preventDefault();
+                    alert('La fecha de compromiso debe ser posterior a hoy.');
+                    return;
+                }
+            }
+            
+            // Confirmar envío
+            if (!confirm('¿Estás seguro de que deseas enviar esta respuesta? Una vez enviada, podrás editarla pero quedará registrada en el sistema.')) {
+                e.preventDefault();
+            }
+        });
+        
+        // Establecer fecha mínima para el campo de fecha
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        fechaCompromisoInput.min = tomorrow.toISOString().split('T')[0];
+    });
+</script>
+{% endblock %}

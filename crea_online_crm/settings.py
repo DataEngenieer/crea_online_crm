@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'crispy_bootstrap5', # Añadido para el paquete Bootstrap 5 de Crispy Forms
     'chat',
     'telefonica',
+    'calidad',  # Módulo de Calidad agregado
 ]
 
 MIDDLEWARE = [

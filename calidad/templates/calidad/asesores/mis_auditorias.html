@@ -1,0 +1,294 @@
+{% extends 'calidad/base_calidad.html' %}
+{% load static %}
+
+{% block title %}Mis Auditorías - Calidad{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'calidad/css/auditorias.css' %}" rel="stylesheet">
+<style>
+    .filter-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 1.5rem;
+        color: white;
+        margin-bottom: 2rem;
+    }
+    .stats-row {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    .stat-item {
+        text-align: center;
+    }
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: bold;
+        display: block;
+    }
+    .stat-label {
+        font-size: 0.8rem;
+        opacity: 0.9;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">Mis Auditorías</h1>
+                    <p class="text-muted">Revisa tus auditorías y responde a los indicadores pendientes</p>
+                </div>
+                <div>
+                    <a href="{% url 'calidad:dashboard_asesor' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros y estadísticas -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="filter-card">
+                <!-- Estadísticas -->
+                <div class="stats-row">
+                    <div class="row">
+                        <div class="col-md-3 stat-item">
+                            <span class="stat-number">{{ total_auditorias }}</span>
+                            <span class="stat-label">Total Auditorías</span>
+                        </div>
+                        <div class="col-md-3 stat-item">
+                            <span class="stat-number">{{ auditorias_pendientes }}</span>
+                            <span class="stat-label">Pendientes de Respuesta</span>
+                        </div>
+                        <div class="col-md-3 stat-item">
+                            <span class="stat-number">{{ auditorias_respondidas }}</span>
+                            <span class="stat-label">Respondidas</span>
+                        </div>
+                        <div class="col-md-3 stat-item">
+                            <span class="stat-number">{{ promedio_puntaje }}%</span>
+                            <span class="stat-label">Promedio de Calidad</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtros -->
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="fecha_desde" class="form-label">Fecha Desde</label>
+                        <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" 
+                               value="{{ filtros.fecha_desde }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="fecha_hasta" class="form-label">Fecha Hasta</label>
+                        <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" 
+                               value="{{ filtros.fecha_hasta }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="estado_respuesta" class="form-label">Estado de Respuesta</label>
+                        <select class="form-select" id="estado_respuesta" name="estado_respuesta">
+                            <option value="">Todas</option>
+                            <option value="pendientes" {% if filtros.estado_respuesta == 'pendientes' %}selected{% endif %}>
+                                Pendientes de Respuesta
+                            </option>
+                            <option value="respondidas" {% if filtros.estado_respuesta == 'respondidas' %}selected{% endif %}>
+                                Respondidas
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-light me-2">
+                            <i class="fas fa-filter"></i> Filtrar
+                        </button>
+                        <a href="{% url 'calidad:mis_auditorias' %}" class="btn btn-outline-light">
+                            <i class="fas fa-times"></i> Limpiar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de auditorías -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i> 
+                        {% if filtros.estado_respuesta == 'pendientes' %}
+                            Auditorías Pendientes de Respuesta
+                        {% elif filtros.estado_respuesta == 'respondidas' %}
+                            Auditorías Respondidas
+                        {% else %}
+                            Todas mis Auditorías
+                        {% endif %}
+                        <span class="badge bg-primary ms-2">{{ auditorias|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if auditorias %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Evaluador</th>
+                                        <th>Tipo</th>
+                                        <th>Puntaje</th>
+                                        <th>Indicadores</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for auditoria in auditorias %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ auditoria.fecha_llamada|date:"d/m/Y" }}</strong><br>
+                                            <small class="text-muted">{{ auditoria.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                                        </td>
+                                        <td>
+                                            {{ auditoria.evaluador.get_full_name|default:auditoria.evaluador.username }}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ auditoria.tipo_monitoreo|capfirst }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if auditoria.puntaje_total >= 80 %}bg-success{% elif auditoria.puntaje_total >= 60 %}bg-warning{% else %}bg-danger{% endif %} fs-6">
+                                                {{ auditoria.puntaje_total }}%
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% with no_cumplidos=auditoria.respuestas.all|length cumplidos=auditoria.respuestas.all|length %}
+                                                {% with total_indicadores=auditoria.respuestas.all|length %}
+                                                    {% if total_indicadores > 0 %}
+                                                        <small class="text-muted">
+                                                            {{ auditoria.respuestas.all|length }} evaluados
+                                                        </small><br>
+                                                        {% with no_cumplidos_count=0 %}
+                                                            {% for respuesta in auditoria.respuestas.all %}
+                                                                {% if not respuesta.cumple %}
+                                                                    {% with no_cumplidos_count=no_cumplidos_count|add:1 %}
+                                                                    {% endwith %}
+                                                                {% endif %}
+                                                            {% endfor %}
+                                                            {% if no_cumplidos_count > 0 %}
+                                                                <span class="badge bg-danger">{{ no_cumplidos_count }} no cumple{{ no_cumplidos_count|pluralize:"n" }}</span>
+                                                            {% else %}
+                                                                <span class="badge bg-success">Todos cumplen</span>
+                                                            {% endif %}
+                                                        {% endwith %}
+                                                    {% else %}
+                                                        <span class="text-muted">Sin indicadores</span>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            {% endwith %}
+                                        </td>
+                                        <td>
+                                            {% with respuestas_count=auditoria.respuestas_asesor.all|length %}
+                                                {% with no_cumplidos_count=0 %}
+                                                    {% for respuesta in auditoria.respuestas.all %}
+                                                        {% if not respuesta.cumple %}
+                                                            {% with no_cumplidos_count=no_cumplidos_count|add:1 %}
+                                                            {% endwith %}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                    {% if no_cumplidos_count == 0 %}
+                                                        <span class="badge bg-success">Excelente</span>
+                                                    {% elif respuestas_count >= no_cumplidos_count %}
+                                                        <span class="badge bg-info">Respondido</span>
+                                                    {% elif respuestas_count > 0 %}
+                                                        <span class="badge bg-warning">Parcial</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger">Pendiente</span>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            {% endwith %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'calidad:mi_auditoria_detalle' auditoria.pk %}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i> Ver Detalle
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Paginación -->
+                        {% if is_paginated %}
+                        <nav aria-label="Paginación de auditorías">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                                    </span>
+                                </li>
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-clipboard-list fa-4x text-muted mb-3"></i>
+                            <h4 class="text-muted">No se encontraron auditorías</h4>
+                            {% if filtros.estado_respuesta or filtros.fecha_desde or filtros.fecha_hasta %}
+                                <p class="text-muted">Intenta ajustar los filtros para ver más resultados.</p>
+                                <a href="{% url 'calidad:mis_auditorias' %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-times"></i> Limpiar Filtros
+                                </a>
+                            {% else %}
+                                <p class="text-muted">Las auditorías aparecerán aquí cuando sean creadas por el equipo de calidad.</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-submit del formulario cuando cambian los filtros
+    document.getElementById('estado_respuesta').addEventListener('change', function() {
+        this.form.submit();
+    });
+</script>
+{% endblock %}

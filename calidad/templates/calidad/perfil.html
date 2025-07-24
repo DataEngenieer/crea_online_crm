@@ -1,0 +1,46 @@
+{% extends 'calidad/base_calidad.html' %}
+{% load static %}
+
+{% block title %}Mi Perfil - Calidad{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'calidad/css/calidad.css' %}">
+{% endblock %}
+
+{% block content_calidad %}
+<div class="container" style="max-width: 600px;">
+    <h2 class="mb-4 mt-4 fw-bold" style="color: var(--calidad-primary);">Mi Perfil</h2>
+    {% if messages %}
+    <div class="mb-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <form method="post" class="card shadow-sm p-4 border-0">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="nombre" class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="nombre" name="nombre" value="{{ user.first_name }}" placeholder="Nombre completo">
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">Correo electrónico</label>
+            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" readonly>
+        </div>
+        <hr>
+        <h6 class="fw-bold">Cambiar contraseña</h6>
+        <div class="mb-3">
+            <label for="password1" class="form-label">Nueva contraseña</label>
+            <input type="password" class="form-control" id="password1" name="password1" placeholder="Nueva contraseña">
+        </div>
+        <div class="mb-3">
+            <label for="password2" class="form-label">Confirmar nueva contraseña</label>
+            <input type="password" class="form-control" id="password2" name="password2" placeholder="Confirmar nueva contraseña">
+        </div>
+        <button type="submit" class="btn btn-calidad w-100">Guardar cambios</button>
+    </form>
+</div>
+{% endblock %}

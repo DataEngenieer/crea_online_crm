@@ -494,7 +494,7 @@ class Campana(models.Model):
     activa = models.BooleanField(default=True, verbose_name=_('Activa'))
     modulo = models.CharField(
         max_length=50, 
-        choices=[('core', 'Core'), ('telefonica', 'Telefónica')],
+        choices=[('core', 'Core'), ('telefonica', 'Telefónica'), ('calidad', 'Calidad')],
         default='core',
         verbose_name=_('Módulo')
     )
