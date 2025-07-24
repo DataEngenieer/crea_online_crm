@@ -1,6 +1,6 @@
 from django.urls import path, include
 from . import views
-from .views_audio import obtener_grafico_onda, control_voz
+from .views_audio import obtener_grafico_onda, control_voz, obtener_url_audio, resubir_a_minio
 
 from .api import buscar_usuarios
 from .decorators import grupo_requerido, ip_permitida
@@ -54,13 +54,19 @@ urlpatterns = [
          calidad_required(views.estadisticas_auditorias), 
          name='estadisticas_auditorias'),
          
-    # Audio y controles de voz
+    # ========== API de Audio ==========
     path('api/audio/grafico-onda/<int:speech_id>/', 
          calidad_required(obtener_grafico_onda), 
          name='obtener_grafico_onda'),
     path('api/audio/control-voz/', 
          calidad_required(control_voz), 
          name='control_voz'),
+    path('api/audio/url/<int:speech_id>/', 
+         calidad_required(obtener_url_audio), 
+         name='obtener_url_audio'),
+    path('api/audio/resubir-minio/<int:speech_id>/', 
+         calidad_required(resubir_a_minio), 
+         name='resubir_a_minio'),
     
     # URL de perfil
     path('perfil/', views.perfil, name='perfil'),

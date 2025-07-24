@@ -193,7 +193,22 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 # --- Depuración de variables de entorno en producción ---
 # Imprime los valores en los logs para verificar que se están leyendo correctamente.
+# Configuración de MinIO
+MINIO_ENDPOINT = os.getenv('MINIO_ENDPOINT', '')
+MINIO_ACCESS_KEY = os.getenv('MINIO_ACCESS_KEY', '')
+MINIO_SECRET_KEY = os.getenv('MINIO_SECRET_KEY', '')
+#MINIO_BUCKET_NAME = os.getenv('MINIO_BUCKET_NAME', 'default-bucket')
+
+MINIO_BUCKET_NAME = {
+"MINIO_BUCKET_NAME_LLAMADAS":"llamadas-crea-online",
+"MINIO_BUCKET_NAME_TRANSCRIPCIONES":"transcripciones-crea-online",
+"MINIO_BUCKET_NAME_TICKET":"tickets-crea-online",
+"MINIO_BUCKET_NAME_TELEFONICA":"telefonica-crea-online"
+}
+
+
 import sys
 print(f"[DJANGO-SETTINGS] DEBUG = {DEBUG}", file=sys.stderr)
 print(f"[DJANGO-SETTINGS] MEDIA_ROOT = {MEDIA_ROOT}", file=sys.stderr)
+print(f"[DJANGO-SETTINGS] ALLOWED_HOSTS = {ALLOWED_HOSTS}", file=sys.stderr)
 # --- Fin de la depuración ---

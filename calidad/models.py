@@ -34,6 +34,11 @@ class Speech(models.Model):
     analisis_json = models.JSONField(blank=True, null=True, help_text="Resultado del análisis de calidad de la IA")
     transcripcion = models.CharField(max_length=255, blank=True, null=True, help_text="Ruta del archivo de transcripción JSON")
     
+    # Campos para MinIO
+    minio_url = models.URLField('URL de MinIO', max_length=500, blank=True, null=True, help_text="URL pública del archivo en MinIO")
+    minio_object_name = models.CharField('Nombre del objeto en MinIO', max_length=255, blank=True, null=True, help_text="Nombre del archivo en MinIO")
+    subido_a_minio = models.BooleanField('Subido a MinIO', default=False, help_text="Indica si el archivo fue subido exitosamente a MinIO")
+    
     # Nuevos campos para métricas
     duracion_segundos = models.FloatField('Duración en segundos', default=0)
     tamano_archivo_mb = models.FloatField('Tamaño del archivo (MB)', default=0)
@@ -56,10 +61,111 @@ class Speech(models.Model):
                     self.duracion_segundos = obtener_duracion_audio(self.audio.path)
                     self.tamano_archivo_mb = obtener_tamano_archivo_mb(self.audio.path)
                     
+                    # Subir a MinIO si no se ha subido antes
+                    if not self.subido_a_minio:
+                        self._subir_audio_a_minio()
+                        
+                        # Si se subió exitosamente a MinIO, eliminar el archivo local
+                        if self.subido_a_minio:
+                            self._eliminar_archivo_local()
+                    
                     # Guardar nuevamente para actualizar los campos calculados
-                    super().save(update_fields=['duracion_segundos', 'tamano_archivo_mb', 'fecha_actualizacion'])
+                    super().save(update_fields=['duracion_segundos', 'tamano_archivo_mb', 'minio_url', 'minio_object_name', 'subido_a_minio', 'fecha_actualizacion'])
             except Exception as e:
                 print(f"Error al procesar el archivo de audio: {e}")
+    
+    def _subir_audio_a_minio(self):
+        """
+        Método interno para subir el archivo de audio a MinIO.
+        """
+        try:
+            from .utils.minio_utils import subir_a_minio
+            import logging
+            
+            logger = logging.getLogger(__name__)
+            
+            # Generar nombre personalizado basado en la auditoría
+            nombre_personalizado = f"auditoria_{self.auditoria.id}_audio_{self.id}"
+            
+            # Subir archivo a MinIO
+            resultado = subir_a_minio(
+                archivo=self.audio,
+                nombre_personalizado=nombre_personalizado,
+                carpeta="audios",
+                bucket_type="MINIO_BUCKET_NAME_LLAMADAS"
+            )
+            
+            if resultado['success']:
+                self.minio_url = resultado['url']
+                self.minio_object_name = resultado['object_name']
+                self.subido_a_minio = True
+                logger.info(f"Archivo de audio subido exitosamente a MinIO: {resultado['url']}")
+            else:
+                logger.error(f"Error al subir archivo a MinIO: {resultado.get('error', 'Error desconocido')}")
+                
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error en _subir_audio_a_minio: {str(e)}")
+    
+    def _eliminar_archivo_local(self):
+        """
+        Método interno para eliminar el archivo de audio del sistema de archivos local
+        después de subirlo exitosamente a MinIO.
+        """
+        try:
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            if self.audio and hasattr(self.audio, 'path') and os.path.exists(self.audio.path):
+                archivo_path = self.audio.path
+                os.remove(archivo_path)
+                logger.info(f"Archivo local eliminado exitosamente: {archivo_path}")
+                
+                # Limpiar la referencia del campo FileField
+                self.audio = None
+                
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error al eliminar archivo local: {str(e)}")
+    
+    def get_audio_url(self):
+        """
+        Retorna la URL del archivo de audio desde MinIO únicamente.
+        
+        Returns:
+            str: URL del archivo de audio desde MinIO
+        """
+        if self.subido_a_minio and self.minio_url:
+            return self.minio_url
+        return None
+    
+    def eliminar_de_minio(self):
+        """
+        Elimina el archivo de audio de MinIO.
+        
+        Returns:
+            dict: Resultado de la operación
+        """
+        if not self.subido_a_minio or not self.minio_object_name:
+            return {'success': False, 'error': 'El archivo no está en MinIO'}
+        
+        try:
+            from .utils.minio_utils import eliminar_de_minio
+            
+            resultado = eliminar_de_minio(self.minio_object_name, bucket_type="MINIO_BUCKET_NAME_LLAMADAS")
+            
+            if resultado['success']:
+                self.minio_url = None
+                self.minio_object_name = None
+                self.subido_a_minio = False
+                self.save(update_fields=['minio_url', 'minio_object_name', 'subido_a_minio', 'fecha_actualizacion'])
+            
+            return resultado
+            
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
     
     def crear_registro_uso(self, usuario):
         """

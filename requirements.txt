@@ -21,3 +21,4 @@ numpy
 matplotlib
 pdf2image
 pytesseract
+minio
