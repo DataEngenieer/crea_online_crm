@@ -186,7 +186,7 @@
                                                 <div class="mb-3">
                                                     <span class="text-muted small">o haz clic para seleccionar</span>
                                                 </div>
-                                                {{ speech_form.audio }}
+                                                <div style="display: none;">{{ speech_form.audio }}</div>
                                                 <div class="form-text mt-2">Solo formatos MP2, MP3, MP4, WAV, OGG, M4A, MPEG.</div>
                                                 <div id="selected-file-info" class="mt-2" style="display: none;">
                                                     <div class="alert alert-success py-2">
@@ -196,6 +196,7 @@
                                                             <i class="fas fa-times"></i>
                                                         </button>
                                                     </div>
+                                                    <!-- El reproductor de audio se insertará aquí dinámicamente -->
                                                 </div>
                                             </div>
                                             {% if speech_form.audio.errors %}
@@ -724,7 +725,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const isValidType = validAudioTypes.some(type => file.type.startsWith(type) || file.type === type);
             
             if (!isValidType) {
-                alert('Por favor, seleccione un archivo de audio válido (MP3, WAV, MPEG, etc).');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Formato no válido',
+                    text: 'Por favor, seleccione un archivo de audio válido (MP3, WAV, MPEG, etc).',
+                    confirmButtonColor: '#3085d6'
+                });
                 this.value = ''; // Limpiar el input
                 return;
             }
@@ -789,7 +795,29 @@ $(document).ready(function() {
             if (!archivoAudio) {
                 console.log('Error: No se ha seleccionado ningún archivo de audio');
                 e.preventDefault();
-                alert('Por favor, seleccione un archivo de audio para continuar con Speech Analytics.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Por favor, seleccione un archivo de audio para continuar con Speech Analytics.',
+                    confirmButtonColor: '#3085d6'
+                });
+                return false;
+            }
+            
+            // Verificar que el archivo sea de audio
+            var file = $('#id_audio')[0].files[0];
+            const validAudioTypes = ['audio/', 'video/mpeg', 'audio/mpeg'];
+            const isValidType = validAudioTypes.some(type => file.type.startsWith(type) || file.type === type);
+            
+            if (!isValidType) {
+                console.log('Error: El archivo seleccionado no es un archivo de audio válido');
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Formato no válido',
+                    text: 'Por favor, seleccione un archivo de audio válido (MP3, WAV, MPEG, etc).',
+                    confirmButtonColor: '#3085d6'
+                });
                 return false;
             }
         }
@@ -850,7 +878,7 @@ $(document).ready(function() {
 // Funcionalidad de arrastrar y soltar para archivos de audio
 $(document).ready(function() {
     const dropZone = document.getElementById('audio-drop-zone');
-    const fileInput = document.querySelector('#speech-audio-section input[type="file"]');
+    const fileInput = document.querySelector('#id_audio'); // Seleccionar directamente por ID
     const dropZoneText = document.getElementById('drop-zone-text');
     const selectedFileInfo = document.getElementById('selected-file-info');
     const fileName = document.getElementById('file-name');
@@ -876,19 +904,6 @@ $(document).ready(function() {
                 }
             }
         });
-        
-        // Estilizar el input de archivo para que se integre con la zona de arrastre
-        if (fileInput) {
-            fileInput.style.width = '100%';
-            fileInput.style.height = '40px';
-            fileInput.style.opacity = '0';
-            fileInput.style.position = 'absolute';
-            fileInput.style.top = '50%';
-            fileInput.style.left = '0';
-            fileInput.style.transform = 'translateY(-50%)';
-            fileInput.style.cursor = 'pointer';
-            fileInput.style.zIndex = '10';
-        }
         
         // Prevenir comportamiento por defecto en drag events
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -927,20 +942,95 @@ $(document).ready(function() {
             const files = dt.files;
             
             if (files.length > 0) {
+                // Verificar que sea un archivo de audio válido
+                const file = files[0];
+                const validAudioTypes = ['audio/', 'video/mpeg', 'audio/mpeg'];
+                const isValidType = validAudioTypes.some(type => file.type.startsWith(type) || file.type === type);
+                
+                if (!isValidType) {
+                    alert('Por favor, seleccione un archivo de audio válido (MP3, WAV, MPEG, etc).');
+                    return;
+                }
+                
+                // Asignar el archivo al input
                 fileInput.files = files;
                 updateFileDisplay(files[0]);
+                
+                // Crear y mostrar el reproductor de audio
+                const audioPreview = document.getElementById('audio-preview') || createAudioPreview();
+                const audioPlayer = audioPreview.querySelector('audio');
+                if (audioPlayer) {
+                    const audioURL = URL.createObjectURL(file);
+                    audioPlayer.src = audioURL;
+                    audioPreview.style.display = 'block';
+                    
+                    // Limpiar la URL del objeto cuando ya no sea necesaria
+                    audioPlayer.onloadedmetadata = function() {
+                        URL.revokeObjectURL(audioURL);
+                    };
+                }
             }
+        }
+        
+        // Función para crear el reproductor de audio si no existe
+        function createAudioPreview() {
+            const audioPreviewContainer = document.getElementById('selected-file-info');
+            const audioPreview = document.createElement('div');
+            audioPreview.id = 'audio-preview';
+            audioPreview.style.display = 'none';
+            audioPreview.className = 'mt-2';
+            
+            // Crear el reproductor de audio
+            const audioPlayer = document.createElement('audio');
+            audioPlayer.controls = true;
+            audioPlayer.className = 'w-100';
+            
+            // Agregar el reproductor al contenedor
+            audioPreview.appendChild(audioPlayer);
+            
+            // Agregar el contenedor después del input
+            audioPreviewContainer.appendChild(audioPreview);
+            
+            return audioPreview;
         }
         
         // Manejar selección de archivos por click
         fileInput.addEventListener('change', function(e) {
             if (this.files.length > 0) {
-                updateFileDisplay(this.files[0]);
+                const file = this.files[0];
+                const validAudioTypes = ['audio/', 'video/mpeg', 'audio/mpeg'];
+                const isValidType = validAudioTypes.some(type => file.type.startsWith(type) || file.type === type);
+                
+                if (!isValidType) {
+                    alert('Por favor, seleccione un archivo de audio válido (MP3, WAV, MPEG, etc).');
+                    this.value = '';
+                    return;
+                }
+                
+                updateFileDisplay(file);
+                
+                // Crear y mostrar el reproductor de audio
+                const audioPreview = document.getElementById('audio-preview') || createAudioPreview();
+                const audioPlayer = audioPreview.querySelector('audio');
+                if (audioPlayer) {
+                    const audioURL = URL.createObjectURL(file);
+                    audioPlayer.src = audioURL;
+                    audioPreview.style.display = 'block';
+                    
+                    // Limpiar la URL del objeto cuando ya no sea necesaria
+                    audioPlayer.onloadedmetadata = function() {
+                        URL.revokeObjectURL(audioURL);
+                    };
+                }
             }
         });
         
         function updateFileDisplay(file) {
-            fileName.textContent = file.name;
+            // Formatear el tamaño del archivo
+            const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+            const fileDetails = `${file.name} (${fileSizeInMB} MB)`;
+            
+            fileName.textContent = fileDetails;
             selectedFileInfo.style.display = 'block';
             dropZoneText.textContent = 'Archivo seleccionado:';
         }
@@ -949,14 +1039,25 @@ $(document).ready(function() {
 
 // Función para limpiar archivo seleccionado
 function clearSelectedFile() {
-    const fileInput = document.querySelector('#speech-audio-section input[type="file"]');
+    const fileInput = document.getElementById('id_audio');
     const dropZoneText = document.getElementById('drop-zone-text');
     const selectedFileInfo = document.getElementById('selected-file-info');
+    const audioPreview = document.getElementById('audio-preview');
     
     if (fileInput) {
         fileInput.value = '';
         selectedFileInfo.style.display = 'none';
         dropZoneText.textContent = 'Arrastra tu archivo de audio aquí';
+        
+        // Limpiar y ocultar el reproductor de audio si existe
+        if (audioPreview) {
+            const audioPlayer = audioPreview.querySelector('audio');
+            if (audioPlayer) {
+                audioPlayer.pause();
+                audioPlayer.src = '';
+            }
+            audioPreview.style.display = 'none';
+        }
     }
 }
 
