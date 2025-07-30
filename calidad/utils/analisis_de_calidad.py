@@ -73,7 +73,10 @@ class AnalizadorTranscripciones:
         indicadores_str = "\n".join(indicadores_texto)
 
 
-        return f"""Eres un experto evaluador de calidad en llamadas de servicio al cliente. Analiza la transcripción y evalúa TODOS los siguientes indicadores:
+        return f"""Situacion: Eres un experto analista de calidad en un call center para llamadas de ventas outbound en telefonica movistar. 
+                Tarea: Realizar un análisis exhaustivo y detallado de una transcripción de llamada de servicio al cliente, 
+                evaluando sistemáticamente los siguientes indicadores de calidad:
+
             {indicadores_str}
 
             FORMATO DE RESPUESTA REQUERIDO (JSON):
@@ -96,12 +99,17 @@ class AnalizadorTranscripciones:
             1. DEBES evaluar TODOS Y CADA UNO de los {contador_global-1} indicadores listados arriba.
             2. Para cada indicador, determina si se cumple (true) o no (false).
             3. Justifica cada evaluación en el campo 'evaluacion'.
-            4. Copia EXACTAMENTE los nombres de 'categoria' e 'indicador' como aparecen arriba.
+            4. Los nombres de los indicadores deben ser tal cual como los entrega arriba, no puedes cambiar ni un 
+            solo caracter del indicador por q despues el json no lo reconoce el siguiente sistema
             5. Si un indicador no se puede evaluar por falta de información, márcalo como 'true' y explica por qué.
             6. Calcula el puntaje total considerando las ponderaciones.
             7. Tu respuesta JSON debe contener exactamente {contador_global-1} elementos en el array 'evaluacion'.
+            8. Tu evaluación debe ser completamente objetiva, sin sesgos personales, centrándote exclusivamente en los hechos y la transcripcion de la llamada.
 
             IMPORTANTE: Responde ÚNICAMENTE con el JSON válido, sin comentarios adicionales. NO omitas ningún indicador.
+
+            La transcripcion a analizar es la siguiente:
+            
             """
 
     def _enviar_solicitud_ia(self, texto: str, instrucciones: str) -> Dict[str, Any]:

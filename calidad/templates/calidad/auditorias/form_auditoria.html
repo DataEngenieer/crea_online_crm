@@ -115,7 +115,7 @@
                                 </div>
                                 <div class="card-body p-3">
                                     <div class="row g-3">
-                                        <!-- Fila 1 -->
+                                        <!-- Fila 1 - Todos los campos principales -->
                                         <div class="col-md-4">
                                             <label for="{{ form.agente.id_for_label }}" class="form-label small fw-bold mb-1">
                                                 <i class="fas fa-user-tie me-1"></i> {{ form.agente.label }}
@@ -123,7 +123,7 @@
                                             {{ form.agente }}
                                         </div>
                                         
-                                        <div class="col-md-2">
+                                        <div class="col-md-3">
                                             <label for="{{ form.numero_telefono.id_for_label }}" class="form-label small fw-bold mb-1">
                                                 <i class="fas fa-phone me-1"></i> Teléfono
                                             </label>
@@ -135,25 +135,12 @@
                                             </div>
                                         </div>
                                         
-                                        <div class="col-md-2">
+                                        <div class="col-md-3">
                                             <label for="{{ form.fecha_llamada.id_for_label }}" class="form-label small fw-bold mb-1">
-                                                <i class="far fa-calendar-alt me-1"></i> Fecha
+                                                <i class="far fa-calendar-alt me-1"></i> Fecha Llamada
                                             </label>
                                             <div class="input-group input-group-sm">
                                                 {{ form.fecha_llamada }}
-                                            </div>
-                                        </div>
-                        
-                                        <!-- Campos area y sede eliminados del formulario -->
-                                        
-                                        <div class="col-md-2">
-                                            <label for="evaluador_display" class="form-label small fw-bold mb-1">
-                                                <i class="fas fa-user-check me-1"></i> Evaluador
-                                            </label>
-                                            <div class="input-group input-group-sm">
-                                                <input type="text" id="evaluador_display" class="form-control form-control-sm bg-light" 
-                                                       value="{{ request.user.get_full_name|default:request.user.username }}" 
-                                                       readonly>
                                             </div>
                                         </div>
                                         
@@ -163,36 +150,57 @@
                                             </label>
                                             <div class="btn-group w-100" role="group" aria-label="Tipo de monitoreo">
                                                 <input type="radio" class="btn-check" name="tipo_monitoreo" id="tipo_speech" value="speech" autocomplete="off" checked>
-                                                <label class="btn btn-outline-primary btn-sm d-flex flex-column align-items-center py-2" for="tipo_speech">
-                                                    <i class="fas fa-brain mb-1" style="font-size: 1.2em;"></i>
-                                                    <small class="fw-bold">Speech</small>
-                                                    <small class="text-muted" style="font-size: 0.7em;">Analytics</small>
+                                                <label class="btn btn-outline-primary btn-sm d-flex flex-column align-items-center py-1" for="tipo_speech">
+                                                    <i class="fas fa-brain mb-1" style="font-size: 1em;"></i>
+                                                    <small class="fw-bold" style="font-size: 0.7em;">Speech IA</small>
                                                 </label>
                                                 
                                                 <input type="radio" class="btn-check" name="tipo_monitoreo" id="tipo_grabacion" value="grabacion" autocomplete="off">
-                                                <label class="btn btn-outline-secondary btn-sm d-flex flex-column align-items-center py-2" for="tipo_grabacion">
-                                                    <i class="fas fa-microphone mb-1" style="font-size: 1.2em;"></i>
-                                                    <small class="fw-bold">Grabación</small>
-                                                    <small class="text-muted" style="font-size: 0.7em;">Manual</small>
+                                                <label class="btn btn-outline-secondary btn-sm d-flex flex-column align-items-center py-1" for="tipo_grabacion">
+                                                    <i class="fas fa-microphone mb-1" style="font-size: 1em;"></i>
+                                                    <small class="fw-bold" style="font-size: 0.7em;">Manual</small>
                                                 </label>
                                             </div>
                                             <!-- Campo oculto para mantener compatibilidad con Django -->
                                             <input type="hidden" id="id_tipo_monitoreo" name="tipo_monitoreo" value="speech">
                                         </div>
+                        
+                                        <!-- Campo evaluador oculto pero manteniendo el valor -->
+                                        <input type="hidden" id="evaluador_hidden" name="evaluador" value="{{ request.user.id }}">
                                         
 
                                         <!-- Sección Speech Analytics -->
-                                        <div class="col-md-4" id="speech-audio-section" style="display:none;">
-                                            <label for="id_audio" class="form-label small fw-bold mb-1">
+                                        <div class="col-12" id="speech-audio-section" style="display:none;">
+                                            <label for="id_audio" class="form-label small fw-bold mb-2">
                                                 <i class="fas fa-microphone me-1"></i> Archivo de audio (requerido para Speech Analytics)
                                             </label>
-                                            <div class="input-group input-group-sm">
+                                            <div class="border border-2 border-dashed rounded p-4 text-center bg-light position-relative" 
+                                                 id="audio-drop-zone"
+                                                 style="border-color: #dee2e6 !important; transition: all 0.3s ease; cursor: pointer;">
+                                                <div class="mb-3">
+                                                    <i class="fas fa-cloud-upload-alt text-muted" style="font-size: 2.5rem;"></i>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <strong class="text-muted" id="drop-zone-text">Arrastra tu archivo de audio aquí</strong>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <span class="text-muted small">o haz clic para seleccionar</span>
+                                                </div>
                                                 {{ speech_form.audio }}
+                                                <div class="form-text mt-2">Solo formatos MP2, MP3, MP4, WAV, OGG, M4A, MPEG.</div>
+                                                <div id="selected-file-info" class="mt-2" style="display: none;">
+                                                    <div class="alert alert-success py-2">
+                                                        <i class="fas fa-file-audio me-2"></i>
+                                                        <span id="file-name"></span>
+                                                        <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="clearSelectedFile()">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                             {% if speech_form.audio.errors %}
-                                                <div class="text-danger small">{{ speech_form.audio.errors }}</div>
+                                                <div class="text-danger small mt-2">{{ speech_form.audio.errors }}</div>
                                             {% endif %}
-                                            <div class="form-text">Solo formatos MP3, WAV, OGG, M4A, MPEG. Tamaño máximo: 25MB</div>
                                         </div>
                                     </div>
                                     </div>
@@ -240,8 +248,8 @@
                                                                     {% for indicador in datos.indicadores %}
                                                                     <tr>
                                                                         <td>
-                                                                            <div class="fw-bold">{{ indicador.categoria }}</div>
-                                                                            <div class="text-muted">{{ indicador.indicador }}</div>
+                                                                            <div class="text-muted">{{ indicador.categoria }}</div>
+                                                                            <div class="fw-bold">{{ indicador.indicador }}</div>
                                                                             <input type="hidden" name="indicador_id" id="indicador_id_{{ indicador.id }}" value="{{ indicador.id }}">
                                                                         </td>
                                                                         <td class="text-center align-middle" style="width:140px;">
@@ -838,6 +846,119 @@ $(document).ready(function() {
     $('#id_tipo_monitoreo').on('change', toggleSpeechSection);
     toggleSpeechSection();
 });
+
+// Funcionalidad de arrastrar y soltar para archivos de audio
+$(document).ready(function() {
+    const dropZone = document.getElementById('audio-drop-zone');
+    const fileInput = document.querySelector('#speech-audio-section input[type="file"]');
+    const dropZoneText = document.getElementById('drop-zone-text');
+    const selectedFileInfo = document.getElementById('selected-file-info');
+    const fileName = document.getElementById('file-name');
+    
+    if (dropZone && fileInput) {
+        // Eventos de hover
+        dropZone.addEventListener('mouseenter', function() {
+            this.style.borderColor = '#0d6efd';
+            this.style.backgroundColor = '#f8f9ff';
+        });
+        
+        dropZone.addEventListener('mouseleave', function() {
+            this.style.borderColor = '#dee2e6';
+            this.style.backgroundColor = '#f8f9fa';
+        });
+        
+        // Click para abrir selector de archivos
+        dropZone.addEventListener('click', function(e) {
+            // Solo prevenir si el click viene de un elemento específico
+            if (e.target === dropZone || e.target.closest('#audio-drop-zone')) {
+                if (fileInput) {
+                    fileInput.click();
+                }
+            }
+        });
+        
+        // Estilizar el input de archivo para que se integre con la zona de arrastre
+        if (fileInput) {
+            fileInput.style.width = '100%';
+            fileInput.style.height = '40px';
+            fileInput.style.opacity = '0';
+            fileInput.style.position = 'absolute';
+            fileInput.style.top = '50%';
+            fileInput.style.left = '0';
+            fileInput.style.transform = 'translateY(-50%)';
+            fileInput.style.cursor = 'pointer';
+            fileInput.style.zIndex = '10';
+        }
+        
+        // Prevenir comportamiento por defecto en drag events
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        // Highlight drop zone cuando se arrastra sobre él
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight(e) {
+            dropZone.style.borderColor = '#0d6efd';
+            dropZone.style.backgroundColor = '#e7f3ff';
+        }
+        
+        function unhighlight(e) {
+            dropZone.style.borderColor = '#dee2e6';
+            dropZone.style.backgroundColor = '#f8f9fa';
+        }
+        
+        // Manejar archivos soltados
+        dropZone.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                fileInput.files = files;
+                updateFileDisplay(files[0]);
+            }
+        }
+        
+        // Manejar selección de archivos por click
+        fileInput.addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                updateFileDisplay(this.files[0]);
+            }
+        });
+        
+        function updateFileDisplay(file) {
+            fileName.textContent = file.name;
+            selectedFileInfo.style.display = 'block';
+            dropZoneText.textContent = 'Archivo seleccionado:';
+        }
+    }
+});
+
+// Función para limpiar archivo seleccionado
+function clearSelectedFile() {
+    const fileInput = document.querySelector('#speech-audio-section input[type="file"]');
+    const dropZoneText = document.getElementById('drop-zone-text');
+    const selectedFileInfo = document.getElementById('selected-file-info');
+    
+    if (fileInput) {
+        fileInput.value = '';
+        selectedFileInfo.style.display = 'none';
+        dropZoneText.textContent = 'Arrastra tu archivo de audio aquí';
+    }
+}
 
 // Estilos adicionales para los botones
 $(document).ready(function() {

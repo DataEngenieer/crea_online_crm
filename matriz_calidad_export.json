@@ -1,0 +1,163 @@
+{
+  "metadata": {
+    "export_date": "2025-07-29T21:23:10.070019",
+    "total_records": 9,
+    "model": "calidad.MatrizCalidad",
+    "version": "1.0"
+  },
+  "data": [
+    {
+      "id": 20,
+      "tipologia": "ECUF",
+      "categoria": "Cierre Controlado",
+      "indicador": "Aceptación explicita del cliente",
+      "ponderacion": 11.11,
+      "activo": true,
+      "usuario_creacion": {
+        "id": 3,
+        "username": "administrador",
+        "first_name": "Jhon",
+        "last_name": "Moreno",
+        "email": "admin@crea.com"
+      },
+      "fecha_creacion": "2025-07-30T00:43:13.725617+00:00",
+      "fecha_actualizacion": "2025-07-30T02:14:43.538093+00:00"
+    },
+    {
+      "id": 12,
+      "tipologia": "ECN",
+      "categoria": "Gestión Portabilidad Crosselling",
+      "indicador": "Durante la atención solicita referido interesado en portabilidad",
+      "ponderacion": 11.11,
+      "activo": true,
+      "usuario_creacion": {
+        "id": 3,
+        "username": "administrador",
+        "first_name": "Jhon",
+        "last_name": "Moreno",
+        "email": "admin@crea.com"
+      },
+      "fecha_creacion": "2025-07-30T00:12:31.889905+00:00",
+      "fecha_actualizacion": "2025-07-30T00:44:41.197647+00:00"
+    },
+    {
+      "id": 13,
+      "tipologia": "ECUF",
+      "categoria": "Gestión Portabilidad Outbound Cross y Televentas",
+      "indicador": "Se realiza ofrecimiento y se detallan características de oferta exclusiva de Crosselling portabilidad",
+      "ponderacion": 11.11,
+      "activo": true,
+      "usuario_creacion": {
+        "id": 3,
+        "username": "administrador",
+        "first_name": "Jhon",
+        "last_name": "Moreno",
+        "email": "admin@crea.com"
+      },
+      "fecha_creacion": "2025-07-30T00:23:41.809518+00:00",
+      "fecha_actualizacion": "2025-07-30T00:45:25.221837+00:00"
+    },
+    {
+      "id": 14,
+      "tipologia": "ECUF",
+      "categoria": "Gestión Portabilidad Outbound Cross y Televentas",
+      "indicador": "Informa al cliente las condiciones de portabilidad en el operador actual",
+      "ponderacion": 11.11,
+      "activo": true,
+      "usuario_creacion": {
+        "id": 3,
+        "username": "administrador",
+        "first_name": "Jhon",
+        "last_name": "Moreno",
+        "email": "admin@crea.com"
+      },
+      "fecha_creacion": "2025-07-30T00:24:30.093778+00:00",
+      "fecha_actualizacion": "2025-07-30T00:44:55.677847+00:00"
+    },
+    {
+      "id": 15,
+      "tipologia": "ECUF",
+      "categoria": "Gestión Portabilidad Outbound Cross y Televentas",
+      "indicador": "Solicita número NIP en Full Stack en línea con el cliente y lo confirma para dar inicio al proceso de portación",
+      "ponderacion": 11.11,
+      "activo": true,
+      "usuario_creacion": {
+        "id": 3,
+        "username": "administrador",
+        "first_name": "Jhon",
+        "last_name": "Moreno",
+        "email": "admin@crea.com"
+      },
+      "fecha_creacion": "2025-07-30T00:25:20.007782+00:00",
+      "fecha_actualizacion": "2025-07-30T00:45:33.226720+00:00"
+    },
+    {
+      "id": 16,
+      "tipologia": "ECUF",
+      "categoria": "Gestión Portabilidad Outbound Cross y Televentas",
+      "indicador": "Valida con el cliente la fecha de la ventana de cambio",
+      "ponderacion": 11.11,
+      "activo": true,
+      "usuario_creacion": {
+        "id": 3,
+        "username": "administrador",
+        "first_name": "Jhon",
+        "last_name": "Moreno",
+        "email": "admin@crea.com"
+      },
+      "fecha_creacion": "2025-07-30T00:26:28.881603+00:00",
+      "fecha_actualizacion": "2025-07-30T00:45:39.561286+00:00"
+    },
+    {
+      "id": 17,
+      "tipologia": "ECUF",
+      "categoria": "Gestión Portabilidad Outbound Cross y Televentas",
+      "indicador": "Informa al cliente tipo de pago según el caso",
+      "ponderacion": 11.11,
+      "activo": true,
+      "usuario_creacion": {
+        "id": 3,
+        "username": "administrador",
+        "first_name": "Jhon",
+        "last_name": "Moreno",
+        "email": "admin@crea.com"
+      },
+      "fecha_creacion": "2025-07-30T00:27:12.152211+00:00",
+      "fecha_actualizacion": "2025-07-30T00:45:06.447966+00:00"
+    },
+    {
+      "id": 18,
+      "tipologia": "ECUF",
+      "categoria": "Gestión Portabilidad Outbound Cross y Televentas",
+      "indicador": "Registra agendamiento para entrega de sim card de acuerdo con la validación con el cliente",
+      "ponderacion": 11.11,
+      "activo": true,
+      "usuario_creacion": {
+        "id": 3,
+        "username": "administrador",
+        "first_name": "Jhon",
+        "last_name": "Moreno",
+        "email": "admin@crea.com"
+      },
+      "fecha_creacion": "2025-07-30T00:27:39.121990+00:00",
+      "fecha_actualizacion": "2025-07-30T00:45:18.944344+00:00"
+    },
+    {
+      "id": 19,
+      "tipologia": "ECUF",
+      "categoria": "Gestión Portabilidad Outbound Cross y Televentas",
+      "indicador": "Realiza la verificación y registro de la dirección al confirmar la venta",
+      "ponderacion": 11.11,
+      "activo": true,
+      "usuario_creacion": {
+        "id": 3,
+        "username": "administrador",
+        "first_name": "Jhon",
+        "last_name": "Moreno",
+        "email": "admin@crea.com"
+      },
+      "fecha_creacion": "2025-07-30T00:42:21.049972+00:00",
+      "fecha_actualizacion": "2025-07-30T00:45:12.498514+00:00"
+    }
+  ]
+}
