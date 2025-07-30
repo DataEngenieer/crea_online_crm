@@ -25,7 +25,7 @@ def obtener_duracion_audio(ruta_archivo):
     try:
         # Usar librosa para obtener la duración
         # load=False solo lee los metadatos, no carga todo el audio en memoria
-        duration = librosa.get_duration(filename=ruta_absoluta)
+        duration = librosa.get_duration(path=ruta_absoluta)
         
         if duration > 0:
             print(f"Duración obtenida con librosa: {duration:.2f} segundos")

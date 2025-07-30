@@ -548,14 +548,45 @@ class AuditoriaCreateView(CalidadBaseView, CreateView):
                 speech = speech_form.save(commit=False)
                 speech.auditoria = self.object
                 
+                # Verificar que el archivo se asignó correctamente antes de guardar
+                audio_file = self.request.FILES.get('audio')
+                if audio_file:
+                    print(f"Archivo recibido: {audio_file.name}, tamaño: {audio_file.size} bytes")
+                    speech.audio = audio_file
+                else:
+                    print("Error: No se pudo obtener el archivo de audio del request")
+                    return self.form_invalid(form)
+                
                 # Guardar el modelo para que el archivo se guarde en el sistema de archivos
                 speech.save()
+                
+                # Verificar que el archivo se guardó correctamente
+                if not speech.audio or not speech.audio.name:
+                    print("Error crítico: El archivo no se guardó correctamente en el modelo")
+                    return self.form_invalid(form)
                 
                 # ===== PRINTS PARA VERIFICAR RUTA REAL DE GUARDADO =====
                 print(f"\n=== INFORMACIÓN DE GUARDADO DE ARCHIVO ===")
                 print(f"Campo audio del modelo: {speech.audio}")
-                print(f"Nombre del archivo: {speech.audio.name}")
-                print(f"URL del archivo: {speech.audio.url}")
+                print(f"Nombre del archivo: {speech.audio.name if speech.audio else 'None'}")
+                
+                # Verificar que el archivo existe antes de intentar obtener la URL
+                try:
+                    if speech.audio and speech.audio.name:
+                        # Si el archivo fue subido a MinIO, usar esa URL
+                        if speech.subido_a_minio and speech.minio_url:
+                            print(f"URL del archivo (MinIO): {speech.minio_url}")
+                        else:
+                            # Intentar obtener la URL local solo si el archivo existe
+                            if hasattr(speech.audio, 'path') and os.path.exists(speech.audio.path):
+                                print(f"URL del archivo (local): {speech.audio.url}")
+                            else:
+                                print("URL del archivo: Archivo local no existe, esperando subida a MinIO")
+                    else:
+                        print("URL del archivo: No disponible - archivo no asociado")
+                except ValueError as e:
+                    print(f"Error al obtener URL del archivo: {str(e)}")
+                    print("El campo audio no tiene un archivo asociado correctamente")
                 
                 if hasattr(speech.audio, 'path'):
                     print(f"Ruta absoluta del archivo: {speech.audio.path}")
@@ -619,8 +650,21 @@ class AuditoriaCreateView(CalidadBaseView, CreateView):
                     print(f"\n=== VERIFICACIÓN DE ARCHIVO EN BACKGROUND ===")
                     print(f"[Auditoría {auditoria_id}] Audio path recibido: {audio_path}")
                     print(f"[Auditoría {auditoria_id}] Campo audio del modelo: {speech_obj.audio}")
-                    print(f"[Auditoría {auditoria_id}] Nombre del archivo: {speech_obj.audio.name}")
-                    print(f"[Auditoría {auditoria_id}] URL del archivo: {speech_obj.audio.url}")
+                    print(f"[Auditoría {auditoria_id}] Nombre del archivo: {speech_obj.audio.name if speech_obj.audio else 'None'}")
+                    
+                    # Verificar URL del archivo de forma segura
+                    try:
+                        if speech_obj.audio and speech_obj.audio.name:
+                            if speech_obj.subido_a_minio and speech_obj.minio_url:
+                                print(f"[Auditoría {auditoria_id}] URL del archivo (MinIO): {speech_obj.minio_url}")
+                            elif hasattr(speech_obj.audio, 'path') and os.path.exists(speech_obj.audio.path):
+                                print(f"[Auditoría {auditoria_id}] URL del archivo (local): {speech_obj.audio.url}")
+                            else:
+                                print(f"[Auditoría {auditoria_id}] URL del archivo: Archivo no disponible localmente")
+                        else:
+                            print(f"[Auditoría {auditoria_id}] URL del archivo: No hay archivo asociado")
+                    except ValueError as e:
+                        print(f"[Auditoría {auditoria_id}] Error al obtener URL: {str(e)}")
                     
                     # Usar el campo 'audio' del modelo para obtener la ruta correcta
                     if hasattr(speech_obj.audio, 'path'):
