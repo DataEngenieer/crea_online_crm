@@ -24,6 +24,7 @@ urlpatterns = [
 
     # ========== API ==========
     path('api/usuarios/buscar/', buscar_usuarios, name='api_buscar_usuarios'),
+    path('api/auditorias/<int:pk>/', calidad_required(views.api_detalle_auditoria), name='api_detalle_auditoria'),
     
     # ========== Matriz de Calidad ==========
     path('matriz/', calidad_required(views.lista_matriz_calidad), name='lista_matriz'),

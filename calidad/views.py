@@ -316,7 +316,7 @@ def crear_editar_matriz(request, id=None):
             messages.success(request, mensaje_exito)
             if 'guardar_y_agregar_otro' in request.POST:
                 return redirect('calidad:crear_editar_matriz')
-            return redirect('calidad:dashboard')
+            return redirect('calidad:lista_matriz')
     else:
         form = MatrizCalidadForm(instance=matriz)
 
@@ -490,13 +490,13 @@ class AuditoriaCreateView(CalidadBaseView, CreateView):
         
         # Definir clases CSS corporativas para cada tipología (sincronizado con TIPOLOGIA_CHOICES del modelo)
         colores_tipologias = {
-            'atencion_telefonica': 'tipologia-atencion',  # Azul índigo corporativo (#7478BC)
-            'ofrecimiento_comercial': 'tipologia-ofrecimiento',  # Magenta principal corporativo (#BB2BA3)
-            'proceso_venta': 'tipologia-proceso'  # Azul oscuro corporativo (#34387C)
+            'ECUF': 'tipologia-atencion',  # Azul índigo corporativo (#7478BC)
+            'ECN': 'tipologia-ofrecimiento',  # Magenta principal corporativo (#BB2BA3)
+            'Estadistico': 'tipologia-proceso'  # Azul oscuro corporativo (#34387C)
         }
         
         # Definir el orden específico de las tipologías (basado en TIPOLOGIA_CHOICES)
-        orden_tipologias = ['atencion_telefonica', 'ofrecimiento_comercial', 'proceso_venta']
+        orden_tipologias = ['ECUF', 'ECN', 'Estadistico']
         
         # Usar OrderedDict para mantener el orden específico
         from collections import OrderedDict
@@ -605,7 +605,7 @@ class AuditoriaCreateView(CalidadBaseView, CreateView):
                 
                 # Las importaciones ya están en el ámbito global
 
-                def procesar_speech_en_background(speech_obj, audio_path, auditoria_id):
+                def procesar_speech_en_background(speech_obj, audio_path, auditoria_id, temp_dir=None):
                     """
                     Orquesta todo el proceso de Speech Analytics en un hilo separado.
                     """
@@ -842,8 +842,35 @@ class AuditoriaCreateView(CalidadBaseView, CreateView):
                     # Paso 4: Guardado final
                     speech_obj.save()
                     print(f"[Auditoría {auditoria_id}] ✅ Proceso finalizado.")
+                    
+                    # Limpiar directorio temporal si existe
+                    if temp_dir and os.path.exists(temp_dir):
+                        try:
+                            import shutil
+                            shutil.rmtree(temp_dir)
+                            print(f"[Auditoría {auditoria_id}] 🧹 Directorio temporal limpiado: {temp_dir}")
+                        except Exception as e:
+                            print(f"[Auditoría {auditoria_id}] ⚠️ Error al limpiar directorio temporal: {e}")
 
-                threading.Thread(target=procesar_speech_en_background, args=(speech, speech.audio.path, self.object.id)).start()
+                # Crear una copia del archivo para procesamiento en segundo plano
+                import shutil
+                import tempfile
+                
+                # Crear archivo temporal para evitar bloqueos
+                temp_dir = tempfile.mkdtemp()
+                temp_file_path = os.path.join(temp_dir, f"temp_audio_{speech.id}.mp3")
+                
+                try:
+                    # Copiar el archivo original al temporal
+                    shutil.copy2(speech.audio.path, temp_file_path)
+                    print(f"Archivo copiado a temporal: {temp_file_path}")
+                    
+                    # Procesar usando el archivo temporal
+                    threading.Thread(target=procesar_speech_en_background, args=(speech, temp_file_path, self.object.id, temp_dir)).start()
+                except Exception as e:
+                    print(f"Error al crear archivo temporal: {e}")
+                    # Fallback al método original
+                    threading.Thread(target=procesar_speech_en_background, args=(speech, speech.audio.path, self.object.id, None)).start()
                 messages.success(self.request, 'Auditoría Speech guardada. El audio será procesado en segundo plano. Recargue el detalle en unos minutos para ver la transcripción.')
             else:
                 error_msg = 'Debes adjuntar un archivo de audio válido.'
@@ -1122,8 +1149,38 @@ class AuditoriaDeleteView(CalidadBaseView, DeleteView):
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
         self.object.delete()
+        
+        # Si es una petición AJAX, devolver respuesta JSON
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
+            return JsonResponse({
+                'success': True,
+                'message': 'La auditoría ha sido eliminada correctamente.'
+            })
+        
+        # Si no es AJAX, comportamiento normal
         messages.success(request, 'La auditoría ha sido eliminada correctamente.')
         return HttpResponseRedirect(self.get_success_url())
+
+@login_required
+@ip_permitida
+@grupo_requerido('Calidad', 'Administrador')
+def api_detalle_auditoria(request, pk):
+    """
+    API para obtener detalles de una auditoría en formato JSON
+    """
+    try:
+        auditoria = get_object_or_404(Auditoria, pk=pk)
+        data = {
+            'id': auditoria.id,
+            'agente_nombre': auditoria.agente.get_full_name() or auditoria.agente.username,
+            'fecha_llamada_formateada': auditoria.fecha_llamada.strftime('%d/%m/%Y'),
+            'evaluador_nombre': auditoria.evaluador.get_full_name() or auditoria.evaluador.username,
+            'porcentaje_aprobacion': str(auditoria.get_porcentaje_aprobacion()),
+            'puntaje_total': str(auditoria.puntaje_total)
+        }
+        return JsonResponse(data)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
 @ip_permitida

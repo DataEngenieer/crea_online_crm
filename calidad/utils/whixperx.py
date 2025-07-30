@@ -34,10 +34,15 @@ def transcribir_audio(file_path):
     url_upload = "https://api.replicate.com/v1/files"
     headers = {"Authorization": f"Bearer {REPLICATE_TOKEN}"}
     
+    # Leer el archivo completo en memoria para evitar bloqueos
+    print("Leyendo archivo de audio para transcripción...")
     with open(file_path, "rb") as f:
-        files = {"content": (os.path.basename(file_path), f, "application/octet-stream")}
-        print("Subiendo archivo de audio para transcripción...")
-        resp = _make_request_with_retry('post', url_upload, headers=headers, files=files)
+        file_content = f.read()
+    
+    # Crear el objeto files con el contenido en memoria
+    files = {"content": (os.path.basename(file_path), file_content, "application/octet-stream")}
+    print("Subiendo archivo de audio para transcripción...")
+    resp = _make_request_with_retry('post', url_upload, headers=headers, files=files)
     
     file_url = resp.json()["urls"]["get"]
     print(f"Archivo subido exitosamente: {file_url}")

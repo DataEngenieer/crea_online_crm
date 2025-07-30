@@ -49,6 +49,38 @@
         text-rendering: auto;
         font-weight: 400;
     }
+    
+    /* Estilos para los botones de tipo de monitoreo */
+    .btn-group .btn-check:checked + .btn {
+        background-color: var(--bs-primary) !important;
+        border-color: var(--bs-primary) !important;
+        color: white !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .btn-group .btn-check:checked + .btn.btn-outline-secondary {
+        background-color: var(--bs-secondary) !important;
+        border-color: var(--bs-secondary) !important;
+    }
+    
+    .btn-group .btn {
+        transition: all 0.2s ease-in-out;
+        border-width: 2px;
+    }
+    
+    .btn-group .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .btn-group .btn i {
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .btn-group .btn-check:checked + .btn i {
+        transform: scale(1.1);
+    }
 </style>
 {% endblock %}
 
@@ -126,12 +158,26 @@
                                         </div>
                                         
                                         <div class="col-md-2">
-                                            <label for="{{ form.tipo_monitoreo.id_for_label }}" class="form-label small fw-bold mb-1">
+                                            <label class="form-label small fw-bold mb-1">
                                                 <i class="fas fa-phone-laptop me-1"></i> Monitoreo
                                             </label>
-                                            <div class="input-group input-group-sm">
-                                                {{ form.tipo_monitoreo }}
+                                            <div class="btn-group w-100" role="group" aria-label="Tipo de monitoreo">
+                                                <input type="radio" class="btn-check" name="tipo_monitoreo" id="tipo_speech" value="speech" autocomplete="off" checked>
+                                                <label class="btn btn-outline-primary btn-sm d-flex flex-column align-items-center py-2" for="tipo_speech">
+                                                    <i class="fas fa-brain mb-1" style="font-size: 1.2em;"></i>
+                                                    <small class="fw-bold">Speech</small>
+                                                    <small class="text-muted" style="font-size: 0.7em;">Analytics</small>
+                                                </label>
+                                                
+                                                <input type="radio" class="btn-check" name="tipo_monitoreo" id="tipo_grabacion" value="grabacion" autocomplete="off">
+                                                <label class="btn btn-outline-secondary btn-sm d-flex flex-column align-items-center py-2" for="tipo_grabacion">
+                                                    <i class="fas fa-microphone mb-1" style="font-size: 1.2em;"></i>
+                                                    <small class="fw-bold">Grabación</small>
+                                                    <small class="text-muted" style="font-size: 0.7em;">Manual</small>
+                                                </label>
                                             </div>
+                                            <!-- Campo oculto para mantener compatibilidad con Django -->
+                                            <input type="hidden" id="id_tipo_monitoreo" name="tipo_monitoreo" value="speech">
                                         </div>
                                         
 
@@ -195,7 +241,7 @@
                                                                     <tr>
                                                                         <td>
                                                                             <div class="fw-bold">{{ indicador.categoria }}</div>
-                                                                            <div class="text-muted small">{{ indicador.indicador }}</div>
+                                                                            <div class="text-muted">{{ indicador.indicador }}</div>
                                                                             <input type="hidden" name="indicador_id" id="indicador_id_{{ indicador.id }}" value="{{ indicador.id }}">
                                                                         </td>
                                                                         <td class="text-center align-middle" style="width:140px;">
@@ -771,8 +817,39 @@ $(document).ready(function() {
             $('#id_audio').prop('required', false);
         }
     }
+    // Sincronizar botones radio con campo oculto
+    function sincronizarTipoMonitoreo() {
+        // Cuando se hace clic en un botón radio, actualizar el campo oculto
+        $('input[name="tipo_monitoreo"][type="radio"]').on('change', function() {
+            var valorSeleccionado = $(this).val();
+            $('#id_tipo_monitoreo').val(valorSeleccionado).trigger('change');
+        });
+        
+        // Si hay un valor inicial en el campo oculto, seleccionar el botón correspondiente
+        var valorInicial = $('#id_tipo_monitoreo').val();
+        if (valorInicial) {
+            $('input[name="tipo_monitoreo"][value="' + valorInicial + '"]').prop('checked', true);
+        }
+    }
+    
+    // Inicializar sincronización
+    sincronizarTipoMonitoreo();
+    
     $('#id_tipo_monitoreo').on('change', toggleSpeechSection);
     toggleSpeechSection();
+});
+
+// Estilos adicionales para los botones
+$(document).ready(function() {
+    // Agregar efecto hover y estilos mejorados
+    $('.btn-group label.btn').hover(
+        function() {
+            $(this).addClass('shadow-sm');
+        },
+        function() {
+            $(this).removeClass('shadow-sm');
+        }
+    );
 });
 </script>
 {% endblock extra_js %}

@@ -49,30 +49,53 @@ class Speech(models.Model):
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     
     def save(self, *args, **kwargs):
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Log inicial para debug
+        logger.info(f"[SPEECH-SAVE] Iniciando save para Speech ID: {self.id}, Auditoría ID: {self.auditoria.id if self.auditoria else 'None'}")
+        
         # Primero guardamos el modelo para que el archivo se guarde en el sistema de archivos
         super().save(*args, **kwargs)
         
         # Después de guardar, verificamos si hay un archivo de audio
         if self.audio:
+            logger.info(f"[SPEECH-SAVE] Archivo de audio detectado: {self.audio.name}")
             try:
                 # Usamos self.audio.path para obtener la ruta absoluta del archivo guardado
                 if hasattr(self.audio, 'path') and os.path.exists(self.audio.path):
+                    logger.info(f"[SPEECH-SAVE] Archivo existe en: {self.audio.path}")
+                    
                     # Calcular duración y tamaño del archivo
                     self.duracion_segundos = obtener_duracion_audio(self.audio.path)
                     self.tamano_archivo_mb = obtener_tamano_archivo_mb(self.audio.path)
+                    logger.info(f"[SPEECH-SAVE] Duración: {self.duracion_segundos}s, Tamaño: {self.tamano_archivo_mb}MB")
                     
                     # Subir a MinIO si no se ha subido antes
                     if not self.subido_a_minio:
+                        logger.info(f"[SPEECH-SAVE] Iniciando subida a MinIO...")
                         self._subir_audio_a_minio()
                         
-                        # Si se subió exitosamente a MinIO, eliminar el archivo local
+                        # Verificar resultado de la subida
                         if self.subido_a_minio:
+                            logger.info(f"[SPEECH-SAVE] Subida exitosa a MinIO. URL: {self.minio_url}")
+                            # Si se subió exitosamente a MinIO, eliminar el archivo local
                             self._eliminar_archivo_local()
+                        else:
+                            logger.error(f"[SPEECH-SAVE] Falló la subida a MinIO")
+                    else:
+                        logger.info(f"[SPEECH-SAVE] Archivo ya está en MinIO: {self.minio_url}")
                     
                     # Guardar nuevamente para actualizar los campos calculados
                     super().save(update_fields=['duracion_segundos', 'tamano_archivo_mb', 'minio_url', 'minio_object_name', 'subido_a_minio', 'fecha_actualizacion'])
+                    logger.info(f"[SPEECH-SAVE] Campos actualizados exitosamente")
+                else:
+                    logger.warning(f"[SPEECH-SAVE] Archivo no existe en el sistema de archivos")
             except Exception as e:
+                logger.error(f"[SPEECH-SAVE] Error al procesar el archivo de audio: {str(e)}")
                 print(f"Error al procesar el archivo de audio: {e}")
+        else:
+            logger.warning(f"[SPEECH-SAVE] No hay archivo de audio asociado")
     
     def _subir_audio_a_minio(self):
         """
@@ -86,8 +109,16 @@ class Speech(models.Model):
             
             # Generar nombre personalizado basado en la auditoría
             nombre_personalizado = f"auditoria_{self.auditoria.id}_audio_{self.id}"
+            logger.info(f"[MINIO-UPLOAD] Nombre personalizado: {nombre_personalizado}")
+            logger.info(f"[MINIO-UPLOAD] Archivo a subir: {self.audio.name}, Tamaño: {self.audio.size if hasattr(self.audio, 'size') else 'Desconocido'}")
+            
+            # Verificar configuración de MinIO
+            from django.conf import settings
+            logger.info(f"[MINIO-UPLOAD] Endpoint: {getattr(settings, 'MINIO_ENDPOINT', 'NO_CONFIGURADO')}")
+            logger.info(f"[MINIO-UPLOAD] Access Key: {getattr(settings, 'MINIO_ACCESS_KEY', 'NO_CONFIGURADO')[:10]}...")
             
             # Subir archivo a MinIO
+            logger.info(f"[MINIO-UPLOAD] Iniciando subida con bucket_type: MINIO_BUCKET_NAME_LLAMADAS")
             resultado = subir_a_minio(
                 archivo=self.audio,
                 nombre_personalizado=nombre_personalizado,
@@ -95,18 +126,26 @@ class Speech(models.Model):
                 bucket_type="MINIO_BUCKET_NAME_LLAMADAS"
             )
             
+            logger.info(f"[MINIO-UPLOAD] Resultado de subida: {resultado}")
+            
             if resultado['success']:
                 self.minio_url = resultado['url']
                 self.minio_object_name = resultado['object_name']
                 self.subido_a_minio = True
-                logger.info(f"Archivo de audio subido exitosamente a MinIO: {resultado['url']}")
+                logger.info(f"[MINIO-UPLOAD] ✅ Archivo de audio subido exitosamente a MinIO: {resultado['url']}")
+                logger.info(f"[MINIO-UPLOAD] Guardando cambios en la base de datos...")
+                # Guardar los cambios en la base de datos inmediatamente
+                super(Speech, self).save(update_fields=['minio_url', 'minio_object_name', 'subido_a_minio', 'fecha_actualizacion'])
+                logger.info(f"[MINIO-UPLOAD] Cambios guardados exitosamente")
             else:
-                logger.error(f"Error al subir archivo a MinIO: {resultado.get('error', 'Error desconocido')}")
+                logger.error(f"[MINIO-UPLOAD] ❌ Error al subir archivo a MinIO: {resultado.get('error', 'Error desconocido')}")
                 
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
-            logger.error(f"Error en _subir_audio_a_minio: {str(e)}")
+            logger.error(f"[MINIO-UPLOAD] ❌ Excepción en _subir_audio_a_minio: {str(e)}")
+            import traceback
+            logger.error(f"[MINIO-UPLOAD] Traceback: {traceback.format_exc()}")
     
     def _eliminar_archivo_local(self):
         """
@@ -245,9 +284,9 @@ class MatrizCalidad(models.Model):
     """
     # Opciones para el campo tipologia
     TIPOLOGIA_CHOICES = [
-        ('atencion_telefonica', 'Atencion Telefonica'),    
-        ('ofrecimiento_comercial', 'Ofrecimiento Comercial'),
-        ('proceso_venta', 'Proceso de Venta'),
+        ('ECUF', 'ECUF'),    
+        ('ECN', 'ECN'),
+        ('Estadistico', 'Estadistico'),
     ]
     
     # Campos principales
@@ -308,7 +347,6 @@ class Auditoria(models.Model):
     
     TIPO_MONITOREO_CHOICES = [
         ('speech', 'Speech Analytics'),
-        ('al_lado', 'Al Lado'),
         ('grabacion', 'Grabación')
     ]
     

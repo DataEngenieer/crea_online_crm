@@ -254,7 +254,7 @@
                     </thead>
                     <tbody>
                         {% for auditoria in auditorias %}
-                        <tr>
+                        <tr data-auditoria-id="{{ auditoria.id }}">
                             <td>#{{ auditoria.id }}</td>
                             <td>
                                 <div class="d-flex align-items-center">
@@ -518,7 +518,7 @@ function confirmarEliminarAuditoria(auditoriaId) {
     
     // Configurar el evento de confirmación
     btnConfirmar.onclick = function() {
-        fetch(`/calidad/auditorias/${auditoriaId}/eliminar/`, {
+        fetch(`/calidad/auditorias/eliminar/${auditoriaId}/`, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCookie('csrftoken'),
@@ -528,14 +528,23 @@ function confirmarEliminarAuditoria(auditoriaId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Mostrar mensaje de éxito y recargar la página
+                // Cerrar el modal
+                modal.hide();
+                
+                // Eliminar la fila de la tabla
+                const filaAuditoria = document.querySelector(`tr[data-auditoria-id="${auditoriaId}"]`);
+                if (filaAuditoria) {
+                    filaAuditoria.remove();
+                }
+                
+                // Mostrar mensaje de éxito
                 Swal.fire({
                     title: '¡Eliminada!',
                     text: 'La auditoría ha sido eliminada correctamente.',
                     icon: 'success',
-                    confirmButtonText: 'Aceptar'
-                }).then(() => {
-                    window.location.reload();
+                    confirmButtonText: 'Aceptar',
+                    timer: 3000,
+                    timerProgressBar: true
                 });
             } else {
                 throw new Error(data.message || 'Error al eliminar la auditoría');

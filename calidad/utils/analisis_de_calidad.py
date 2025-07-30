@@ -16,9 +16,9 @@ class AnalizadorTranscripciones:
         self.model = model
         self.api_url = "https://api.deepseek.com/v1/chat/completions"
 
-    def evaluar_calidad_llamada(self, transcripcion: str, info_tipificacion: str = None) -> Dict[str, Any]:
+    def evaluar_calidad_llamada(self, transcripcion: str) -> Dict[str, Any]:
         """
-        Evalúa la calidad de una llamada a partir de su transcripción y la información de tipificación.
+        Evalúa la calidad de una llamada a partir de su transcripción.
         """
         # Validar que la transcripción no esté vacía
         if not transcripcion or not isinstance(transcripcion, str) or transcripcion.strip() == "":
@@ -28,7 +28,7 @@ class AnalizadorTranscripciones:
         if transcripcion.strip().startswith("[Error") or transcripcion.strip().startswith("[Advertencia]"):
             return {"error": f"Transcripción inválida: {transcripcion}"}
         
-        instrucciones = self._construir_instrucciones(info_tipificacion=info_tipificacion)
+        instrucciones = self._construir_instrucciones()
 
         # --- DEBUG: Imprimir el prompt para verificación ---
         print("="*50)
@@ -44,7 +44,7 @@ class AnalizadorTranscripciones:
 
         return self._enviar_solicitud_ia(transcripcion, instrucciones)
 
-    def _construir_instrucciones(self, info_tipificacion: str = None) -> str:
+    def _construir_instrucciones(self : str = None) -> str:
         """
         Construye dinámicamente el prompt para el modelo de IA con las instrucciones de evaluación
         basadas en los indicadores activos de la Matriz de Calidad.
@@ -72,20 +72,9 @@ class AnalizadorTranscripciones:
         
         indicadores_str = "\n".join(indicadores_texto)
 
-        contexto_adicional = ""
-        if info_tipificacion and info_tipificacion.strip():
-            contexto_adicional = f"""
-
-            CONTEXTO ADICIONAL SOBRE LA TIPIFICACIÓN:
-            La siguiente información fue proporcionada por el auditor sobre el registro de la llamada en el sistema. Úsala para evaluar el indicador 'Tipificación correcta' y otros relacionados si aplica:
-            ---
-            {info_tipificacion}
-            ---
-            """
 
         return f"""Eres un experto evaluador de calidad en llamadas de servicio al cliente. Analiza la transcripción y evalúa TODOS los siguientes indicadores:
             {indicadores_str}
-            {contexto_adicional}
 
             FORMATO DE RESPUESTA REQUERIDO (JSON):
             {{
@@ -108,7 +97,7 @@ class AnalizadorTranscripciones:
             2. Para cada indicador, determina si se cumple (true) o no (false).
             3. Justifica cada evaluación en el campo 'evaluacion'.
             4. Copia EXACTAMENTE los nombres de 'categoria' e 'indicador' como aparecen arriba.
-            5. Si un indicador no se puede evaluar por falta de información, márcalo como 'false' y explica por qué.
+            5. Si un indicador no se puede evaluar por falta de información, márcalo como 'true' y explica por qué.
             6. Calcula el puntaje total considerando las ponderaciones.
             7. Tu respuesta JSON debe contener exactamente {contador_global-1} elementos en el array 'evaluacion'.
 
@@ -131,7 +120,7 @@ class AnalizadorTranscripciones:
                     {"role": "user", "content": texto}
                 ],
                 "temperature": 0.1,
-                "max_tokens": 6000,
+                #"max_tokens": 6000,
                 "response_format": {"type": "json_object"}
             }
             print(payload)
