@@ -22,3 +22,4 @@ matplotlib
 pdf2image
 pytesseract
 minio
+werkzeug
