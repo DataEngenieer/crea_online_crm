@@ -1,0 +1,50 @@
+node_modules
+build
+dist
+.git
+.trae
+.log
+
+# Archivos de exportación y datos
+*.json
+!package.json
+!vercel.json
+!railway.json
+!requirements.txt
+
+# Scripts de debug y test
+debug_*.py
+test_*.py
+fix_*.py
+force_*.py
+export_*.py
+envio_*.py
+
+# Migraciones (mantener solo __init__.py)
+*/migrations/*.py
+!*/migrations/__init__.py
+
+# Archivos de logs y temporales
+*.log
+*.tmp
+*.temp
+
+# Archivos de media y uploads
+media/
+uploads/
+static/uploads/
+
+# Archivos de base de datos
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos de configuración local
+.env
+.env.local
+.env.production
+
+# Documentación
+README.md
+*/README.md
+EXPORT_*.md

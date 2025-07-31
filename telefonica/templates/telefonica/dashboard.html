@@ -1,6 +1,68 @@
 {% extends 'telefonica/base_telefonica.html' %}
 {% load static %}
 
+{% block extra_css %}
+{{ block.super }}
+<style>
+    /* Estilos para las gráficas mejoradas */
+    .chart-container {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border-radius: 8px;
+        padding: 10px;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .telefonica-card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    
+    .telefonica-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+    }
+    
+    .btn-group .btn {
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    
+    .btn-group .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    #graficos-separados .card {
+        transition: all 0.3s ease;
+    }
+    
+    #graficos-separados .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+    }
+    
+    /* Animación para el cambio de vista */
+    #graficos-separados {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <h1 class="h3 mb-4 text-gray-800">Dashboard Telefónica</h1>
@@ -141,14 +203,28 @@
         {% endif %}
     </div>
     
-    <!-- Gráfico de ventas por día -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Ventas por Día (Últimos 30 días)</h6>
+    <!-- Panel de control de gráficas -->
+    <div class="card shadow mb-4 telefonica-card">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary" id="chart-title">
+                <i class="bi bi-bar-chart-fill me-2"></i>Ventas Consolidadas por Día (Últimos 30 días)
+            </h6>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-sm btn-primary" id="btn-consolidado" onclick="toggleChart('consolidado')">
+                    <i class="bi bi-eye"></i> Consolidado
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-separado" onclick="toggleChart('separado')">
+                    <i class="bi bi-layers"></i> Por Tipo
+                </button>
+            </div>
         </div>
+    </div>
+
+    <!-- Gráfico consolidado de ventas por día -->
+    <div class="card shadow mb-4 telefonica-card" id="grafico-consolidado">
         <div class="card-body">
-            <div class="chart-container" style="position: relative; height:400px; width:100%">
-                <canvas id="ventasPorDiaChart"></canvas>
+            <div class="chart-area chart-container" style="position: relative; height:400px; width:100%">
+                <canvas id="ventasConsolidadoChart"></canvas>
             </div>
             {% if not fechas_ventas or fechas_ventas == '[]' %}
             <div class="alert alert-info mt-3">
@@ -179,6 +255,57 @@
             {% endif %}
         </div>
     </div>
+
+    <!-- Gráficos separados por tipo de venta -->
+    <div class="row" id="graficos-separados" style="display: none;">
+        <!-- Gráfico de Portabilidad -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow h-100 telefonica-card" style="border-left: 4px solid rgb(197,74,176);">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold" style="color: rgb(197,74,176);">
+                        <i class="bi bi-arrow-left-right me-2"></i>Ventas Portabilidad
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area chart-container" style="position: relative; height:300px; width:100%">
+                        <canvas id="portabilidadChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Prepago -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow h-100 telefonica-card" style="border-left: 4px solid rgb(20,24,92);">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold" style="color: rgb(20,24,92);">
+                        <i class="bi bi-phone me-2"></i>Ventas Pre a Pos
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area chart-container" style="position: relative; height:300px; width:100%">
+                        <canvas id="prepagoChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Upgrade -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow h-100 telefonica-card" style="border-left: 4px solid rgb(52,56,124);">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold" style="color: rgb(52,56,124);">
+                        <i class="bi bi-arrow-up-circle me-2"></i>Ventas Upgrade
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area chart-container" style="position: relative; height:300px; width:100%">
+                        <canvas id="upgradeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -188,52 +315,248 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
+    // Variables globales para los gráficos
+    let ventasConsolidadoChart;
+    let portabilidadChart;
+    let prepagoChart;
+    let upgradeChart;
+    
     document.addEventListener('DOMContentLoaded', function() {
         // Obtener datos del contexto
         const fechas = {{ fechas_ventas|safe }};
         const totales = {{ totales_ventas|safe }};
+        const portabilidadData = {{ portabilidad_ventas|safe }};
+        const prepagoData = {{ prepago_ventas|safe }};
+        const upgradeData = {{ upgrade_ventas|safe }};
+        
+        // Configuración común para todos los gráficos
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0,
+                        font: {
+                            size: 12
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            size: 11
+                        }
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleColor: 'white',
+                    bodyColor: 'white',
+                    borderColor: 'rgba(255,255,255,0.2)',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: true
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeInOutQuart'
+            }
+        };
         
         if (fechas && fechas.length > 0) {
-            // Configurar el gráfico
-            const ctx = document.getElementById('ventasPorDiaChart').getContext('2d');
-            const ventasPorDiaChart = new Chart(ctx, {
+            // Calcular datos consolidados (suma de todos los tipos por día)
+            const consolidadoData = fechas.map((fecha, index) => {
+                return (portabilidadData[index] || 0) + (prepagoData[index] || 0) + (upgradeData[index] || 0);
+            });
+            
+            // Gráfico consolidado con una sola barra por día
+            const ctxConsolidado = document.getElementById('ventasConsolidadoChart').getContext('2d');
+            ventasConsolidadoChart = new Chart(ctxConsolidado, {
                 type: 'bar',
                 data: {
                     labels: fechas,
                     datasets: [{
-                        label: 'Cantidad de Ventas',
-                        data: totales,
-                        backgroundColor: 'rgba(197, 74, 176, 0.7)',
-                        borderColor: 'rgb(197, 74, 176)',
-                        borderWidth: 1
+                        label: 'Total Ventas',
+                        data: consolidadoData,
+                        backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                        borderColor: 'rgb(54, 162, 235)',
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        borderSkipped: false
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                precision: 0 // Solo mostrar números enteros
-                            }
-                        }
-                    },
+                    ...commonOptions,
                     plugins: {
+                        ...commonOptions.plugins,
                         title: {
                             display: true,
-                            text: 'Ventas por Día (Últimos 30 días)',
+                            text: 'Ventas Consolidadas por Día',
                             font: {
-                                size: 16
-                            }
+                                size: 16,
+                                weight: 'bold'
+                            },
+                            color: '#333'
                         },
-                        legend: {
-                            position: 'top',
+                        tooltip: {
+                            ...commonOptions.plugins.tooltip,
+                            callbacks: {
+                                afterBody: function(context) {
+                                    const index = context[0].dataIndex;
+                                    const portabilidad = portabilidadData[index] || 0;
+                                    const prepago = prepagoData[index] || 0;
+                                    const upgrade = upgradeData[index] || 0;
+                                    return [
+                                        '',
+                                        `Portabilidad: ${portabilidad}`,
+                                        `Pre a Pos: ${prepago}`,
+                                        `Upgrade: ${upgrade}`
+                                    ];
+                                }
+                            }
                         }
                     }
                 }
             });
+            
+            // Gráfico de Portabilidad
+            const ctxPortabilidad = document.getElementById('portabilidadChart').getContext('2d');
+            portabilidadChart = new Chart(ctxPortabilidad, {
+                type: 'line',
+                data: {
+                    labels: fechas,
+                    datasets: [{
+                        label: 'Portabilidad',
+                        data: portabilidadData,
+                        backgroundColor: 'rgba(197, 74, 176, 0.1)',
+                        borderColor: 'rgb(197, 74, 176)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: 'rgb(197, 74, 176)',
+                        pointBorderColor: 'white',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: commonOptions
+            });
+            
+            // Gráfico de Prepago
+            const ctxPrepago = document.getElementById('prepagoChart').getContext('2d');
+            prepagoChart = new Chart(ctxPrepago, {
+                type: 'line',
+                data: {
+                    labels: fechas,
+                    datasets: [{
+                        label: 'Pre a Pos',
+                        data: prepagoData,
+                        backgroundColor: 'rgba(20, 24, 92, 0.1)',
+                        borderColor: 'rgb(20, 24, 92)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: 'rgb(20, 24, 92)',
+                        pointBorderColor: 'white',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: commonOptions
+            });
+            
+            // Gráfico de Upgrade
+            const ctxUpgrade = document.getElementById('upgradeChart').getContext('2d');
+            upgradeChart = new Chart(ctxUpgrade, {
+                type: 'line',
+                data: {
+                    labels: fechas,
+                    datasets: [{
+                        label: 'Upgrade',
+                        data: upgradeData,
+                        backgroundColor: 'rgba(52, 56, 124, 0.1)',
+                        borderColor: 'rgb(52, 56, 124)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: 'rgb(52, 56, 124)',
+                        pointBorderColor: 'white',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: commonOptions
+            });
         }
     });
+    
+    // Función para alternar entre vista consolidada y separada
+    function toggleChart(tipo) {
+        const consolidadoContainer = document.getElementById('grafico-consolidado');
+        const separadosContainer = document.getElementById('graficos-separados');
+        const btnConsolidado = document.getElementById('btn-consolidado');
+        const btnSeparado = document.getElementById('btn-separado');
+        const chartTitle = document.getElementById('chart-title');
+        
+        if (tipo === 'consolidado') {
+            // Mostrar gráfico consolidado
+            consolidadoContainer.style.display = 'block';
+            separadosContainer.style.display = 'none';
+            
+            // Actualizar botones
+            btnConsolidado.classList.remove('btn-outline-primary');
+            btnConsolidado.classList.add('btn-primary');
+            btnSeparado.classList.remove('btn-primary');
+            btnSeparado.classList.add('btn-outline-secondary');
+            
+            // Actualizar título
+            chartTitle.innerHTML = '<i class="bi bi-bar-chart-fill me-2"></i>Ventas Consolidadas por Día (Últimos 30 días)';
+            
+        } else {
+            // Mostrar gráficos separados
+            consolidadoContainer.style.display = 'none';
+            separadosContainer.style.display = 'flex';
+            
+            // Actualizar botones
+            btnSeparado.classList.remove('btn-outline-secondary');
+            btnSeparado.classList.add('btn-primary');
+            btnConsolidado.classList.remove('btn-primary');
+            btnConsolidado.classList.add('btn-outline-primary');
+            
+            // Actualizar título
+            chartTitle.innerHTML = '<i class="bi bi-layers me-2"></i>Ventas por Tipo (Últimos 30 días)';
+            
+            // Redimensionar gráficos separados después de mostrarlos
+            setTimeout(() => {
+                if (portabilidadChart) portabilidadChart.resize();
+                if (prepagoChart) prepagoChart.resize();
+                if (upgradeChart) upgradeChart.resize();
+            }, 100);
+        }
+    }
 </script>
 {% endblock %}

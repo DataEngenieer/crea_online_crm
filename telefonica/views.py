@@ -13,6 +13,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 import json
+from datetime import datetime
 
 from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, ClientesUpgrade, ClientesPrePos, GestionAsesor, GestionBackoffice, Planes_portabilidad, Agendamiento, GestionAgendamiento, Comision, ESTADO_AGENDAMIENTO_CHOICES
 from .forms import (
@@ -41,48 +42,72 @@ def dashboard(request):
     es_backoffice = user.groups.filter(name='backoffice').exists()
     es_admin = user.groups.filter(name__iexact='Administrador').exists()
 
-    # Obtener datos para el gráfico de ventas por día
+    # Obtener datos para los gráficos de ventas por día
     from django.db.models import Count
     from django.db.models.functions import TruncDate
+    from collections import defaultdict
     
     # Obtener las ventas de los últimos 30 días
     fecha_limite = timezone.now() - timezone.timedelta(days=30)
     
-    # Agrupar ventas por día
-    if es_asesor and not es_backoffice and not es_admin and not user.is_superuser:
-        # Para asesores, solo sus ventas
-        ventas_por_dia = VentaPortabilidad.objects.filter(
-            agente=user,
-            fecha_creacion__gte=fecha_limite
-        ).annotate(
-            fecha=TruncDate('fecha_creacion')
-        ).values('fecha').annotate(
-            total=Count('id')
-        ).order_by('fecha')
-    else:
-        # Para backoffice, admin y superusuarios, todas las ventas
-        ventas_por_dia = VentaPortabilidad.objects.filter(
-            fecha_creacion__gte=fecha_limite
-        ).annotate(
+    # Función para obtener ventas por día según el rol del usuario
+    def obtener_ventas_por_dia(modelo, filtro_usuario=None):
+        query = modelo.objects.filter(fecha_creacion__gte=fecha_limite)
+        if filtro_usuario:
+            query = query.filter(agente=filtro_usuario)
+        return query.annotate(
             fecha=TruncDate('fecha_creacion')
         ).values('fecha').annotate(
             total=Count('id')
         ).order_by('fecha')
     
-    # Preparar datos para el gráfico
-    fechas = []
-    totales = []
+    # Determinar filtro de usuario según el rol
+    filtro_usuario = user if (es_asesor and not es_backoffice and not es_admin and not user.is_superuser) else None
     
-    for venta in ventas_por_dia:
-        fechas.append(venta['fecha'].strftime('%d/%m/%Y'))
-        totales.append(venta['total'])
+    # Obtener ventas por tipo
+    ventas_portabilidad_dia = obtener_ventas_por_dia(VentaPortabilidad, filtro_usuario)
+    ventas_prepago_dia = obtener_ventas_por_dia(VentaPrePos, filtro_usuario)
+    ventas_upgrade_dia = obtener_ventas_por_dia(VentaUpgrade, filtro_usuario)
+    
+    # Crear diccionarios para organizar datos por fecha
+    datos_por_fecha = defaultdict(lambda: {'portabilidad': 0, 'prepago': 0, 'upgrade': 0, 'total': 0})
+    
+    # Procesar ventas de portabilidad
+    for venta in ventas_portabilidad_dia:
+        fecha_str = venta['fecha'].strftime('%d/%m/%Y')
+        datos_por_fecha[fecha_str]['portabilidad'] = venta['total']
+        datos_por_fecha[fecha_str]['total'] += venta['total']
+    
+    # Procesar ventas de prepago
+    for venta in ventas_prepago_dia:
+        fecha_str = venta['fecha'].strftime('%d/%m/%Y')
+        datos_por_fecha[fecha_str]['prepago'] = venta['total']
+        datos_por_fecha[fecha_str]['total'] += venta['total']
+    
+    # Procesar ventas de upgrade
+    for venta in ventas_upgrade_dia:
+        fecha_str = venta['fecha'].strftime('%d/%m/%Y')
+        datos_por_fecha[fecha_str]['upgrade'] = venta['total']
+        datos_por_fecha[fecha_str]['total'] += venta['total']
+    
+    # Preparar datos para los gráficos (ordenados por fecha)
+    fechas_ordenadas = sorted(datos_por_fecha.keys(), key=lambda x: datetime.strptime(x, '%d/%m/%Y'))
+    
+    fechas = fechas_ordenadas
+    totales = [datos_por_fecha[fecha]['total'] for fecha in fechas_ordenadas]
+    portabilidad_totales = [datos_por_fecha[fecha]['portabilidad'] for fecha in fechas_ordenadas]
+    prepago_totales = [datos_por_fecha[fecha]['prepago'] for fecha in fechas_ordenadas]
+    upgrade_totales = [datos_por_fecha[fecha]['upgrade'] for fecha in fechas_ordenadas]
     
     context = {
         'es_asesor': es_asesor,
         'es_backoffice': es_backoffice,
         'ventas_recientes': VentaPortabilidad.objects.none(), # Default empty queryset
         'fechas_ventas': json.dumps(fechas),
-        'totales_ventas': json.dumps(totales)
+        'totales_ventas': json.dumps(totales),
+        'portabilidad_ventas': json.dumps(portabilidad_totales),
+        'prepago_ventas': json.dumps(prepago_totales),
+        'upgrade_ventas': json.dumps(upgrade_totales)
     }
 
     # --- Lógica para Asesores ---

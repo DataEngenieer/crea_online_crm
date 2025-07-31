@@ -553,18 +553,64 @@ class AuditoriaCreateView(CalidadBaseView, CreateView):
                 audio_file = self.request.FILES.get('audio')
                 if audio_file:
                     print(f"Archivo recibido: {audio_file.name}, tamaño: {audio_file.size} bytes")
-                    speech.audio = audio_file
+                    
+                    # En producción, subir directamente a MinIO sin guardar localmente
+                    from django.conf import settings
+                    import os
+                    
+                    # Verificar si estamos en producción (Railway)
+                    is_production = not settings.DEBUG or os.getenv('RAILWAY_ENVIRONMENT') is not None
+                    print(f"Entorno de producción detectado: {is_production}")
+                    
+                    if is_production:
+                        print("[PRODUCCIÓN] Subiendo archivo directamente a MinIO...")
+                        # Subir directamente a MinIO sin guardar localmente
+                        from .utils.minio_utils import subir_a_minio
+                        
+                        # Generar nombre personalizado basado en la auditoría
+                        nombre_personalizado = f"auditoria_{self.object.id}_audio_{speech.id if speech.id else 'temp'}"
+                        
+                        # Subir archivo a MinIO
+                        resultado = subir_a_minio(
+                            archivo=audio_file,
+                            nombre_personalizado=nombre_personalizado,
+                            carpeta="audios",
+                            bucket_type="MINIO_BUCKET_NAME_LLAMADAS"
+                        )
+                        
+                        if resultado['success']:
+                            print(f"[PRODUCCIÓN] ✅ Archivo subido exitosamente a MinIO: {resultado['url']}")
+                            # Configurar los campos de MinIO en el modelo
+                            speech.minio_url = resultado['url']
+                            speech.minio_object_name = resultado['object_name']
+                            speech.subido_a_minio = True
+                            # No asignar el archivo local, solo los datos de MinIO
+                            speech.audio = None
+                        else:
+                            print(f"[PRODUCCIÓN] ❌ Error al subir a MinIO: {resultado.get('error', 'Error desconocido')}")
+                            return self.form_invalid(form)
+                    else:
+                        print("[DESARROLLO] Guardando archivo localmente...")
+                        # En desarrollo, usar el flujo normal
+                        speech.audio = audio_file
                 else:
                     print("Error: No se pudo obtener el archivo de audio del request")
                     return self.form_invalid(form)
                 
-                # Guardar el modelo para que el archivo se guarde en el sistema de archivos
+                # Guardar el modelo
                 speech.save()
                 
-                # Verificar que el archivo se guardó correctamente
-                if not speech.audio or not speech.audio.name:
-                    print("Error crítico: El archivo no se guardó correctamente en el modelo")
-                    return self.form_invalid(form)
+                # Verificar que el proceso fue exitoso
+                if not is_production:
+                    # En desarrollo, verificar que el archivo se guardó localmente
+                    if not speech.audio or not speech.audio.name:
+                        print("Error crítico: El archivo no se guardó correctamente en el modelo")
+                        return self.form_invalid(form)
+                else:
+                    # En producción, verificar que se subió a MinIO
+                    if not speech.subido_a_minio or not speech.minio_url:
+                        print("Error crítico: El archivo no se subió correctamente a MinIO")
+                        return self.form_invalid(form)
                 
                 # ===== PRINTS PARA VERIFICAR RUTA REAL DE GUARDADO =====
                 print(f"\n=== INFORMACIÓN DE GUARDADO DE ARCHIVO ===")
@@ -632,304 +678,255 @@ class AuditoriaCreateView(CalidadBaseView, CreateView):
                 # Guardar nuevamente para asegurar que los campos se actualicen
                 speech.save()
                 
-                # Verificar que el archivo existe y es accesible
-                if hasattr(speech.audio, 'path') and os.path.exists(speech.audio.path):
-                    print(f"Archivo de audio guardado correctamente en: {speech.audio.path}")
-                    print(f"Tamaño del archivo: {os.path.getsize(speech.audio.path) / (1024 * 1024):.2f} MB")
+                # Verificar que el archivo está disponible (local o MinIO)
+                if is_production:
+                    if speech.subido_a_minio and speech.minio_url:
+                        print(f"Archivo de audio disponible en MinIO: {speech.minio_url}")
+                    else:
+                        print("Advertencia: No se pudo verificar el archivo de audio en MinIO")
                 else:
-                    print(f"Advertencia: No se pudo verificar el archivo de audio en: {getattr(speech.audio, 'path', 'Ruta no disponible')}")
+                    if hasattr(speech.audio, 'path') and os.path.exists(speech.audio.path):
+                        print(f"Archivo de audio guardado correctamente en: {speech.audio.path}")
+                        print(f"Tamaño del archivo: {os.path.getsize(speech.audio.path) / (1024 * 1024):.2f} MB")
+                    else:
+                        print(f"Advertencia: No se pudo verificar el archivo de audio en: {getattr(speech.audio, 'path', 'Ruta no disponible')}")
                 
                 # Las importaciones ya están en el ámbito global
 
-                def procesar_speech_en_background(speech_obj, audio_path, auditoria_id, temp_dir=None):
+                def procesar_speech_en_background(speech_obj, auditoria_id, is_production=False):
                     """
                     Orquesta todo el proceso de Speech Analytics en un hilo separado.
+                    Maneja tanto archivos locales como de MinIO.
                     """
                     print(f"[Auditoría {auditoria_id}] 🚀 Hilo de procesamiento iniciado.")
+                    print(f"[Auditoría {auditoria_id}] Modo producción: {is_production}")
                     
-                    # Obtener la ruta absoluta del archivo de audio
                     import os
+                    import tempfile
+                    import requests
                     from django.conf import settings
                     
-                    # ===== PRINTS PARA VERIFICAR ACCESO AL ARCHIVO EN BACKGROUND =====
-                    print(f"\n=== VERIFICACIÓN DE ARCHIVO EN BACKGROUND ===")
-                    print(f"[Auditoría {auditoria_id}] Audio path recibido: {audio_path}")
-                    print(f"[Auditoría {auditoria_id}] Campo audio del modelo: {speech_obj.audio}")
-                    print(f"[Auditoría {auditoria_id}] Nombre del archivo: {speech_obj.audio.name if speech_obj.audio else 'None'}")
+                    audio_path = None
+                    temp_file_created = False
                     
-                    # Verificar URL del archivo de forma segura
                     try:
-                        if speech_obj.audio and speech_obj.audio.name:
-                            if speech_obj.subido_a_minio and speech_obj.minio_url:
-                                print(f"[Auditoría {auditoria_id}] URL del archivo (MinIO): {speech_obj.minio_url}")
-                            elif hasattr(speech_obj.audio, 'path') and os.path.exists(speech_obj.audio.path):
-                                print(f"[Auditoría {auditoria_id}] URL del archivo (local): {speech_obj.audio.url}")
-                            else:
-                                print(f"[Auditoría {auditoria_id}] URL del archivo: Archivo no disponible localmente")
+                        # ===== OBTENER ARCHIVO DE AUDIO =====
+                        if is_production and speech_obj.subido_a_minio and speech_obj.minio_url:
+                            print(f"[Auditoría {auditoria_id}] 📥 Descargando archivo desde MinIO: {speech_obj.minio_url}")
+                            
+                            # Descargar archivo temporal desde MinIO
+                            response = requests.get(speech_obj.minio_url, stream=True)
+                            response.raise_for_status()
+                            
+                            # Crear archivo temporal
+                            temp_fd, audio_path = tempfile.mkstemp(suffix='.mp3', prefix=f'audio_{auditoria_id}_')
+                            temp_file_created = True
+                            
+                            with os.fdopen(temp_fd, 'wb') as temp_file:
+                                for chunk in response.iter_content(chunk_size=8192):
+                                    temp_file.write(chunk)
+                            
+                            print(f"[Auditoría {auditoria_id}] ✅ Archivo descargado temporalmente: {audio_path}")
+                            print(f"[Auditoría {auditoria_id}] Tamaño del archivo: {os.path.getsize(audio_path) / (1024 * 1024):.2f} MB")
+                            
                         else:
-                            print(f"[Auditoría {auditoria_id}] URL del archivo: No hay archivo asociado")
-                    except ValueError as e:
-                        print(f"[Auditoría {auditoria_id}] Error al obtener URL: {str(e)}")
-                    
-                    # Usar el campo 'audio' del modelo para obtener la ruta correcta
-                    if hasattr(speech_obj.audio, 'path'):
-                        audio_path = speech_obj.audio.path
-                        print(f"[Auditoría {auditoria_id}] Ruta desde speech_obj.audio.path: {audio_path}")
-                    elif not os.path.isabs(audio_path):
-                        # Si la ruta no es absoluta, construirla con MEDIA_ROOT
-                        audio_path = os.path.join(settings.MEDIA_ROOT, audio_path)
-                        print(f"[Auditoría {auditoria_id}] Ruta construida con MEDIA_ROOT: {audio_path}")
-                    
-                    print(f"[Auditoría {auditoria_id}] 📁 Ruta final del audio: {audio_path}")
-                    print(f"[Auditoría {auditoria_id}] MEDIA_ROOT: {settings.MEDIA_ROOT}")
-                    print(f"[Auditoría {auditoria_id}] Directorio padre existe: {os.path.exists(os.path.dirname(audio_path))}")
-                    print(f"[Auditoría {auditoria_id}] Archivo existe: {os.path.exists(audio_path)}")
-                    
-                    if os.path.exists(audio_path):
-                        print(f"[Auditoría {auditoria_id}] Tamaño del archivo: {os.path.getsize(audio_path) / (1024 * 1024):.2f} MB")
-                        print(f"[Auditoría {auditoria_id}] Permisos del archivo: {oct(os.stat(audio_path).st_mode)[-3:]}")
-                    print(f"=== FIN VERIFICACIÓN DE ARCHIVO ===")
-                    
-                    # Verificar que el archivo existe
-                    if not os.path.exists(audio_path):
-                        error_msg = f"[Auditoría {auditoria_id}] ❌ Error: El archivo de audio no existe en la ruta: {audio_path}"
-                        print(error_msg)
-                        speech_obj.resultado_json = {'texto': error_msg}
-                        speech_obj.save()
-                        return
-                    
-                    # Paso 1: Transcripción del audio
-                    try:
-                        print(f"[Auditoría {auditoria_id}] 🎤 Transcribiendo audio...")
-                        resultado_transcripcion = transcribir_audio(audio_path)
-                        print(f"[Auditoría {auditoria_id}] ✅ Transcripción de audio completada.")
-                        
-                        # Paso 2: Guardar JSON de transcripción y formatear texto
-                        texto_formateado = ""
-                        try:
-                            # Extraer el resultado de la transcripción - manejar diferentes formatos posibles
-                            prediccion = resultado_transcripcion
+                            # Modo desarrollo - usar archivo local
+                            print(f"[Auditoría {auditoria_id}] 📁 Usando archivo local")
                             
-                            # Si tiene una estructura anidada dentro de 'resultado', extraerla
-                            if isinstance(resultado_transcripcion, dict):
-                                if 'resultado' in resultado_transcripcion:
-                                    prediccion = resultado_transcripcion['resultado']
-                                    print(f"[Auditoría {auditoria_id}] ℹ️ Usando estructura de resultado anidado")
-                            
-                            if not prediccion:
-                                raise ValueError("No se pudo extraer datos válidos de la transcripción")
-                                
-                            # Debug: Mostrar estructura
-                            if isinstance(prediccion, dict):
-                                print(f"[Auditoría {auditoria_id}] ⚙️ Estructura del JSON: {list(prediccion.keys())}")
+                            # Usar el campo 'audio' del modelo para obtener la ruta correcta
+                            if hasattr(speech_obj.audio, 'path'):
+                                audio_path = speech_obj.audio.path
+                                print(f"[Auditoría {auditoria_id}] Ruta desde speech_obj.audio.path: {audio_path}")
                             else:
-                                print(f"[Auditoría {auditoria_id}] ⚙️ Tipo de predicción: {type(prediccion)}")
-                            
-                            # Crear directorio para transcripciones si no existe
-                            trans_dir = os.path.join(settings.MEDIA_ROOT, 'auditorias', 'transcripciones')
-                            os.makedirs(trans_dir, exist_ok=True)
-                            
-                            # Generar nombre de archivo único
-                            import uuid
-                            unique_id = str(uuid.uuid4())[:8]
-                            json_filename = f'auditoria_{auditoria_id}_{unique_id}.json'
-                            json_path = os.path.join(trans_dir, json_filename)
-                            
-                            # Guardar el JSON de la transcripción
-                            with open(json_path, 'w', encoding='utf-8') as f:
-                                json.dump(prediccion, f, ensure_ascii=False, indent=2)
-                            
-                            # Actualizar el modelo Speech
-                            speech_obj.transcripcion = f'auditorias/transcripciones/{json_filename}'
-                            print(f"[Auditoría {auditoria_id}] 📄 Archivo de transcripción guardado en: {speech_obj.transcripcion}")
-                            
-                            # Formatear el texto de la transcripción - intentar primero con el JSON directo
-                            print(f"[Auditoría {auditoria_id}] 🔄 Procesando transcripción...")
-                            
-                            # Primer intento: formatear directamente desde el objeto predicción
-                            texto_formateado = format_transcript_as_script(prediccion)
-                            
-                            # Si hay algún error, probar con la ruta del archivo como respaldo
-                            if texto_formateado.startswith('[Error') or texto_formateado.startswith('[Advertencia]'):
-                                print(f"[Auditoría {auditoria_id}] ⚠️ Intento directo fallido: {texto_formateado[:100]}...")
-                                print(f"[Auditoría {auditoria_id}] 🔄 Intentando formatear desde el archivo JSON...")
-                                texto_formateado = format_transcript_as_script(json_path)
-                            
-                            # Si todavía hay errores, último intento: extracción directa
-                            if texto_formateado.startswith('[Error') or texto_formateado.startswith('[Advertencia]'):
-                                print(f"[Auditoría {auditoria_id}] ⚠️ Segundo intento fallido. Último intento: extracción directa")
-                                # Intentar extraer el texto directamente de la respuesta
-                                if isinstance(prediccion, dict) and 'output' in prediccion:
-                                    if isinstance(prediccion['output'], str):
-                                        # Si output es una cadena, usarla directamente
-                                        texto_formateado = prediccion['output']
-                                    elif isinstance(prediccion['output'], dict) and 'segments' in prediccion['output']:
-                                        # Si tiene estructura de segmentos, extraer textos
-                                        texto_formateado = " ".join(seg.get("text", "") for seg in prediccion["output"]["segments"])
-                            
-                            # Si después de todos los intentos sigue habiendo error, marcar como fallido
-                            if texto_formateado.startswith('[Error') or texto_formateado.startswith('[Advertencia]') or not texto_formateado.strip():
-                                texto_formateado = "[Error] No se pudo extraer texto válido de la transcripción tras múltiples intentos"
-                                
-                            # Almacenar el resultado y guardar
-                            speech_obj.resultado_json = {'texto': texto_formateado}
-                            print(f"[Auditoría {auditoria_id}] ✅ Transcripción procesada")
-                            
-                            # Debug - imprimir primeros caracteres
-                            preview_length = min(len(texto_formateado), 100)
-                            print(f"[Auditoría {auditoria_id}] 📝 Primeros {preview_length} caracteres:")
-                            print(texto_formateado[:preview_length] + ("..." if len(texto_formateado) > preview_length else ""))
-                            
-                            # Guardar los cambios en la base de datos
-                            speech_obj.save(update_fields=['transcripcion', 'resultado_json', 'fecha_actualizacion'])
-                            print(f"[Auditoría {auditoria_id}] 💾 Modelo actualizado en la base de datos.")
-                            
-                        except Exception as e:
-                            print(f"[Auditoría {auditoria_id}] ⚠️ Error al guardar/formatear: {e}. Intentando extraer texto plano...")
-                            try:
-                                # Intentar extraer el texto directamente del resultado
-                                if isinstance(resultado_transcripcion, dict) and 'output' in resultado_transcripcion and 'segments' in resultado_transcripcion['output']:
-                                    texto_formateado = " ".join(seg["text"] for seg in resultado_transcripcion["output"]["segments"])
-                                    speech_obj.resultado_json = {'texto': texto_formateado}
-                                    speech_obj.save(update_fields=['resultado_json', 'fecha_actualizacion'])
-                                    print(f"[Auditoría {auditoria_id}] ✅ Texto extraído directamente del resultado.")
-                                else:
-                                    raise ValueError("Formato de transcripción inesperado")
-                            except Exception as ex:
-                                error_msg = f"Error extrayendo texto plano: {ex}"
-                                print(f"[Auditoría {auditoria_id}] ❌ {error_msg}")
-                                speech_obj.resultado_json = {'texto': f'[Error: {error_msg}]'}
-                                speech_obj.save(update_fields=['resultado_json', 'fecha_actualizacion'])
+                                error_msg = f"[Auditoría {auditoria_id}] ❌ Error: No se pudo obtener la ruta del archivo de audio"
+                                print(error_msg)
+                                speech_obj.resultado_json = {'texto': error_msg}
+                                speech_obj.save()
                                 return
-                    except Exception as e:
-                        error_msg = f"[Auditoría {auditoria_id}] ❌ Error crítico durante la transcripción: {str(e)}"
-                        print(error_msg)
-                        speech_obj.resultado_json = {'texto': f'Error en transcripción: {str(e)}'}
-                        speech_obj.save()
-                        return
+                            
+                            print(f"[Auditoría {auditoria_id}] 📁 Ruta final del audio: {audio_path}")
+                            
+                            # Verificar que el archivo existe
+                            if not os.path.exists(audio_path):
+                                error_msg = f"[Auditoría {auditoria_id}] ❌ Error: El archivo de audio no existe en la ruta: {audio_path}"
+                                print(error_msg)
+                                speech_obj.resultado_json = {'texto': error_msg}
+                                speech_obj.save()
+                                raise FileNotFoundError(error_msg)
+                            
+                            print(f"[Auditoría {auditoria_id}] Tamaño del archivo: {os.path.getsize(audio_path) / (1024 * 1024):.2f} MB")
+                            print(f"[Auditoría {auditoria_id}] Permisos del archivo: {oct(os.stat(audio_path).st_mode)[-3:]}")
                         
-                    # Ya hemos procesado la transcripción, continuamos con el análisis
-                        
-                        # Generar nombre de archivo único
-                        import uuid
-                        unique_id = str(uuid.uuid4())[:8]
-                        json_filename = f'auditoria_{auditoria_id}_{unique_id}.json'
-                        json_path = os.path.join(trans_dir, json_filename)
-                        
-                        # Guardar el JSON de la transcripción
-                        with open(json_path, 'w', encoding='utf-8') as f:
-                            json.dump(resultado_transcripcion, f, ensure_ascii=False, indent=2)
-                        
-                        # Actualizar el modelo Speech
-                        speech_obj.transcripcion = f'auditorias/transcripciones/{json_filename}'
-                        print(f"[Auditoría {auditoria_id}] 📄 Archivo de transcripción guardado en: {speech_obj.transcripcion}")
-                        
-                        # Formatear el texto de la transcripción - intentar primero con el JSON directo
-                        texto_formateado = format_transcript_as_script(resultado_transcripcion)
-                        # Si hay algún error, probar con la ruta del archivo
-                        if texto_formateado.startswith('[Error') or texto_formateado.startswith('[Advertencia]'):
-                            print(f"[Auditoría {auditoria_id}] ⚠️ Intento directo fallido, probando con archivo...")
-                            texto_formateado = format_transcript_as_script(json_path)
-                        
-                        speech_obj.resultado_json = {'texto': texto_formateado}
-                        print(f"[Auditoría {auditoria_id}] ✅ Transcripción formateada como guion.")
-                        
-                        # Debug - imprimir un fragmento de la transcripción
-                        preview_length = min(len(texto_formateado), 100)
-                        print(f"[Auditoría {auditoria_id}] 📝 Primeros {preview_length} caracteres de la transcripción:")
-                        print(texto_formateado[:preview_length] + ("..." if len(texto_formateado) > preview_length else ""))
-                        
-                        # Guardar los cambios en la base de datos
-                        speech_obj.save(update_fields=['transcripcion', 'resultado_json', 'fecha_actualizacion'])
-                        print(f"[Auditoría {auditoria_id}] 💾 Modelo actualizado en la base de datos.")
-                        
-                    except Exception as e:
-                        print(f"[Auditoría {auditoria_id}] ⚠️ Error al guardar/formatear: {e}. Intentando extraer texto plano...")
+                        # Paso 1: Transcripción del audio
                         try:
-                            # Intentar extraer el texto directamente del resultado
-                            if isinstance(resultado_transcripcion, dict) and 'output' in resultado_transcripcion and 'segments' in resultado_transcripcion['output']:
-                                texto_formateado = " ".join(seg["text"] for seg in resultado_transcripcion["output"]["segments"])
+                            print(f"[Auditoría {auditoria_id}] 🎤 Transcribiendo audio...")
+                            resultado_transcripcion = transcribir_audio(audio_path)
+                            print(f"[Auditoría {auditoria_id}] ✅ Transcripción de audio completada.")
+                        
+                            # Paso 2: Guardar JSON de transcripción y formatear texto
+                            texto_formateado = ""
+                            try:
+                                # Extraer el resultado de la transcripción - manejar diferentes formatos posibles
+                                prediccion = resultado_transcripcion
+                                
+                                # Si tiene una estructura anidada dentro de 'resultado', extraerla
+                                if isinstance(resultado_transcripcion, dict):
+                                    if 'resultado' in resultado_transcripcion:
+                                        prediccion = resultado_transcripcion['resultado']
+                                        print(f"[Auditoría {auditoria_id}] ℹ️ Usando estructura de resultado anidado")
+                                
+                                if not prediccion:
+                                    raise ValueError("No se pudo extraer datos válidos de la transcripción")
+                                    
+                                # Debug: Mostrar estructura
+                                if isinstance(prediccion, dict):
+                                    print(f"[Auditoría {auditoria_id}] ⚙️ Estructura del JSON: {list(prediccion.keys())}")
+                                else:
+                                    print(f"[Auditoría {auditoria_id}] ⚙️ Tipo de predicción: {type(prediccion)}")
+                                
+                                # Crear directorio para transcripciones si no existe
+                                trans_dir = os.path.join(settings.MEDIA_ROOT, 'auditorias', 'transcripciones')
+                                os.makedirs(trans_dir, exist_ok=True)
+                                
+                                # Generar nombre de archivo único
+                                import uuid
+                                unique_id = str(uuid.uuid4())[:8]
+                                json_filename = f'auditoria_{auditoria_id}_{unique_id}.json'
+                                json_path = os.path.join(trans_dir, json_filename)
+                                
+                                # Guardar el JSON de la transcripción
+                                with open(json_path, 'w', encoding='utf-8') as f:
+                                    json.dump(prediccion, f, ensure_ascii=False, indent=2)
+                                
+                                # Actualizar el modelo Speech
+                                speech_obj.transcripcion = f'auditorias/transcripciones/{json_filename}'
+                                print(f"[Auditoría {auditoria_id}] 📄 Archivo de transcripción guardado en: {speech_obj.transcripcion}")
+                                
+                                # Formatear el texto de la transcripción - intentar primero con el JSON directo
+                                print(f"[Auditoría {auditoria_id}] 🔄 Procesando transcripción...")
+                                
+                                # Primer intento: formatear directamente desde el objeto predicción
+                                texto_formateado = format_transcript_as_script(prediccion)
+                                
+                                # Si hay algún error, probar con la ruta del archivo como respaldo
+                                if texto_formateado.startswith('[Error') or texto_formateado.startswith('[Advertencia]'):
+                                    print(f"[Auditoría {auditoria_id}] ⚠️ Intento directo fallido: {texto_formateado[:100]}...")
+                                    print(f"[Auditoría {auditoria_id}] 🔄 Intentando formatear desde el archivo JSON...")
+                                    texto_formateado = format_transcript_as_script(json_path)
+                                
+                                # Si todavía hay errores, último intento: extracción directa
+                                if texto_formateado.startswith('[Error') or texto_formateado.startswith('[Advertencia]'):
+                                    print(f"[Auditoría {auditoria_id}] ⚠️ Segundo intento fallido. Último intento: extracción directa")
+                                    # Intentar extraer el texto directamente de la respuesta
+                                    if isinstance(prediccion, dict) and 'output' in prediccion:
+                                        if isinstance(prediccion['output'], str):
+                                            # Si output es una cadena, usarla directamente
+                                            texto_formateado = prediccion['output']
+                                        elif isinstance(prediccion['output'], dict) and 'segments' in prediccion['output']:
+                                            # Si tiene estructura de segmentos, extraer textos
+                                            texto_formateado = " ".join(seg.get("text", "") for seg in prediccion["output"]["segments"])
+                                
+                                # Si después de todos los intentos sigue habiendo error, marcar como fallido
+                                if texto_formateado.startswith('[Error') or texto_formateado.startswith('[Advertencia]') or not texto_formateado.strip():
+                                    texto_formateado = "[Error] No se pudo extraer texto válido de la transcripción tras múltiples intentos"
+                                    
+                                # Almacenar el resultado y guardar
                                 speech_obj.resultado_json = {'texto': texto_formateado}
-                                update_fields = ['resultado_json', 'fecha_actualizacion']
-                                if speech_obj.transcripcion:  # Si ya se ha definido la ruta de transcripción
-                                    update_fields.append('transcripcion')
-                                speech_obj.save(update_fields=update_fields)
-                                print(f"[Auditoría {auditoria_id}] ✅ Texto extraído directamente del resultado.")
-                            else:
-                                raise ValueError("Formato de transcripción inesperado")
-                        except Exception as ex:
-                            error_msg = f"Error extrayendo texto plano: {ex}"
-                            print(f"[Auditoría {auditoria_id}] ❌ {error_msg}")
-                            speech_obj.resultado_json = {'texto': f'[Error: {error_msg}]'}
-                            speech_obj.save(update_fields=['resultado_json', 'fecha_actualizacion'])
-                            return
-
-                    # Paso 3: Análisis de Calidad con IA
-                    if not texto_formateado or "[Error" in texto_formateado or "[Advertencia]" in texto_formateado:
-                        print(f"[Auditoría {auditoria_id}] 🛑 Análisis de IA omitido por problemas en la transcripción: {texto_formateado[:100]}...")
-                        return
-
-                    print(f"[Auditoría {auditoria_id}] 🧠 Iniciando análisis de calidad con IA...")
-                    try:
-                        analizador = AnalizadorTranscripciones()
-                        # Convertimos texto_formateado a str si no lo es
-                        if not isinstance(texto_formateado, str):
-                            texto_formateado = str(texto_formateado)
-                        analisis_resultado = analizador.evaluar_calidad_llamada(texto_formateado)
-                        speech_obj.analisis_json = analisis_resultado
-                        
-                        if 'error' in analisis_resultado:
-                            print(f"[Auditoría {auditoria_id}] ❌ Error en análisis de IA: {analisis_resultado['error']}")
-                        else:
-                            print(f"[Auditoría {auditoria_id}] ✅ Análisis de IA completado. Autocompletando auditoría...")
-                            autocompletar_auditoria_desde_analisis(speech_obj.auditoria, analisis_resultado)
-
-                    except Exception as e:
-                        print(f"[Auditoría {auditoria_id}] ❌ Fallo crítico en el proceso de análisis de IA: {e}")
-                        speech_obj.analisis_json = {'error': f'Fallo crítico en el proceso de análisis: {str(e)}'}
-                    
-                    # Paso 4: Guardado final
-                    speech_obj.save()
-                    print(f"[Auditoría {auditoria_id}] ✅ Proceso finalizado.")
-                    
-                    # Limpiar directorio temporal si existe
-                    if temp_dir and os.path.exists(temp_dir):
-                        try:
-                            import shutil
-                            shutil.rmtree(temp_dir)
-                            print(f"[Auditoría {auditoria_id}] 🧹 Directorio temporal limpiado: {temp_dir}")
+                                print(f"[Auditoría {auditoria_id}] ✅ Transcripción procesada")
+                                
+                                # Debug - imprimir primeros caracteres
+                                preview_length = min(len(texto_formateado), 100)
+                                print(f"[Auditoría {auditoria_id}] 📝 Primeros {preview_length} caracteres:")
+                                print(texto_formateado[:preview_length] + ("..." if len(texto_formateado) > preview_length else ""))
+                                
+                                # Guardar los cambios en la base de datos
+                                speech_obj.save(update_fields=['transcripcion', 'resultado_json', 'fecha_actualizacion'])
+                                print(f"[Auditoría {auditoria_id}] 💾 Modelo actualizado en la base de datos.")
+                                
+                            except Exception as e:
+                                print(f"[Auditoría {auditoria_id}] ⚠️ Error al guardar/formatear: {e}. Intentando extraer texto plano...")
+                                try:
+                                    # Intentar extraer el texto directamente del resultado
+                                    if isinstance(resultado_transcripcion, dict) and 'output' in resultado_transcripcion and 'segments' in resultado_transcripcion['output']:
+                                        texto_formateado = " ".join(seg["text"] for seg in resultado_transcripcion["output"]["segments"])
+                                        speech_obj.resultado_json = {'texto': texto_formateado}
+                                        speech_obj.save(update_fields=['resultado_json', 'fecha_actualizacion'])
+                                        print(f"[Auditoría {auditoria_id}] ✅ Texto extraído directamente del resultado.")
+                                    else:
+                                        raise ValueError("Formato de transcripción inesperado")
+                                except Exception as ex:
+                                    error_msg = f"Error extrayendo texto plano: {ex}"
+                                    print(f"[Auditoría {auditoria_id}] ❌ {error_msg}")
+                                    speech_obj.resultado_json = {'texto': f'[Error: {error_msg}]'}
+                                    speech_obj.save(update_fields=['resultado_json', 'fecha_actualizacion'])
+                                    raise Exception(error_msg)
                         except Exception as e:
-                            print(f"[Auditoría {auditoria_id}] ⚠️ Error al limpiar directorio temporal: {e}")
+                            error_msg = f"[Auditoría {auditoria_id}] ❌ Error crítico durante la transcripción: {str(e)}"
+                            print(error_msg)
+                            speech_obj.resultado_json = {'texto': f'Error en transcripción: {str(e)}'}
+                            speech_obj.save()
+                            raise Exception(f'Error en transcripción: {str(e)}')
+                        
+                        # Paso 3: Análisis de Calidad con IA
+                        if not texto_formateado or "[Error" in texto_formateado or "[Advertencia]" in texto_formateado:
+                            print(f"[Auditoría {auditoria_id}] 🛑 Análisis de IA omitido por problemas en la transcripción: {texto_formateado[:100]}...")
+                            # Continuar sin análisis de IA pero completar el proceso
+                            speech_obj.save()
+                            print(f"[Auditoría {auditoria_id}] ✅ Proceso finalizado sin análisis de IA.")
+                        else:
+                            print(f"[Auditoría {auditoria_id}] 🧠 Iniciando análisis de calidad con IA...")
+                            try:
+                                analizador = AnalizadorTranscripciones()
+                                # Convertimos texto_formateado a str si no lo es
+                                if not isinstance(texto_formateado, str):
+                                    texto_formateado = str(texto_formateado)
+                                analisis_resultado = analizador.evaluar_calidad_llamada(texto_formateado)
+                                speech_obj.analisis_json = analisis_resultado
+                                
+                                if 'error' in analisis_resultado:
+                                    print(f"[Auditoría {auditoria_id}] ❌ Error en análisis de IA: {analisis_resultado['error']}")
+                                else:
+                                    print(f"[Auditoría {auditoria_id}] ✅ Análisis de IA completado. Autocompletando auditoría...")
+                                    autocompletar_auditoria_desde_analisis(speech_obj.auditoria, analisis_resultado)
 
-                # Crear una copia del archivo para procesamiento en segundo plano
-                import shutil
-                import tempfile
-                
-                # Crear archivo temporal para evitar bloqueos
-                temp_dir = tempfile.mkdtemp()
-                temp_file_path = os.path.join(temp_dir, f"temp_audio_{speech.id}.mp3")
-                
-                try:
-                    # Copiar el archivo original al temporal
-                    shutil.copy2(speech.audio.path, temp_file_path)
-                    print(f"Archivo copiado a temporal: {temp_file_path}")
-                    
-                    # Procesar usando el archivo temporal
-                    threading.Thread(target=procesar_speech_en_background, args=(speech, temp_file_path, self.object.id, temp_dir)).start()
-                except Exception as e:
-                    print(f"Error al crear archivo temporal: {e}")
-                    # Fallback al método original
-                    threading.Thread(target=procesar_speech_en_background, args=(speech, speech.audio.path, self.object.id, None)).start()
-                messages.success(self.request, 'Auditoría Speech guardada. El audio será procesado en segundo plano. Recargue el detalle en unos minutos para ver la transcripción.')
-            else:
-                error_msg = 'Debes adjuntar un archivo de audio válido.'
-                print(f"Error en el formulario de Speech: {error_msg}")
-                print(f"Errores del formulario: {speech_form.errors}")
-                print(f"Archivos recibidos: {self.request.FILES}")
-                messages.error(self.request, error_msg)
-                return self.form_invalid(form)
+                            except Exception as e:
+                                print(f"[Auditoría {auditoria_id}] ❌ Fallo crítico en el proceso de análisis de IA: {e}")
+                                speech_obj.analisis_json = {'error': f'Fallo crítico en el proceso de análisis: {str(e)}'}
+                            
+                            # Paso 4: Guardado final
+                            speech_obj.save()
+                            print(f"[Auditoría {auditoria_id}] ✅ Proceso finalizado.")
+                        
+                    except Exception as e:
+                        error_msg = f"[Auditoría {auditoria_id}] ❌ Error crítico en el procesamiento: {str(e)}"
+                        print(error_msg)
+                        speech_obj.resultado_json = {'texto': f'Error crítico: {str(e)}'}
+                        speech_obj.save()
+                        
+                    finally:
+                        # Limpiar archivo temporal si se creó uno
+                        if temp_file_created and audio_path and os.path.exists(audio_path):
+                            try:
+                                os.unlink(audio_path)
+                                print(f"[Auditoría {auditoria_id}] 🧹 Archivo temporal limpiado: {audio_path}")
+                            except Exception as e:
+                                print(f"[Auditoría {auditoria_id}] ⚠️ Error al limpiar archivo temporal: {e}")
+
+            # Determinar si estamos en producción
+            is_production = os.environ.get('RAILWAY_ENVIRONMENT') is not None
+            
+            # Iniciar procesamiento en segundo plano
+            threading.Thread(target=procesar_speech_en_background, args=(speech, self.object.id, is_production)).start()
+            messages.success(self.request, 'Auditoría Speech guardada. El audio será procesado en segundo plano. Recargue el detalle en unos minutos para ver la transcripción.')
         else:
-            # Procesar las respuestas de los indicadores
+            error_msg = 'Debes adjuntar un archivo de audio válido.'
+            print(f"Error en el formulario de Speech: {error_msg}")
+            print(f"Errores del formulario: {speech_form.errors}")
+            print(f"Archivos recibidos: {self.request.FILES}")
+            messages.error(self.request, error_msg)
+            return self.form_invalid(form)
+        
+        # Procesar las respuestas de los indicadores
             indicadores = MatrizCalidad.objects.filter(activo=True)
             from .models import DetalleAuditoria
             self.object.respuestas.all().delete()

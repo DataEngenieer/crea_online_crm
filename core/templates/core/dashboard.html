@@ -208,7 +208,7 @@
                 <div class="card-body">
                     <h6 class="card-title">CARTERA TOTAL</h6>
                     <div class="d-flex justify-content-between align-items-center">
-                        <div class="card-value">${{ cartera_total|intcomma }}</div>
+                        <div class="card-value">${{ cartera_total|floatformat:0|intcomma }}</div>
                         <div class="bg-soft-success rounded p-2">
                             <i class="fas fa-wallet fa-2x text-success"></i>
                         </div>
@@ -226,7 +226,7 @@
                 <div class="card-body">
                     <h6 class="card-title">TOTAL COMPROMISOS</h6>
                     <div class="d-flex justify-content-between align-items-center">
-                        <div class="card-value">${{ total_compromisos|intcomma }}</div>
+                        <div class="card-value">${{ total_compromisos|floatformat:0|intcomma }}</div>
                         <div class="bg-soft-warning rounded p-2">
                             <i class="fas fa-handshake fa-2x text-warning"></i>
                         </div>
@@ -244,7 +244,7 @@
                 <div class="card-body">
                     <h6 class="card-title">PAGOS ESTE MES</h6>
                     <div class="d-flex justify-content-between align-items-center">
-                        <div class="card-value">${{ pagos_este_mes|intcomma|default:"0" }}</div>
+                        <div class="card-value">${{ pagos_este_mes|floatformat:0|intcomma|default:"0" }}</div>
                         <div class="bg-soft-purple rounded p-2">
                             <i class="fas fa-money-bill-wave fa-2x" style="color: #9c27b0;"></i>
                         </div>
@@ -262,7 +262,7 @@
                 <div class="card-body">
                     <h6 class="card-title">TOTAL PAGOS</h6>
                     <div class="d-flex justify-content-between align-items-center">
-                        <div class="card-value">${{ total_pagos_historico|intcomma|default:"0" }}</div>
+                        <div class="card-value">${{ total_pagos_historico|floatformat:0|intcomma|default:"0" }}</div>
                         <div class="bg-soft-success rounded p-2">
                             <i class="fas fa-chart-line fa-2x text-success"></i>
                         </div>
