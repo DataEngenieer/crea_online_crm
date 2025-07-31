@@ -1,6 +1,7 @@
 import json
 import os
 import threading
+import logging
 from datetime import datetime
 
 from django.shortcuts import render, redirect, get_object_or_404, HttpResponseRedirect
@@ -602,7 +603,11 @@ class AuditoriaCreateView(CalidadBaseView, CreateView):
                 from django.conf import settings
                 print(f"MEDIA_ROOT configurado: {settings.MEDIA_ROOT}")
                 print(f"MEDIA_URL configurado: {settings.MEDIA_URL}")
-                print(f"DEBUG activado: {settings.DEBUG}")
+                
+                # Log de información de DEBUG solo en desarrollo
+                if settings.DEBUG:
+                    logger = logging.getLogger(__name__)
+                    logger.info(f"DEBUG activado: {settings.DEBUG}")
                 
                 # Verificar si el directorio de medios existe
                 media_audio_dir = os.path.join(settings.MEDIA_ROOT, 'auditorias', 'audio')

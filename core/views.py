@@ -48,6 +48,8 @@ import json
 import os
 import re
 import pandas as pd
+import logging
+from django.conf import settings
 
 from .utils import determinar_estado_cliente
 from .models import Cliente, Gestion, AcuerdoPago, CuotaAcuerdo, LoginUser, Campana
@@ -766,8 +768,11 @@ def clientes(request):
         
     except Exception as e:
         import traceback
-        print(f"Error en vista clientes: {e}")
-        print(traceback.format_exc())
+        # Log de error solo en desarrollo
+        if settings.DEBUG:
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error en vista clientes: {e}")
+            logger.error(traceback.format_exc())
         # Devolver una página de error sencilla
         return HttpResponse(f"<h1>Error al cargar la página de clientes</h1><p>{e}</p>")
 
@@ -815,7 +820,10 @@ def crear_cliente_view(request):
 @login_required
 def agregar_gestion_cliente(request, documento_cliente):
     cliente = get_object_or_404(Cliente, documento=documento_cliente)
-    print(f"Cliente en vista (antes de formulario): {cliente}, Tipo: {type(cliente)}") # <--- AÑADA ESTA LÍNEA
+    # Log de depuración solo en desarrollo
+    if settings.DEBUG:
+        logger = logging.getLogger(__name__)
+        logger.info(f"Cliente en vista (antes de formulario): {cliente}, Tipo: {type(cliente)}")
     if request.method == 'POST':
         form = GestionForm(request.POST or None, cliente_instance=cliente)
         if form.is_valid():
@@ -1223,9 +1231,12 @@ def api_seguimientos_proximos(request):
     fecha_actual = ahora.date()
     
     # Log para depuración de zona horaria
-    print(f"DEBUG: Zona horaria del servidor: {timezone.get_current_timezone()}")
-    print(f"DEBUG: Hora UTC: {timezone.now()}")
-    print(f"DEBUG: Hora local (Bogotá): {ahora}")
+    # Log de información de zona horaria solo en desarrollo
+    if settings.DEBUG:
+        logger = logging.getLogger(__name__)
+        logger.info(f"Zona horaria del servidor: {timezone.get_current_timezone()}")
+        logger.info(f"Hora UTC: {timezone.now()}")
+        logger.info(f"Hora local (Bogotá): {ahora}")
     
     # Crear una ventana de tiempo más amplia (30 minutos) para capturar seguimientos próximos
     limite_tiempo = (ahora + timezone.timedelta(minutes=30)).time()
@@ -1234,9 +1245,11 @@ def api_seguimientos_proximos(request):
     # También considerar seguimientos del día anterior que no se hayan completado
     ayer = fecha_actual - timezone.timedelta(days=1)
     
-    # Log de depuración
-    print(f"DEBUG: Buscando seguimientos próximos a las {ahora.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"DEBUG: Hora actual: {hora_actual}, Límite: {limite_tiempo}")
+    # Log de depuración solo en desarrollo
+    if settings.DEBUG:
+        logger = logging.getLogger(__name__)
+        logger.info(f"Buscando seguimientos próximos a las {ahora.strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info(f"Hora actual: {hora_actual}, Límite: {limite_tiempo}")
     
     # Filtrar seguimientos pendientes (de hoy o de ayer) que no estén completados
     seguimientos_pendientes = Gestion.objects.filter(
@@ -1245,16 +1258,20 @@ def api_seguimientos_proximos(request):
         fecha_proximo_seguimiento__in=[fecha_actual, ayer]
     )
     
-    # Log de depuración para ver cuántos seguimientos pendientes hay en total
-    print(f"DEBUG: Total de seguimientos pendientes encontrados: {seguimientos_pendientes.count()}")
-    for seg in seguimientos_pendientes:
-        print(f"DEBUG: Seguimiento ID {seg.id}, Cliente: {seg.cliente.nombre_completo}, "  
-              f"Fecha: {seg.fecha_proximo_seguimiento}, Hora: {seg.hora_proximo_seguimiento or 'No especificada'}, "  
-              f"Usuario: {seg.usuario_gestion.username}")
+    # Log de depuración para ver cuántos seguimientos pendientes hay en total (solo en desarrollo)
+    if settings.DEBUG:
+        logger = logging.getLogger(__name__)
+        logger.info(f"Total de seguimientos pendientes encontrados: {seguimientos_pendientes.count()}")
+        for seg in seguimientos_pendientes:
+            logger.info(f"Seguimiento ID {seg.id}, Cliente: {seg.cliente.nombre_completo}, "
+                       f"Fecha: {seg.fecha_proximo_seguimiento}, Hora: {seg.hora_proximo_seguimiento or 'No especificada'}, "
+                       f"Usuario: {seg.usuario_gestion.username}")
     
     # Filtrar por usuario actual
     seguimientos_usuario = seguimientos_pendientes.filter(usuario_gestion=request.user)
-    print(f"DEBUG: Seguimientos asignados al usuario actual: {seguimientos_usuario.count()}")
+    if settings.DEBUG:
+        logger = logging.getLogger(__name__)
+        logger.info(f"Seguimientos asignados al usuario actual: {seguimientos_usuario.count()}")
     
     # Filtrar por hora si está disponible o incluir todos si no tienen hora específica
     seguimientos_a_notificar = []
@@ -1267,21 +1284,29 @@ def api_seguimientos_proximos(request):
                 # Incluir si la hora está dentro de la ventana de 30 minutos
                 if hora_actual <= seguimiento.hora_proximo_seguimiento <= limite_tiempo:
                     incluir = True
-                    print(f"DEBUG: Incluyendo seguimiento ID {seguimiento.id} - hora dentro de ventana")
+                    if settings.DEBUG:
+                        logger = logging.getLogger(__name__)
+                        logger.info(f"Incluyendo seguimiento ID {seguimiento.id} - hora dentro de ventana")
                 # MODIFICACIÓN: Incluir también si la hora ya pasó (seguimientos pendientes de hoy)
                 elif hora_actual > seguimiento.hora_proximo_seguimiento:
                     incluir = True
-                    print(f"DEBUG: Incluyendo seguimiento ID {seguimiento.id} - hora ya pasó hoy")
+                    if settings.DEBUG:
+                        logger = logging.getLogger(__name__)
+                        logger.info(f"Incluyendo seguimiento ID {seguimiento.id} - hora ya pasó hoy")
             else:
                 # Si no tiene hora específica, incluirlo durante todo el día
                 incluir = True
-                print(f"DEBUG: Incluyendo seguimiento ID {seguimiento.id} - sin hora específica")
+                if settings.DEBUG:
+                    logger = logging.getLogger(__name__)
+                    logger.info(f"Incluyendo seguimiento ID {seguimiento.id} - sin hora específica")
         
         # Si es de ayer y no se atendió
         elif seguimiento.fecha_proximo_seguimiento == ayer:
             # Incluir seguimientos de ayer que no se atendieron
             incluir = True
-            print(f"DEBUG: Incluyendo seguimiento ID {seguimiento.id} - de ayer sin atender")
+            if settings.DEBUG:
+                logger = logging.getLogger(__name__)
+                logger.info(f"Incluyendo seguimiento ID {seguimiento.id} - de ayer sin atender")
         
         if incluir:
             seguimientos_a_notificar.append(seguimiento)
@@ -1307,7 +1332,9 @@ def api_seguimientos_proximos(request):
             'estado': estado
         })
     
-    print(f"DEBUG: Total de seguimientos a notificar: {len(seguimientos_data)}")
+    if settings.DEBUG:
+        logger = logging.getLogger(__name__)
+        logger.info(f"Total de seguimientos a notificar: {len(seguimientos_data)}")
     
     # Crear la respuesta con los datos y agregar encabezados CORS
     response = JsonResponse({
@@ -1440,7 +1467,10 @@ def carga_clientes(request):
 
             registros = df_procesado.to_dict('records')
             
-            print(f"[DEBUG] Iniciando procesamiento de {len(registros)} registros del archivo.")
+            # Log de procesamiento solo en desarrollo
+            if settings.DEBUG:
+                logger = logging.getLogger(__name__)
+                logger.info(f"Iniciando procesamiento de {len(registros)} registros del archivo.")
 
             for idx, registro_original in enumerate(registros):
                 registro = registro_original.copy()
@@ -1463,7 +1493,10 @@ def carga_clientes(request):
                 
                 referencia_para_db = referencia_actual if referencia_actual else None
 
-                print(f"[DEBUG] Fila {idx + 2}: Intentando update_or_create para Documento='{documento}', Referencia='{referencia_para_db}'")
+                # Log de procesamiento de fila solo en desarrollo
+                if settings.DEBUG:
+                    logger = logging.getLogger(__name__)
+                    logger.info(f"Fila {idx + 2}: Intentando update_or_create para Documento='{documento}', Referencia='{referencia_para_db}'")
 
                 try:
                     cliente, created = Cliente.objects.update_or_create(

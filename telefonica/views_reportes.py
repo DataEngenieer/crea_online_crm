@@ -3,11 +3,13 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponse
 from django.utils import timezone
+from django.conf import settings
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 from datetime import datetime, timedelta
 import pandas as pd
+import logging
 
 from .models import (
     VentaPortabilidad, VentaPrePos, VentaUpgrade, 
@@ -253,7 +255,10 @@ def reportes(request):
             total_registros = queryset.count()
             datos = list(queryset[:100])
         
-        print(f"Total de registros encontrados: {total_registros}")
+        # Log de registros solo en desarrollo
+        if settings.DEBUG:
+            logger = logging.getLogger(__name__)
+            logger.info(f"Total de registros encontrados: {total_registros}")
         
     except Exception as e:
         print(f"Error al obtener datos: {e}")

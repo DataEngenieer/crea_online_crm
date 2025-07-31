@@ -3,11 +3,13 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponse
 from django.utils import timezone
+from django.conf import settings
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 from datetime import datetime, timedelta
 import pandas as pd
+import logging
 
 from .models import Cliente, Gestion, AcuerdoPago, CuotaAcuerdo
 
@@ -192,8 +194,11 @@ def reportes(request):
                 fecha_registro__range=[fecha_ini, fecha_fin_obj]
             )
             
-            print(f"Filtrando clientes por fecha: {fecha_ini} a {fecha_fin_obj}")
-            print(f"Total de clientes encontrados: {clientes.count()}")
+            # Log de filtrado solo en desarrollo
+            if settings.DEBUG:
+                logger = logging.getLogger(__name__)
+                logger.info(f"Filtrando clientes por fecha: {fecha_ini} a {fecha_fin_obj}")
+                logger.info(f"Total de clientes encontrados: {clientes.count()}")
             
         context['datos'] = clientes[:100]  # Limitar a 100 registros para la vista previa
         context['total_registros'] = clientes.count()
@@ -214,8 +219,14 @@ def reportes(request):
                 fecha_hora_gestion__range=[fecha_ini, fecha_fin_obj]
             )
             
-            print(f"Filtrando gestiones por fecha: {fecha_ini} a {fecha_fin_obj}")
-            print(f"Total de gestiones encontradas: {gestiones.count()}")
+            # Log de filtrado de gestiones solo en desarrollo
+            if settings.DEBUG:
+                logger = logging.getLogger(__name__)
+                logger.info(f"Filtrando gestiones por fecha: {fecha_ini} a {fecha_fin_obj}")
+            # Log de gestiones solo en desarrollo
+            if settings.DEBUG:
+                logger = logging.getLogger(__name__)
+                logger.info(f"Total de gestiones encontradas: {gestiones.count()}")
             
         context['datos'] = gestiones[:100]
         context['total_registros'] = gestiones.count()
@@ -236,8 +247,14 @@ def reportes(request):
                 fecha_creacion__range=[fecha_ini, fecha_fin_obj]
             )
             
-            print(f"Filtrando acuerdos por fecha: {fecha_ini} a {fecha_fin_obj}")
-            print(f"Total de acuerdos encontrados: {acuerdos.count()}")
+            # Log de filtrado de acuerdos solo en desarrollo
+            if settings.DEBUG:
+                logger = logging.getLogger(__name__)
+                logger.info(f"Filtrando acuerdos por fecha: {fecha_ini} a {fecha_fin_obj}")
+            # Log de acuerdos solo en desarrollo
+            if settings.DEBUG:
+                logger = logging.getLogger(__name__)
+                logger.info(f"Total de acuerdos encontrados: {acuerdos.count()}")
             
         context['datos'] = acuerdos[:100]
         context['total_registros'] = acuerdos.count()
@@ -261,8 +278,14 @@ def reportes(request):
                 fecha_pago__range=[fecha_ini, fecha_fin_obj]
             )
             
-            print(f"Filtrando pagos por fecha: {fecha_ini} a {fecha_fin_obj}")
-            print(f"Total de pagos encontrados: {pagos.count()}")
+            # Log de filtrado de pagos solo en desarrollo
+            if settings.DEBUG:
+                logger = logging.getLogger(__name__)
+                logger.info(f"Filtrando pagos por fecha: {fecha_ini} a {fecha_fin_obj}")
+            # Log de pagos solo en desarrollo
+            if settings.DEBUG:
+                logger = logging.getLogger(__name__)
+                logger.info(f"Total de pagos encontrados: {pagos.count()}")
             
         context['datos'] = pagos[:100]
         context['total_registros'] = pagos.count()
@@ -368,8 +391,11 @@ def exportar_excel(request):
                 fecha_registro__range=[fecha_ini, fecha_fin_obj]
             )
             
-            print(f"Filtrando clientes por fecha: {fecha_ini} a {fecha_fin_obj}")
-            print(f"Total de clientes encontrados: {queryset.count()}")
+            # Log de filtrado solo en desarrollo
+            if settings.DEBUG:
+                logger = logging.getLogger(__name__)
+                logger.info(f"Filtrando clientes por fecha: {fecha_ini} a {fecha_fin_obj}")
+                logger.info(f"Total de clientes encontrados: {queryset.count()}")
         
         # Escribir encabezados
         for col_num, campo in enumerate(campos_seleccionados, 1):
@@ -468,7 +494,10 @@ def exportar_excel(request):
             
         queryset = gestiones_con_acuerdos
         
-        print(f"Total de gestiones encontradas: {len(queryset)}")
+        # Log de gestiones solo en desarrollo
+        if settings.DEBUG:
+            logger = logging.getLogger(__name__)
+            logger.info(f"Total de gestiones encontradas: {len(queryset)}")
         
         # Escribir encabezados
         for col_num, campo in enumerate(campos_seleccionados, 1):
