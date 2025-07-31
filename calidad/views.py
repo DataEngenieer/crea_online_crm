@@ -385,6 +385,18 @@ class AuditoriaListView(CalidadBaseView, ListView):
         # Obtener parámetros de filtrado
         params = self.request.GET.copy()
         
+        # Filtro de búsqueda general
+        busqueda = params.get('busqueda', '').strip()
+        if busqueda:
+            queryset = queryset.filter(
+                Q(agente__first_name__icontains=busqueda) |
+                Q(agente__last_name__icontains=busqueda) |
+                Q(evaluador__first_name__icontains=busqueda) |
+                Q(evaluador__last_name__icontains=busqueda) |
+                Q(numero_telefono__icontains=busqueda) |
+                Q(observaciones__icontains=busqueda)
+            )
+        
         # Filtro por agente
         if 'agente' in params and params['agente']:
             queryset = queryset.filter(agente_id=params['agente'])
