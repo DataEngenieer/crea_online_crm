@@ -566,6 +566,28 @@ class AuditoriaCreateView(CalidadBaseView, CreateView):
                         print("[PRODUCCIÓN] Subiendo archivo directamente a MinIO...")
                         # Subir directamente a MinIO sin guardar localmente
                         from .utils.minio_utils import subir_a_minio
+                        from .utils.audio_utils import obtener_duracion_audio, obtener_tamano_archivo_mb
+                        import tempfile
+                        
+                        # Calcular duración y tamaño ANTES de subir a MinIO
+                        # Crear archivo temporal para calcular duración
+                        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
+                            # Escribir el contenido del archivo subido al archivo temporal
+                            for chunk in audio_file.chunks():
+                                temp_file.write(chunk)
+                            temp_file.flush()
+                            
+                            # Calcular duración y tamaño del archivo temporal
+                            print(f"[PRODUCCIÓN] Calculando duración del archivo temporal: {temp_file.name}")
+                            duracion_calculada = obtener_duracion_audio(temp_file.name)
+                            tamano_calculado = obtener_tamano_archivo_mb(temp_file.name)
+                            print(f"[PRODUCCIÓN] Duración calculada: {duracion_calculada}s, Tamaño: {tamano_calculado}MB")
+                            
+                            # Limpiar archivo temporal
+                            os.unlink(temp_file.name)
+                        
+                        # Resetear el puntero del archivo para la subida a MinIO
+                        audio_file.seek(0)
                         
                         # Generar nombre personalizado basado en la auditoría
                         nombre_personalizado = f"auditoria_{self.object.id}_audio_{speech.id if speech.id else 'temp'}"
@@ -584,6 +606,9 @@ class AuditoriaCreateView(CalidadBaseView, CreateView):
                             speech.minio_url = resultado['url']
                             speech.minio_object_name = resultado['object_name']
                             speech.subido_a_minio = True
+                            # Asignar la duración y tamaño calculados previamente
+                            speech.duracion_segundos = duracion_calculada
+                            speech.tamano_archivo_mb = tamano_calculado
                             # No asignar el archivo local, solo los datos de MinIO
                             speech.audio = None
                         else:
@@ -1199,6 +1224,24 @@ class AuditoriaDeleteView(CalidadBaseView, DeleteView):
     
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
+        
+        # Verificar si hay archivos de audio en MinIO que necesitan ser eliminados
+        try:
+            if hasattr(self.object, 'speech') and self.object.speech:
+                speech = self.object.speech
+                if speech.subido_a_minio and speech.minio_object_name:
+                    print(f"[ELIMINACIÓN] Eliminando archivo de MinIO: {speech.minio_object_name}")
+                    resultado_minio = speech.eliminar_de_minio()
+                    if resultado_minio['success']:
+                        print(f"[ELIMINACIÓN] ✅ Archivo eliminado de MinIO exitosamente")
+                    else:
+                        print(f"[ELIMINACIÓN] ⚠️ Error al eliminar archivo de MinIO: {resultado_minio.get('error', 'Error desconocido')}")
+                        # Continuar con la eliminación aunque falle MinIO
+        except Exception as e:
+            print(f"[ELIMINACIÓN] ⚠️ Error al intentar eliminar archivo de MinIO: {str(e)}")
+            # Continuar con la eliminación aunque falle MinIO
+        
+        # Eliminar la auditoría (esto eliminará automáticamente los objetos relacionados por CASCADE)
         self.object.delete()
         
         # Si es una petición AJAX, devolver respuesta JSON
