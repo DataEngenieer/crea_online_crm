@@ -635,15 +635,20 @@ class AuditoriaCreateView(CalidadBaseView, CreateView):
                     print(f"Error al obtener URL del archivo: {str(e)}")
                     print("El campo audio no tiene un archivo asociado correctamente")
                 
-                if hasattr(speech.audio, 'path'):
+                # Verificar información del archivo según el entorno
+                if not is_production and speech.audio and hasattr(speech.audio, 'path'):
                     print(f"Ruta absoluta del archivo: {speech.audio.path}")
                     print(f"Directorio padre: {os.path.dirname(speech.audio.path)}")
                     print(f"Archivo existe: {os.path.exists(speech.audio.path)}")
                     if os.path.exists(speech.audio.path):
                         print(f"Tamaño del archivo: {os.path.getsize(speech.audio.path) / (1024 * 1024):.2f} MB")
                         print(f"Permisos del archivo: {oct(os.stat(speech.audio.path).st_mode)[-3:]}")
+                elif is_production:
+                    print("[PRODUCCIÓN] Archivo almacenado en MinIO, no hay ruta local")
+                    print(f"URL de MinIO: {speech.minio_url}")
+                    print(f"Objeto MinIO: {speech.minio_object_name}")
                 else:
-                    print("El campo audio no tiene atributo 'path'")
+                    print("[DESARROLLO] El campo audio no tiene atributo 'path' o está vacío")
                 
                 # Verificar configuración de MEDIA
                 from django.conf import settings
