@@ -1,0 +1,595 @@
+{% extends 'tarjeta_plata/base_tarjeta_plata.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    /* Estilos para las gráficas mejoradas */
+    .chart-container {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border-radius: 8px;
+        padding: 10px;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .tarjeta-plata-card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    
+    .tarjeta-plata-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+    }
+    
+    .btn-group .btn {
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    
+    .btn-group .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    #graficos-separados .card {
+        transition: all 0.3s ease;
+    }
+    
+    #graficos-separados .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+    }
+    
+    /* Animación para el cambio de vista */
+    #graficos-separados {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Colores específicos para Tarjeta Plata */
+    .border-left-tarjeta-nueva {
+        border-left: 4px solid #ffc107 !important;
+    }
+    
+    .border-left-tarjeta-aceptada {
+        border-left: 4px solid #28a745 !important;
+    }
+    
+    .border-left-tarjeta-rechazada {
+        border-left: 4px solid #dc3545 !important;
+    }
+    
+    .border-left-tarjeta-total {
+        border-left: 4px solid #6f42c1 !important;
+    }
+</style>
+{% endblock %}
+
+{% block contenido_tarjeta_plata %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">
+        <i class="bi bi-credit-card me-2"></i>Dashboard Tarjeta Plata
+    </h1>
+    
+    <div class="row">
+        {% if es_asesor %}
+        <!-- Tarjetas para Asesores -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="tarjeta-plata-card card shadow h-100 py-2 border-left-tarjeta-total">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: #6f42c1;">Mis Ventas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ mis_ventas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-credit-card fa-2x" style="color: #6f42c1;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="tarjeta-plata-card card shadow h-100 py-2 border-left-tarjeta-nueva">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: #ffc107;">Hoy</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ mis_ventas_hoy }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-calendar-day fa-2x" style="color: #ffc107;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="tarjeta-plata-card card shadow h-100 py-2 border-left-tarjeta-aceptada">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: #28a745;">Aceptadas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_aceptadas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle fa-2x" style="color: #28a745;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="tarjeta-plata-card card shadow h-100 py-2 border-left-tarjeta-rechazada">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: #dc3545;">Rechazadas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_rechazadas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-x-circle fa-2x" style="color: #dc3545;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if es_backoffice %}
+        <!-- Tarjetas para Backoffice -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="tarjeta-plata-card card shadow h-100 py-2 border-left-tarjeta-total">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: #6f42c1;">Total Ventas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_ventas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-credit-card fa-2x" style="color: #6f42c1;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="tarjeta-plata-card card shadow h-100 py-2 border-left-tarjeta-nueva">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: #ffc107;">Nuevas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_nuevas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-hourglass-split fa-2x" style="color: #ffc107;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="tarjeta-plata-card card shadow h-100 py-2 border-left-tarjeta-aceptada">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: #28a745;">Aceptadas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_aceptadas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle fa-2x" style="color: #28a745;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="tarjeta-plata-card card shadow h-100 py-2 border-left-tarjeta-rechazada">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: #dc3545;">Rechazadas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ventas_rechazadas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-x-circle fa-2x" style="color: #dc3545;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Panel de control de gráficas -->
+    <div class="card shadow mb-4 tarjeta-plata-card">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary" id="chart-title">
+                <i class="bi bi-bar-chart-fill me-2"></i>Ventas por Día (Últimos 30 días)
+            </h6>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-sm btn-primary" id="btn-consolidado" onclick="toggleChart('consolidado')">
+                    <i class="bi bi-eye"></i> Consolidado
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-separado" onclick="toggleChart('separado')">
+                    <i class="bi bi-layers"></i> Por Estado
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico consolidado de ventas por día -->
+    <div class="card shadow mb-4 tarjeta-plata-card" id="grafico-consolidado">
+        <div class="card-body">
+            <div class="chart-area chart-container" style="position: relative; height:400px; width:100%">
+                <canvas id="ventasConsolidadoChart"></canvas>
+            </div>
+            {% if not fechas_json or fechas_json == '[]' %}
+            <div class="alert alert-info mt-3">
+                {% if es_asesor and not es_backoffice %}
+                    No tienes ventas registradas en los últimos 30 días. 
+                    <a href="{% url 'tarjeta_plata:crear_venta' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Nueva Venta
+                    </a>
+                {% elif es_backoffice %}
+                    No hay ventas registradas en los últimos 30 días.
+                {% else %}
+                    No hay datos de ventas para mostrar en el gráfico.
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Gráficos separados por estado -->
+    <div id="graficos-separados" style="display: none;">
+        <div class="row">
+            <!-- Gráfico de Ventas Nuevas -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow tarjeta-plata-card">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold" style="color: #ffc107;">
+                            <i class="bi bi-hourglass-split me-2"></i>Ventas Nuevas
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-area chart-container" style="position: relative; height:300px; width:100%">
+                            <canvas id="ventasNuevasChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gráfico de Ventas Aceptadas -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow tarjeta-plata-card">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold" style="color: #28a745;">
+                            <i class="bi bi-check-circle me-2"></i>Ventas Aceptadas
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-area chart-container" style="position: relative; height:300px; width:100%">
+                            <canvas id="ventasAceptadasChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <!-- Gráfico de Ventas Rechazadas -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow tarjeta-plata-card">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold" style="color: #dc3545;">
+                            <i class="bi bi-x-circle me-2"></i>Ventas Rechazadas
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-area chart-container" style="position: relative; height:300px; width:100%">
+                            <canvas id="ventasRechazadasChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gráfico de Distribución por Estado -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow tarjeta-plata-card">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="bi bi-pie-chart me-2"></i>Distribución por Estado
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-area chart-container" style="position: relative; height:300px; width:100%">
+                            <canvas id="distribucionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Accesos rápidos -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4 tarjeta-plata-card">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-lightning me-2"></i>Accesos Rápidos
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if es_asesor %}
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'tarjeta_plata:crear_venta' %}" class="btn btn-primary btn-block">
+                                <i class="bi bi-plus-circle me-2"></i>Nueva Venta
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'tarjeta_plata:lista_ventas' %}" class="btn btn-info btn-block">
+                                <i class="bi bi-list-ul me-2"></i>Mis Ventas
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        {% if es_backoffice %}
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'tarjeta_plata:bandeja_nuevas' %}" class="btn btn-warning btn-block">
+                                <i class="bi bi-hourglass-split me-2"></i>Ventas Nuevas
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'tarjeta_plata:bandeja_aceptadas' %}" class="btn btn-success btn-block">
+                                <i class="bi bi-check-circle me-2"></i>Aceptadas
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'tarjeta_plata:lista_clientes' %}" class="btn btn-secondary btn-block">
+                                <i class="bi bi-people me-2"></i>Clientes
+                            </a>
+                        </div>
+                        
+                        {% if user.is_superuser or 'administrador' in user.groups.values_list.name %}
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'tarjeta_plata:reportes' %}" class="btn btn-dark btn-block">
+                                <i class="bi bi-file-earmark-bar-graph me-2"></i>Reportes
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Datos del backend
+    const fechas = {{ fechas_json|safe }};
+    const totales = {{ totales_json|safe }};
+    
+    // Variables para los gráficos
+    let ventasConsolidadoChart;
+    let ventasNuevasChart;
+    let ventasAceptadasChart;
+    let ventasRechazadasChart;
+    let distribucionChart;
+    
+    // Función para alternar entre vistas
+    function toggleChart(tipo) {
+        const consolidado = document.getElementById('grafico-consolidado');
+        const separados = document.getElementById('graficos-separados');
+        const btnConsolidado = document.getElementById('btn-consolidado');
+        const btnSeparado = document.getElementById('btn-separado');
+        const chartTitle = document.getElementById('chart-title');
+        
+        if (tipo === 'consolidado') {
+            consolidado.style.display = 'block';
+            separados.style.display = 'none';
+            btnConsolidado.className = 'btn btn-sm btn-primary';
+            btnSeparado.className = 'btn btn-sm btn-outline-secondary';
+            chartTitle.innerHTML = '<i class="bi bi-bar-chart-fill me-2"></i>Ventas por Día (Últimos 30 días)';
+        } else {
+            consolidado.style.display = 'none';
+            separados.style.display = 'block';
+            btnConsolidado.className = 'btn btn-sm btn-outline-secondary';
+            btnSeparado.className = 'btn btn-sm btn-primary';
+            chartTitle.innerHTML = '<i class="bi bi-layers me-2"></i>Ventas por Estado (Últimos 30 días)';
+            
+            // Cargar datos separados si no están cargados
+            if (!ventasNuevasChart) {
+                cargarGraficosSeparados();
+            }
+        }
+    }
+    
+    // Función para cargar gráficos separados
+    function cargarGraficosSeparados() {
+        fetch('{% url "tarjeta_plata:api_ventas_por_dia" %}')
+            .then(response => response.json())
+            .then(data => {
+                crearGraficosSeparados(data);
+            })
+            .catch(error => console.error('Error:', error));
+    }
+    
+    // Función para crear gráficos separados
+    function crearGraficosSeparados(data) {
+        const colores = {
+            nuevas: '#ffc107',
+            aceptadas: '#28a745',
+            rechazadas: '#dc3545'
+        };
+        
+        // Gráfico de ventas nuevas
+        const ctxNuevas = document.getElementById('ventasNuevasChart').getContext('2d');
+        ventasNuevasChart = new Chart(ctxNuevas, {
+            type: 'line',
+            data: {
+                labels: data.fechas,
+                datasets: [{
+                    label: 'Ventas Nuevas',
+                    data: data.nuevas,
+                    borderColor: colores.nuevas,
+                    backgroundColor: colores.nuevas + '20',
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        // Gráfico de ventas aceptadas
+        const ctxAceptadas = document.getElementById('ventasAceptadasChart').getContext('2d');
+        ventasAceptadasChart = new Chart(ctxAceptadas, {
+            type: 'line',
+            data: {
+                labels: data.fechas,
+                datasets: [{
+                    label: 'Ventas Aceptadas',
+                    data: data.aceptadas,
+                    borderColor: colores.aceptadas,
+                    backgroundColor: colores.aceptadas + '20',
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        // Gráfico de ventas rechazadas
+        const ctxRechazadas = document.getElementById('ventasRechazadasChart').getContext('2d');
+        ventasRechazadasChart = new Chart(ctxRechazadas, {
+            type: 'line',
+            data: {
+                labels: data.fechas,
+                datasets: [{
+                    label: 'Ventas Rechazadas',
+                    data: data.rechazadas,
+                    borderColor: colores.rechazadas,
+                    backgroundColor: colores.rechazadas + '20',
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        // Gráfico de distribución
+        const ctxDistribucion = document.getElementById('distribucionChart').getContext('2d');
+        const totalNuevas = data.nuevas.reduce((a, b) => a + b, 0);
+        const totalAceptadas = data.aceptadas.reduce((a, b) => a + b, 0);
+        const totalRechazadas = data.rechazadas.reduce((a, b) => a + b, 0);
+        
+        distribucionChart = new Chart(ctxDistribucion, {
+            type: 'doughnut',
+            data: {
+                labels: ['Nuevas', 'Aceptadas', 'Rechazadas'],
+                datasets: [{
+                    data: [totalNuevas, totalAceptadas, totalRechazadas],
+                    backgroundColor: [colores.nuevas, colores.aceptadas, colores.rechazadas],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    // Inicializar gráfico consolidado
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('ventasConsolidadoChart').getContext('2d');
+        ventasConsolidadoChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: fechas,
+                datasets: [{
+                    label: 'Ventas por Día',
+                    data: totales,
+                    borderColor: '#6f42c1',
+                    backgroundColor: '#6f42c1' + '20',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

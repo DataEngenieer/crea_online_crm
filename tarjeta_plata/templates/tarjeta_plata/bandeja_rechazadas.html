@@ -1,0 +1,519 @@
+{% extends 'tarjeta_plata/base_tarjeta_plata.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .stats-card {
+        border: none;
+        border-radius: 15px;
+        background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);
+        color: white;
+        transition: transform 0.3s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stats-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .table-container {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .table thead th {
+        background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);
+        color: white;
+        border: none;
+        font-weight: 600;
+        padding: 1rem 0.75rem;
+    }
+    
+    .table tbody tr {
+        transition: all 0.3s ease;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+        transform: scale(1.01);
+    }
+    
+    .badge-rechazada {
+        background: linear-gradient(45deg, #6f42c1 0%, #5a2d91 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-weight: 600;
+    }
+    
+    .btn-action {
+        border-radius: 20px;
+        padding: 0.4rem 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        margin: 0 2px;
+    }
+    
+    .btn-ver {
+        background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-reactivar {
+        background: linear-gradient(45deg, #56ab2f 0%, #a8e6cf 100%);
+        color: white;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .filter-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        border: none;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .quick-actions {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .pagination .page-link {
+        border-radius: 10px;
+        margin: 0 2px;
+        border: none;
+        color: #6f42c1;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(45deg, #6f42c1 0%, #5a2d91 100%);
+        border: none;
+    }
+    
+    .motivo-rechazo {
+        background: #f8f6ff;
+        border-left: 4px solid #6f42c1;
+        padding: 0.5rem;
+        border-radius: 0 8px 8px 0;
+        font-size: 0.85rem;
+    }
+    
+    .alert-rechazo {
+        background: linear-gradient(45deg, #f8f6ff 0%, #f0ebff 100%);
+        border: 1px solid #6f42c1;
+        border-radius: 10px;
+        color: #4a2c7a;
+    }
+</style>
+{% endblock %}
+
+{% block contenido_tarjeta_plata %}
+<div class="container-fluid">
+    <!-- Encabezado -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="mb-2">
+                    <i class="fas fa-times-circle me-3"></i>Ventas Rechazadas
+                </h2>
+                <p class="mb-0 opacity-75">Gestión de ventas rechazadas y motivos de rechazo</p>
+            </div>
+            <div class="text-end">
+                <div class="h4 mb-0">{{ ventas.count }}</div>
+                <small class="opacity-75">Total de ventas</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas Rápidas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stats-icon me-3">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div>
+                        <div class="h4 mb-0">{{ stats.total_rechazadas }}</div>
+                        <small class="opacity-75">Total Rechazadas</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stats-icon me-3">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div>
+                        <div class="h4 mb-0">{{ stats.hoy }}</div>
+                        <small class="opacity-75">Hoy</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stats-icon me-3">
+                        <i class="fas fa-calendar-week"></i>
+                    </div>
+                    <div>
+                        <div class="h4 mb-0">{{ stats.semana }}</div>
+                        <small class="opacity-75">Esta Semana</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stats-icon me-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div>
+                        <div class="h4 mb-0">{{ stats.motivo_principal.count|default:0 }}</div>
+                        <small class="opacity-75">{{ stats.motivo_principal.motivo|default:"Sin datos" }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="quick-actions">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h6 class="mb-2">Acciones Rápidas</h6>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-danger" onclick="filtrarPorTiempo('hoy')">
+                        <i class="fas fa-calendar-day me-2"></i>Hoy
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" onclick="filtrarPorTiempo('semana')">
+                        <i class="fas fa-calendar-week me-2"></i>Esta Semana
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" onclick="filtrarPorTiempo('mes')">
+                        <i class="fas fa-calendar-alt me-2"></i>Este Mes
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="limpiarFiltros()">
+                        <i class="fas fa-times me-2"></i>Limpiar Filtros
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <button type="button" class="btn btn-success" onclick="exportarExcel()">
+                    <i class="fas fa-file-excel me-2"></i>Exportar Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card filter-card mb-4">
+        <div class="card-body">
+            <form method="get" id="filtroForm">
+                <div class="row align-items-end">
+                    <div class="col-md-2">
+                        <label for="fecha_desde" class="form-label">Fecha Desde</label>
+                        <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" value="{{ request.GET.fecha_desde }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="fecha_hasta" class="form-label">Fecha Hasta</label>
+                        <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" value="{{ request.GET.fecha_hasta }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="agente" class="form-label">Agente</label>
+                        <select class="form-select" id="agente" name="agente">
+                            <option value="">Todos los agentes</option>
+                            {% for agente in agentes %}
+                                <option value="{{ agente.id }}" {% if request.GET.agente == agente.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ agente.get_full_name|default:agente.username }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="motivo" class="form-label">Motivo</label>
+                        <select class="form-select" id="motivo" name="motivo">
+                            <option value="">Todos los motivos</option>
+                            <option value="documentos_incompletos" {% if request.GET.motivo == 'documentos_incompletos' %}selected{% endif %}>Documentos incompletos</option>
+                            <option value="datos_incorrectos" {% if request.GET.motivo == 'datos_incorrectos' %}selected{% endif %}>Datos incorrectos</option>
+                            <option value="no_cumple_requisitos" {% if request.GET.motivo == 'no_cumple_requisitos' %}selected{% endif %}>No cumple requisitos</option>
+                            <option value="duplicado" {% if request.GET.motivo == 'duplicado' %}selected{% endif %}>Solicitud duplicada</option>
+                            <option value="otro" {% if request.GET.motivo == 'otro' %}selected{% endif %}>Otro</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="buscar" class="form-label">Buscar</label>
+                        <input type="text" class="form-control" id="buscar" name="buscar" placeholder="Nombre, teléfono, RFC..." value="{{ request.GET.buscar }}">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Ventas -->
+    <div class="table-container">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Contacto</th>
+                        <th>Agente</th>
+                        <th>Fecha Rechazo</th>
+                        <th>Motivo</th>
+                        <th>Observaciones</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for venta in ventas %}
+                    <tr>
+                        <td>
+                            <strong class="text-danger">#{{ venta.id_preap }}</strong>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>{{ venta.nombre }}</strong>
+                                {% if venta.rfc %}
+                                    <br><small class="text-muted">RFC: {{ venta.rfc }}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <i class="fas fa-phone me-1"></i>{{ venta.telefono }}
+                                {% if venta.correo %}
+                                    <br><small class="text-muted"><i class="fas fa-envelope me-1"></i>{{ venta.correo }}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <small>{{ venta.agente.get_full_name|default:venta.agente.username }}</small>
+                        </td>
+                        <td>
+                            <small>{{ venta.fecha_actualizacion|date:"d/m/Y H:i" }}</small>
+                        </td>
+                        <td>
+                            {% if venta.gestion_backoffice %}
+                                <div class="motivo-rechazo">
+                                    <strong>{{ venta.gestion_backoffice.get_motivo_rechazo_display|default:"No especificado" }}</strong>
+                                </div>
+                            {% else %}
+                                <span class="badge bg-secondary">Sin motivo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if venta.gestion_backoffice.observaciones %}
+                                <small class="text-muted">{{ venta.gestion_backoffice.observaciones|truncatechars:50 }}</small>
+                            {% else %}
+                                <small class="text-muted">Sin observaciones</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'tarjeta_plata:detalle_venta' venta.pk %}" class="btn btn-action btn-ver btn-sm" title="Ver Detalle">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if perms.tarjeta_plata.change_ventatarjetaplata %}
+                                    <button type="button" class="btn btn-action btn-reactivar btn-sm" title="Reactivar Venta" onclick="reactivarVenta({{ venta.pk }})">
+                                        <i class="fas fa-redo"></i>
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <h5>No hay ventas rechazadas</h5>
+                                <p>No se encontraron ventas rechazadas con los filtros aplicados.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Paginación -->
+    {% if is_paginated %}
+    <div class="d-flex justify-content-center mt-4">
+        <nav aria-label="Paginación de ventas">
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">{{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal para Reactivar Venta -->
+<div class="modal fade" id="reactivarModal" tabindex="-1" aria-labelledby="reactivarModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reactivarModalLabel">Reactivar Venta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" id="reactivarForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-rechazo">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>¿Está seguro de reactivar esta venta?</strong>
+                        <p class="mb-0 mt-2">La venta volverá al estado "Nueva" y estará disponible para validación nuevamente.</p>
+                    </div>
+                    <div class="mb-3">
+                        <label for="observaciones_reactivacion" class="form-label">Motivo de Reactivación</label>
+                        <textarea class="form-control" id="observaciones_reactivacion" name="observaciones" rows="3" placeholder="Explique el motivo de la reactivación..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Reactivar Venta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    // Auto-envío del formulario de filtros
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('filtroForm');
+        const inputs = form.querySelectorAll('input, select');
+        
+        inputs.forEach(input => {
+            input.addEventListener('change', function() {
+                form.submit();
+            });
+        });
+    });
+    
+    // Funciones de filtrado rápido
+    function filtrarPorTiempo(periodo) {
+        const hoy = new Date();
+        let fechaDesde;
+        
+        switch(periodo) {
+            case 'hoy':
+                fechaDesde = hoy.toISOString().split('T')[0];
+                document.getElementById('fecha_desde').value = fechaDesde;
+                document.getElementById('fecha_hasta').value = fechaDesde;
+                break;
+            case 'semana':
+                fechaDesde = new Date(hoy.setDate(hoy.getDate() - 7)).toISOString().split('T')[0];
+                document.getElementById('fecha_desde').value = fechaDesde;
+                document.getElementById('fecha_hasta').value = new Date().toISOString().split('T')[0];
+                break;
+            case 'mes':
+                fechaDesde = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+                document.getElementById('fecha_desde').value = fechaDesde;
+                document.getElementById('fecha_hasta').value = new Date().toISOString().split('T')[0];
+                break;
+        }
+        
+        document.getElementById('filtroForm').submit();
+    }
+    
+    function limpiarFiltros() {
+        document.getElementById('fecha_desde').value = '';
+        document.getElementById('fecha_hasta').value = '';
+        document.getElementById('agente').value = '';
+        document.getElementById('motivo').value = '';
+        document.getElementById('buscar').value = '';
+        document.getElementById('filtroForm').submit();
+    }
+    
+    function exportarExcel() {
+        const params = new URLSearchParams(window.location.search);
+        params.set('export', 'excel');
+        window.location.href = '{% url "tarjeta_plata:bandeja_rechazadas" %}?' + params.toString();
+    }
+    
+    function reactivarVenta(ventaId) {
+        const form = document.getElementById('reactivarForm');
+        form.action = `/tarjeta-plata/reactivar-venta/${ventaId}/`;
+        
+        const modal = new bootstrap.Modal(document.getElementById('reactivarModal'));
+        modal.show();
+    }
+    
+    // Auto-actualización de estadísticas cada 30 segundos
+    setInterval(function() {
+        fetch('{% url "tarjeta_plata:api_estadisticas" %}')
+            .then(response => response.json())
+            .then(data => {
+                // Actualizar estadísticas sin recargar la página
+                console.log('Estadísticas actualizadas:', data);
+            })
+            .catch(error => console.error('Error al actualizar estadísticas:', error));
+    }, 30000);
+</script>
+{% endblock %}

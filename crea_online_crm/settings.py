@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'chat',
     'telefonica',
     'calidad',  # Módulo de Calidad agregado
+    'tarjeta_plata',  # Módulo de Tarjeta Plata agregado
 ]
 
 MIDDLEWARE = [
@@ -203,7 +204,8 @@ MINIO_BUCKET_NAME = {
 "MINIO_BUCKET_NAME_LLAMADAS":"llamadas-crea-online",
 "MINIO_BUCKET_NAME_TRANSCRIPCIONES":"transcripciones-crea-online",
 "MINIO_BUCKET_NAME_TICKET":"tickets-crea-online",
-"MINIO_BUCKET_NAME_TELEFONICA":"telefonica-crea-online"
+"MINIO_BUCKET_NAME_TELEFONICA":"telefonica-crea-online",
+"MINIO_BUCKET_NAME_TARJETA_PLATA":"tarjeta-plata-crea-online"
 }
 
 

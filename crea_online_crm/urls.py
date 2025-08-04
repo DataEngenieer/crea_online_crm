@@ -24,6 +24,7 @@ urlpatterns = [
     path('telefonica/', include('telefonica.urls')),  # Inclusión de la aplicación Telefónica
     path('tickets/', include('tickets.urls')),  # Inclusión de la aplicación de Tickets
     path('calidad/', include('calidad.urls')),  # Inclusión de la aplicación de Calidad
+    path('tarjeta-plata/', include('tarjeta_plata.urls')),  # Inclusión de la aplicación de Tarjeta Plata
 ]
 
 # Configuración para servir archivos en modo de desarrollo

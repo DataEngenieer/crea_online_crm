@@ -1,0 +1,454 @@
+{% extends 'tarjeta_plata/base_tarjeta_plata.html' %}
+{% load static %}
+
+{% block title %}Reportes Tarjeta Plata - CRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-file-earmark-bar-graph me-2"></i>Reportes Tarjeta Plata
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Formulario para el tipo de reporte (GET) -->
+                    <form method="GET" id="tipoReporteForm" class="mb-3">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label for="tipo_reporte" class="form-label">Tipo de Reporte</label>
+                                <select name="tipo_reporte" id="tipo_reporte" class="form-select" onchange="this.form.submit()">
+                                    {% for valor, etiqueta in tipos_reporte %}
+                                        <option value="{{ valor }}" {% if valor == tipo_reporte %}selected{% endif %}>
+                                            {{ etiqueta }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Formulario principal (POST) -->
+                    <form method="POST" id="filtroForm" class="mb-4">
+                        {% csrf_token %}
+                        <input type="hidden" name="tipo_reporte" value="{{ tipo_reporte }}">
+                        
+                        <!-- Filtros de fecha -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <label for="fecha_inicio" class="form-label">Fecha Inicio</label>
+                                <input type="date" name="fecha_inicio" id="fecha_inicio" class="form-control" value="{{ fecha_inicio }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="fecha_fin" class="form-label">Fecha Fin</label>
+                                <input type="date" name="fecha_fin" id="fecha_fin" class="form-control" value="{{ fecha_fin }}">
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <div class="btn-group" role="group">
+                                    <button type="button" id="seleccionar-todos" class="btn btn-outline-secondary btn-sm">
+                                        <i class="bi bi-check-all me-1"></i> Seleccionar todos
+                                    </button>
+                                    <button type="button" id="deseleccionar-todos" class="btn btn-outline-secondary btn-sm">
+                                        <i class="bi bi-x-circle me-1"></i> Deseleccionar todos
+                                    </button>
+                                </div>
+                                <div class="ms-3">
+                                    <button type="submit" name="accion" value="aplicar" class="btn btn-sm btn-primary me-2 btn-aplicar-filtros">
+                                        <i class="bi bi-funnel me-1"></i> Aplicar Filtros
+                                    </button>
+                                    <button type="submit" name="accion" value="exportar" formaction="{% url 'tarjeta_plata:reportes_exportar' %}" class="btn btn-sm btn-success btn-export">
+                                        <i class="bi bi-file-earmark-excel me-1"></i> Exportar a Excel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Selección de campos -->
+                        {% if campos_disponibles %}
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">
+                                            <i class="bi bi-list-check me-2"></i>Campos a Exportar
+                                            <span class="badge bg-primary ms-2" id="contador-campos">0</span>
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-2">
+                                            {% for campo, etiqueta in campos_disponibles %}
+                                            <div class="col-md-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input campo-exportar" type="checkbox" 
+                                                           name="campos" value="{{ campo }}" id="campo_{{ forloop.counter }}"
+                                                           {% if campo in campos_seleccionados %}checked{% endif %}>
+                                                    <label class="form-check-label" for="campo_{{ forloop.counter }}">
+                                                        {{ etiqueta }}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="card-footer text-end">
+                                        <button type="submit" name="accion" value="aplicar" class="btn btn-primary me-2 btn-aplicar">
+                                            <i class="bi bi-funnel me-1"></i> Aplicar Cambios
+                                        </button>
+                                        <button type="submit" formaction="{% url 'tarjeta_plata:reportes_exportar' %}" class="btn btn-success btn-export">
+                                            <i class="bi bi-file-earmark-excel me-1"></i> Exportar a Excel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </form>
+                    
+                    <!-- Resultados -->
+                    {% if datos %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-table me-2"></i>Vista Previa de Datos
+                                    </h6>
+                                    <div>
+                                        <span class="badge bg-info">{{ total_registros }} registro{{ total_registros|pluralize }}</span>
+                                        {% if mostrando_vista_previa %}
+                                            <span class="badge bg-warning">Mostrando primeros 100</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-striped">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    {% if tipo_reporte == 'ventas' %}
+                                                        <th>ID PreAp</th>
+                                                        <th>Item</th>
+                                                        <th>Nombre</th>
+                                                        <th>INE</th>
+                                                        <th>RFC</th>
+                                                        <th>Teléfono</th>
+                                                        <th>Estado</th>
+                                                        <th>Agente</th>
+                                                        <th>Fecha</th>
+                                                    {% elif tipo_reporte == 'clientes' %}
+                                                        <th>Nombre</th>
+                                                        <th>Teléfono</th>
+                                                        <th>RFC</th>
+                                                        <th>Correo</th>
+                                                        <th>Código Postal</th>
+                                                        <th>Fecha Registro</th>
+                                                    {% elif tipo_reporte == 'gestiones' %}
+                                                        <th>Venta</th>
+                                                        <th>Cliente</th>
+                                                        <th>Estado Anterior</th>
+                                                        <th>Estado Nuevo</th>
+                                                        <th>Backoffice</th>
+                                                        <th>Fecha</th>
+                                                    {% elif tipo_reporte == 'auditorias' %}
+                                                        <th>Venta</th>
+                                                        <th>Cliente</th>
+                                                        <th>Auditor</th>
+                                                        <th>Observaciones</th>
+                                                        <th>Fecha</th>
+                                                    {% endif %}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for item in datos %}
+                                                <tr>
+                                                    {% if tipo_reporte == 'ventas' %}
+                                                        <td>{{ item.id_preap|default:'-' }}</td>
+                                                        <td>{{ item.item|default:'-' }}</td>
+                                                        <td>{{ item.nombre|default:'-' }}</td>
+                                                        <td>{{ item.ine|default:'-' }}</td>
+                                                        <td>{{ item.rfc|default:'-' }}</td>
+                                                        <td>{{ item.telefono|default:'-' }}</td>
+                                                        <td>
+                                                            {% if item.estado_venta == 'nueva' %}
+                                                                <span class="badge bg-warning">Nueva</span>
+                                                            {% elif item.estado_venta == 'aceptada' %}
+                                                                <span class="badge bg-success">Aceptada</span>
+                                                            {% elif item.estado_venta == 'rechazada' %}
+                                                                <span class="badge bg-danger">Rechazada</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ item.agente.get_full_name|default:'-' }}</td>
+                                                        <td>{{ item.fecha_creacion|date:'d/m/Y H:i' }}</td>
+                                                    {% elif tipo_reporte == 'clientes' %}
+                                                        <td>{{ item.nombre_completo|default:'-' }}</td>
+                                                        <td>{{ item.telefono|default:'-' }}</td>
+                                                        <td>{{ item.rfc|default:'-' }}</td>
+                                                        <td>{{ item.correo|default:'-' }}</td>
+                                                        <td>{{ item.codigo_postal|default:'-' }}</td>
+                                                        <td>{{ item.fecha_creacion|date:'d/m/Y H:i' }}</td>
+                                                    {% elif tipo_reporte == 'gestiones' %}
+                                                        <td>{{ item.venta.id_preap|default:item.venta.id }}</td>
+                                                        <td>{{ item.venta.nombre|default:'-' }}</td>
+                                                        <td>
+                                                            {% if item.estado_anterior == 'nueva' %}
+                                                                <span class="badge bg-warning">Nueva</span>
+                                                            {% elif item.estado_anterior == 'aceptada' %}
+                                                                <span class="badge bg-success">Aceptada</span>
+                                                            {% elif item.estado_anterior == 'rechazada' %}
+                                                                <span class="badge bg-danger">Rechazada</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% if item.nuevo_estado == 'nueva' %}
+                                                                <span class="badge bg-warning">Nueva</span>
+                                                            {% elif item.nuevo_estado == 'aceptada' %}
+                                                                <span class="badge bg-success">Aceptada</span>
+                                                            {% elif item.nuevo_estado == 'rechazada' %}
+                                                                <span class="badge bg-danger">Rechazada</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ item.backoffice.get_full_name|default:'-' }}</td>
+                                                        <td>{{ item.fecha_gestion|date:'d/m/Y H:i' }}</td>
+                                                    {% elif tipo_reporte == 'auditorias' %}
+                                                        <td>{{ item.venta.id_preap|default:item.venta.id }}</td>
+                                                        <td>{{ item.venta.nombre|default:'-' }}</td>
+                                                        <td>{{ item.auditor.get_full_name|default:'-' }}</td>
+                                                        <td>{{ item.observaciones|default:'-' }}</td>
+                                                        <td>{{ item.fecha_auditoria|date:'d/m/Y H:i' }}</td>
+                                                    {% endif %}
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+:root {
+    --primary-gradient: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);
+    --primary-color: #6f42c1;
+    --primary-dark: #5a2d91;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --info-color: #17a2b8;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+}
+
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    background: var(--primary-gradient) !important;
+    color: white;
+    border-radius: 15px 15px 0 0 !important;
+    border: none;
+    padding: 1.25rem;
+}
+
+.card-header h4, .card-header h6 {
+    color: white !important;
+    margin: 0;
+    font-weight: 600;
+}
+
+.btn-primary {
+    background: var(--primary-gradient);
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #5a2d91 0%, #4a2577 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(111, 66, 193, 0.3);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.btn-outline-secondary {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.25);
+}
+
+.table {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.table thead th {
+    background: var(--primary-gradient) !important;
+    color: white;
+    border: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.table tbody tr {
+    transition: all 0.3s ease;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(111, 66, 193, 0.05);
+    transform: scale(1.01);
+}
+
+.badge {
+    border-radius: 20px;
+    padding: 0.5rem 0.75rem;
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.form-check-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(111, 66, 193, 0.25);
+}
+
+.card-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    border-radius: 0 0 15px 15px;
+}
+
+#contador-campos {
+    background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%) !important;
+    color: white;
+}
+
+.table-responsive {
+    border-radius: 10px;
+}
+
+.container-fluid {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Contador de campos seleccionados
+    function actualizarContador() {
+        const checkboxes = document.querySelectorAll('.campo-exportar:checked');
+        const contador = document.getElementById('contador-campos');
+        if (contador) {
+            contador.textContent = checkboxes.length;
+        }
+    }
+
+    // Event listeners para checkboxes
+    document.querySelectorAll('.campo-exportar').forEach(checkbox => {
+        checkbox.addEventListener('change', actualizarContador);
+    });
+
+    // Seleccionar todos
+    document.getElementById('seleccionar-todos')?.addEventListener('click', function() {
+        document.querySelectorAll('.campo-exportar').forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        actualizarContador();
+    });
+
+    // Deseleccionar todos
+    document.getElementById('deseleccionar-todos')?.addEventListener('click', function() {
+        document.querySelectorAll('.campo-exportar').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        actualizarContador();
+    });
+
+    // Actualizar contador inicial
+    actualizarContador();
+
+    // Validación de formulario
+    document.getElementById('filtroForm')?.addEventListener('submit', function(e) {
+        const fechaInicio = document.getElementById('fecha_inicio').value;
+        const fechaFin = document.getElementById('fecha_fin').value;
+        
+        if (fechaInicio && fechaFin && fechaInicio > fechaFin) {
+            e.preventDefault();
+            alert('La fecha de inicio no puede ser mayor que la fecha de fin.');
+            return false;
+        }
+        
+        // Mostrar indicador de carga
+        const submitButtons = document.querySelectorAll('button[type="submit"]');
+        submitButtons.forEach(button => {
+            button.disabled = true;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Procesando...';
+            
+            setTimeout(() => {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }, 5000);
+        });
+    });
+});
+</script>
+{% endblock %}

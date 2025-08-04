@@ -1,0 +1,414 @@
+{% extends 'tarjeta_plata/base_tarjeta_plata.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .form-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .form-header h2 {
+        margin: 0;
+        font-weight: 600;
+    }
+    
+    .form-body {
+        padding: 2rem;
+    }
+    
+    .section-card {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: none;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    
+    .section-title {
+        color: #667eea;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .section-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .btn-submit {
+        background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+    
+    .btn-cancel {
+        background: #6c757d;
+        border: none;
+        border-radius: 25px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-cancel:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+        color: white;
+    }
+    
+    .required-field::after {
+        content: ' *';
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    .form-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    
+    .invalid-feedback {
+        display: block;
+        width: 100%;
+        margin-top: 0.25rem;
+        font-size: 0.875rem;
+        color: #dc3545;
+    }
+    
+    .is-invalid {
+        border-color: #dc3545;
+    }
+    
+    .alert-info {
+        background: linear-gradient(45deg, #d1ecf1 0%, #bee5eb 100%);
+        border: 1px solid #667eea;
+        border-radius: 10px;
+        color: #0c5460;
+    }
+</style>
+{% endblock %}
+
+{% block contenido_tarjeta_plata %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="form-container">
+                <div class="form-header">
+                    <i class="fas fa-user-plus fa-2x mb-3"></i>
+                    <h2>{% if cliente %}Editar Cliente{% else %}Nuevo Cliente{% endif %}</h2>
+                    <p class="mb-0 opacity-75">Complete la información del cliente para tarjeta de crédito</p>
+                </div>
+                
+                <div class="form-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="post" id="clienteForm" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Información Personal -->
+                        <div class="section-card">
+                            <h5 class="section-title">
+                                <div class="section-icon">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                Información Personal
+                            </h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.telefono.id_for_label }}" class="form-label required-field">Teléfono</label>
+                                        {{ form.telefono|add_class:"form-control" }}
+                                        {% if form.telefono.errors %}
+                                            <div class="invalid-feedback">{{ form.telefono.errors.0 }}</div>
+                                        {% endif %}
+                                        <div class="form-text">Número de teléfono a 10 dígitos (campo único)</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.nombre_completo.id_for_label }}" class="form-label required-field">Nombre Completo</label>
+                                        {{ form.nombre_completo|add_class:"form-control" }}
+                                        {% if form.nombre_completo.errors %}
+                                            <div class="invalid-feedback">{{ form.nombre_completo.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.rfc.id_for_label }}" class="form-label">RFC</label>
+                                        {{ form.rfc|add_class:"form-control" }}
+                                        {% if form.rfc.errors %}
+                                            <div class="invalid-feedback">{{ form.rfc.errors.0 }}</div>
+                                        {% endif %}
+                                        <div class="form-text">Formato: AAAA######AAA (opcional)</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.email.id_for_label }}" class="form-label">Correo Electrónico</label>
+                                        {{ form.email|add_class:"form-control" }}
+                                        {% if form.email.errors %}
+                                            <div class="invalid-feedback">{{ form.email.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.fecha_nacimiento.id_for_label }}" class="form-label">Fecha de Nacimiento</label>
+                                        {{ form.fecha_nacimiento|add_class:"form-control" }}
+                                        {% if form.fecha_nacimiento.errors %}
+                                            <div class="invalid-feedback">{{ form.fecha_nacimiento.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.genero.id_for_label }}" class="form-label">Género</label>
+                                        {{ form.genero|add_class:"form-select" }}
+                                        {% if form.genero.errors %}
+                                            <div class="invalid-feedback">{{ form.genero.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.tipo.id_for_label }}" class="form-label required-field">Tipo de Cliente</label>
+                                        {{ form.tipo|add_class:"form-select" }}
+                                        {% if form.tipo.errors %}
+                                            <div class="invalid-feedback">{{ form.tipo.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Factibilidad -->
+                        <div class="section-card">
+                            <h5 class="section-title">
+                                <div class="section-icon">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                Evaluación de Factibilidad
+                            </h5>
+                            
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Información:</strong> La factibilidad determina si el cliente cumple con los requisitos para obtener una tarjeta de crédito.
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.factibilidad.id_for_label }}" class="form-label required-field">Estado de Factibilidad</label>
+                                {{ form.factibilidad|add_class:"form-select" }}
+                                {% if form.factibilidad.errors %}
+                                    <div class="invalid-feedback">{{ form.factibilidad.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">
+                                    <strong>Factible:</strong> Cliente aprobado para tarjeta de crédito<br>
+                                    <strong>No Factible:</strong> Cliente no cumple requisitos<br>
+                                    <strong>Pendiente:</strong> Evaluación en proceso
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botones de Acción -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'tarjeta_plata:lista_clientes' %}" class="btn btn-cancel">
+                                <i class="fas fa-arrow-left me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-submit">
+                                <i class="fas fa-save me-2"></i>{% if cliente %}Actualizar Cliente{% else %}Guardar Cliente{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('clienteForm');
+        const telefonoInput = document.getElementById('{{ form.telefono.id_for_label }}');
+        const rfcInput = document.getElementById('{{ form.rfc.id_for_label }}');
+        
+        // Validación en tiempo real del teléfono
+        if (telefonoInput) {
+            telefonoInput.addEventListener('input', function() {
+                let value = this.value.replace(/\D/g, ''); // Solo números
+                if (value.length > 10) {
+                    value = value.substring(0, 10);
+                }
+                this.value = value;
+                
+                // Validar formato
+                if (value.length === 10) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else if (value.length > 0) {
+                    this.classList.add('is-invalid');
+                    this.classList.remove('is-valid');
+                } else {
+                    this.classList.remove('is-invalid', 'is-valid');
+                }
+            });
+        }
+        
+        // Validación en tiempo real del RFC
+        if (rfcInput) {
+            rfcInput.addEventListener('input', function() {
+                let value = this.value.toUpperCase();
+                this.value = value;
+                
+                // Validar formato RFC (opcional)
+                if (value.length === 0) {
+                    this.classList.remove('is-invalid', 'is-valid');
+                } else if (value.length === 13) {
+                    const rfcPattern = /^[A-Z]{4}\d{6}[A-Z0-9]{3}$/;
+                    if (rfcPattern.test(value)) {
+                        this.classList.remove('is-invalid');
+                        this.classList.add('is-valid');
+                    } else {
+                        this.classList.add('is-invalid');
+                        this.classList.remove('is-valid');
+                    }
+                } else {
+                    this.classList.add('is-invalid');
+                    this.classList.remove('is-valid');
+                }
+            });
+        }
+        
+        // Validación del formulario antes del envío
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            const requiredFields = form.querySelectorAll('[required]');
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    field.classList.remove('is-invalid');
+                }
+            });
+            
+            // Validar teléfono específicamente
+            if (telefonoInput && telefonoInput.value.length !== 10) {
+                telefonoInput.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            // Validar RFC si está presente
+            if (rfcInput && rfcInput.value.length > 0 && rfcInput.value.length !== 13) {
+                rfcInput.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                
+                // Mostrar mensaje de error
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Error:</strong> Por favor, complete todos los campos obligatorios correctamente.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                
+                const formBody = document.querySelector('.form-body');
+                formBody.insertBefore(alertDiv, form);
+                
+                // Scroll al primer campo con error
+                const firstInvalid = form.querySelector('.is-invalid');
+                if (firstInvalid) {
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstInvalid.focus();
+                }
+            }
+        });
+        
+        // Limpiar clases de validación al enfocar
+        const inputs = form.querySelectorAll('.form-control, .form-select');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.classList.remove('is-invalid');
+            });
+        });
+    });
+</script>
+{% endblock %}

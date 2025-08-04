@@ -1,0 +1,404 @@
+{% extends 'tarjeta_plata/base_tarjeta_plata.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .form-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .form-header h2 {
+        margin: 0;
+        font-weight: 600;
+    }
+    
+    .form-body {
+        padding: 2rem;
+    }
+    
+    .upload-area {
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+    }
+    
+    .upload-area:hover {
+        border-color: #667eea;
+        background: #f0f2ff;
+    }
+    
+    .upload-icon {
+        font-size: 3rem;
+        color: #667eea;
+        margin-bottom: 1rem;
+    }
+    
+    .instructions-card {
+        background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: none;
+    }
+    
+    .instructions-title {
+        color: #1976d2;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .instructions-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(45deg, #1976d2 0%, #7b1fa2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+    }
+    
+    .btn-upload {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 12px 30px;
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-upload:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+    
+    .btn-back {
+        background: #6c757d;
+        border: none;
+        border-radius: 25px;
+        padding: 12px 30px;
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-back:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+        color: white;
+    }
+    
+    .alert {
+        border-radius: 15px;
+        border: none;
+        padding: 1.5rem;
+    }
+    
+    .file-input {
+        border-radius: 10px;
+        border: 2px solid #dee2e6;
+        padding: 0.75rem;
+        transition: all 0.3s ease;
+    }
+    
+    .file-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="form-container">
+                <div class="form-header">
+                    <h2><i class="bi bi-cloud-upload me-2"></i>{{ titulo }}</h2>
+                    <p class="mb-0 mt-2">Sube un archivo CSV o Excel con los datos de los clientes</p>
+                </div>
+                
+                <div class="form-body">
+                    <!-- Botones de acción superiores -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <a href="{% url 'tarjeta_plata:lista_clientes' %}" class="btn btn-back">
+                            <i class="bi bi-arrow-left me-2"></i>Volver a Lista de Clientes
+                        </a>
+                        <button type="button" class="btn btn-success" onclick="descargarPlantilla()">
+                            <i class="bi bi-file-earmark-excel me-2"></i>Descargar Plantilla
+                        </button>
+                    </div>
+                    
+                    <!-- Instrucciones -->
+                    <div class="instructions-card">
+                        <div class="instructions-title">
+                            <div class="instructions-icon">
+                                <i class="bi bi-info-circle"></i>
+                            </div>
+                            Instrucciones para la Carga Masiva
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-2">Campos Obligatorios:</h6>
+                                <ul class="list-unstyled">
+                                    <li><i class="bi bi-check-circle text-success me-2"></i>item</li>
+                                    <li><i class="bi bi-check-circle text-success me-2"></i>telefono</li>
+                                    <li><i class="bi bi-check-circle text-success me-2"></i>nombre_completo</li>
+                                    <li><i class="bi bi-check-circle text-success me-2"></i>factibilidad</li>
+                                    <li><i class="bi bi-check-circle text-success me-2"></i>tipo</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-2">Campos Adicionales:</h6>
+                                <ul class="list-unstyled">
+                                    <li><i class="bi bi-circle text-muted me-2"></i>rfc</li>
+                                    <li><i class="bi bi-circle text-muted me-2"></i>fecha_nacimiento</li>
+                                    <li><i class="bi bi-circle text-muted me-2"></i>genero</li>
+                                    <li><i class="bi bi-circle text-muted me-2"></i>email</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="alert alert-info mt-3 mb-0">
+                            <i class="bi bi-lightbulb me-2"></i>
+                            <strong>Importante:</strong> El formato de fecha debe ser DD/MM/AAAA. Los archivos deben tener extensión .csv, .xlsx o .xls. Tamaño máximo: 10MB.
+                        </div>
+                    </div>
+                    
+                    <!-- Formulario de carga -->
+                    <form method="post" enctype="multipart/form-data" id="uploadForm">
+                        {% csrf_token %}
+                        
+                        <div class="upload-area">
+                            <div class="upload-icon">
+                                <i class="bi bi-cloud-upload"></i>
+                            </div>
+                            <h5 class="mb-3">Selecciona tu archivo</h5>
+                            {{ form.archivo|add_class:"form-control file-input" }}
+                            {% if form.archivo.help_text %}
+                                <small class="form-text text-muted mt-2">{{ form.archivo.help_text }}</small>
+                            {% endif %}
+                            {% if form.archivo.errors %}
+                                <div class="text-danger mt-2">
+                                    {% for error in form.archivo.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-upload btn-lg" id="submitBtn">
+                                <i class="bi bi-upload me-2"></i>Procesar Archivo
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Mensajes de resultado -->
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} mt-4" role="alert">
+                                {% if message.tags == 'success' %}
+                                    <i class="bi bi-check-circle me-2"></i>
+                                {% elif message.tags == 'error' %}
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                {% elif message.tags == 'warning' %}
+                                    <i class="bi bi-exclamation-circle me-2"></i>
+                                {% else %}
+                                    <i class="bi bi-info-circle me-2"></i>
+                                {% endif %}
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Carga -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <h5>Procesando archivo...</h5>
+                <p class="text-muted">Esto puede tardar unos momentos. Por favor, espera.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('uploadForm');
+    const submitButton = document.getElementById('submitBtn');
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    const fileInput = form.querySelector('input[type="file"]');
+    
+    // Manejar envío del formulario
+    form.addEventListener('submit', function(e) {
+        // Validar que se haya seleccionado un archivo
+        if (fileInput.files.length === 0) {
+            e.preventDefault();
+            alert('Por favor, selecciona un archivo antes de continuar.');
+            return;
+        }
+        
+        // Validar extensión del archivo
+        const fileName = fileInput.files[0].name.toLowerCase();
+        const validExtensions = ['.csv', '.xlsx', '.xls'];
+        const isValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+        
+        if (!isValidExtension) {
+            e.preventDefault();
+            alert('Por favor, selecciona un archivo con extensión .csv, .xlsx o .xls');
+            return;
+        }
+        
+        // Validar tamaño del archivo (10MB máximo)
+        const maxSize = 10 * 1024 * 1024; // 10MB en bytes
+        if (fileInput.files[0].size > maxSize) {
+            e.preventDefault();
+            alert('El archivo es demasiado grande. El tamaño máximo permitido es 10MB.');
+            return;
+        }
+        
+        // Mostrar modal de carga y deshabilitar botón
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando...';
+        }
+        loadingModal.show();
+    });
+    
+    // Mejorar la experiencia del área de carga
+    const uploadArea = document.querySelector('.upload-area');
+    
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#667eea';
+        uploadArea.style.background = '#f0f2ff';
+    });
+    
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#dee2e6';
+        uploadArea.style.background = '#f8f9fa';
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#dee2e6';
+        uploadArea.style.background = '#f8f9fa';
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            // Disparar evento change para actualizar la UI
+            fileInput.dispatchEvent(new Event('change'));
+        }
+    });
+    
+    // Mostrar nombre del archivo seleccionado
+    fileInput.addEventListener('change', function() {
+        const fileName = this.files[0] ? this.files[0].name : 'Ningún archivo seleccionado';
+        const fileSize = this.files[0] ? (this.files[0].size / 1024 / 1024).toFixed(2) + ' MB' : '';
+        
+        // Crear o actualizar elemento de información del archivo
+        let fileInfo = document.getElementById('fileInfo');
+        if (!fileInfo) {
+            fileInfo = document.createElement('div');
+            fileInfo.id = 'fileInfo';
+            fileInfo.className = 'mt-3 text-center';
+            uploadArea.appendChild(fileInfo);
+        }
+        
+        if (this.files[0]) {
+            fileInfo.innerHTML = `
+                <div class="alert alert-light border mb-0">
+                    <i class="bi bi-file-earmark me-2"></i>
+                    <strong>${fileName}</strong>
+                    <span class="text-muted ms-2">(${fileSize})</span>
+                </div>
+            `;
+        } else {
+            fileInfo.innerHTML = '';
+        }
+    });
+});
+
+// Función para descargar plantilla
+function descargarPlantilla() {
+    // Crear datos de ejemplo para la plantilla
+    const data = [
+        {
+            item: 'ITEM001',
+            telefono: '5551234567',
+            nombre_completo: 'Juan Pérez García',
+            factibilidad: 'alta',
+            tipo: 'nuevo',
+            rfc: 'PEGJ850101ABC',
+            fecha_nacimiento: '01/01/1985',
+            genero: 'M',
+            email: 'juan.perez@email.com'
+        },
+        {
+            item: 'ITEM002',
+            telefono: '5559876543',
+            nombre_completo: 'María López Rodríguez',
+            factibilidad: 'media',
+            tipo: 'existente',
+            rfc: 'LORM900215XYZ',
+            fecha_nacimiento: '15/02/1990',
+            genero: 'F',
+            email: 'maria.lopez@email.com'
+        }
+    ];
+    
+    // Crear CSV
+    const headers = Object.keys(data[0]);
+    const csvContent = [headers.join(',')];
+    
+    data.forEach(row => {
+        csvContent.push(headers.map(header => row[header]).join(','));
+    });
+    
+    // Descargar archivo
+    const blob = new Blob([csvContent.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'plantilla_clientes_tarjeta_plata.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+{% endblock %}

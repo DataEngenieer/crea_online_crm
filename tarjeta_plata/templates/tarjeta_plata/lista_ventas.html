@@ -1,0 +1,354 @@
+{% extends 'tarjeta_plata/base_tarjeta_plata.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .table-responsive {
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .table {
+        margin-bottom: 0;
+    }
+    
+    .table thead th {
+        background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);
+        color: white;
+        border: none;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .table tbody tr {
+        transition: all 0.3s ease;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 20px;
+    }
+    
+    .badge-nueva {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    
+    .badge-aceptada {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .badge-rechazada {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.8rem;
+        border-radius: 15px;
+    }
+    
+    .filter-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+    
+    .stats-card {
+        background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .pagination {
+        justify-content: center;
+    }
+    
+    .page-link {
+        color: #6f42c1;
+        border-color: #6f42c1;
+        border-radius: 5px;
+        margin: 0 2px;
+    }
+    
+    .page-link:hover {
+        background-color: #6f42c1;
+        border-color: #6f42c1;
+        color: white;
+    }
+    
+    .page-item.active .page-link {
+        background-color: #6f42c1;
+        border-color: #6f42c1;
+    }
+</style>
+{% endblock %}
+
+{% block contenido_tarjeta_plata %}
+<div class="container-fluid">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="bi bi-list-ul me-2"></i>Lista de Ventas
+            </h1>
+            <p class="text-muted mb-0">Gestión de ventas de tarjetas de crédito</p>
+        </div>
+        <div>
+            <a href="{% url 'tarjeta_plata:crear_venta' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Nueva Venta
+            </a>
+        </div>
+    </div>
+    
+    <!-- Estadísticas rápidas -->
+    <div class="stats-card">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <h3 class="mb-0">{{ total_ventas }}</h3>
+                <small>Total de Ventas</small>
+            </div>
+            <div class="col-md-3">
+                <h3 class="mb-0">{{ page_obj.paginator.count }}</h3>
+                <small>Resultados Filtrados</small>
+            </div>
+            <div class="col-md-3">
+                <h3 class="mb-0">{{ page_obj.number }}</h3>
+                <small>Página Actual</small>
+            </div>
+            <div class="col-md-3">
+                <h3 class="mb-0">{{ page_obj.paginator.num_pages }}</h3>
+                <small>Total Páginas</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="card filter-card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Inicio</label>
+                    {{ form.fecha_inicio|add_class:"form-control" }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Fin</label>
+                    {{ form.fecha_fin|add_class:"form-control" }}
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Estado</label>
+                    {{ form.estado|add_class:"form-select" }}
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Agente</label>
+                    {{ form.agente|add_class:"form-select" }}
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Buscar</label>
+                    <div class="input-group">
+                        {{ form.buscar|add_class:"form-control"|attr:"placeholder:Nombre, RFC, Teléfono..." }}
+                        <button class="btn btn-primary" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Tabla de ventas -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID PreAp</th>
+                            <th>Cliente</th>
+                            <th>Teléfono</th>
+                            <th>RFC</th>
+                            <th>Estado</th>
+                            <th>Agente</th>
+                            <th>Fecha</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for venta in page_obj %}
+                        <tr>
+                            <td>
+                                <strong class="text-primary">{{ venta.id_preap }}</strong>
+                                <br>
+                                <small class="text-muted">{{ venta.item }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ venta.nombre }}</strong>
+                                <br>
+                                <small class="text-muted">{{ venta.correo }}</small>
+                            </td>
+                            <td>{{ venta.telefono }}</td>
+                            <td>{{ venta.rfc }}</td>
+                            <td>
+                                {% if venta.estado_venta == 'nueva' %}
+                                    <span class="badge badge-nueva">
+                                        <i class="bi bi-hourglass-split me-1"></i>Nueva
+                                    </span>
+                                {% elif venta.estado_venta == 'aceptada' %}
+                                    <span class="badge badge-aceptada">
+                                        <i class="bi bi-check-circle me-1"></i>Aceptada
+                                    </span>
+                                {% elif venta.estado_venta == 'rechazada' %}
+                                    <span class="badge badge-rechazada">
+                                        <i class="bi bi-x-circle me-1"></i>Rechazada
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ venta.agente.get_full_name|default:venta.agente.username }}
+                                <br>
+                                <small class="text-muted">
+                                    {% if venta.backoffice %}
+                                        Validado por: {{ venta.backoffice.get_full_name|default:venta.backoffice.username }}
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                {{ venta.fecha_creacion|date:"d/m/Y H:i" }}
+                                {% if venta.fecha_revision %}
+                                    <br>
+                                    <small class="text-muted">
+                                        Rev: {{ venta.fecha_revision|date:"d/m/Y H:i" }}
+                                    </small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'tarjeta_plata:detalle_venta' venta.id %}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       title="Ver detalles">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if user == venta.agente or user.is_superuser or 'administrador' in user.groups.values_list.name or 'backoffice' in user.groups.values_list.name %}
+                                    <a href="{% url 'tarjeta_plata:editar_venta' venta.id %}" 
+                                       class="btn btn-sm btn-outline-warning" 
+                                       title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if user.is_superuser or 'backoffice' in user.groups.values_list.name %}
+                                        {% if venta.estado_venta == 'nueva' %}
+                                        <a href="{% url 'tarjeta_plata:validar_venta' venta.id %}" 
+                                           class="btn btn-sm btn-outline-success" 
+                                           title="Validar">
+                                            <i class="bi bi-check-square"></i>
+                                        </a>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                                    <h5>No se encontraron ventas</h5>
+                                    <p>No hay ventas que coincidan con los filtros aplicados.</p>
+                                    <a href="{% url 'tarjeta_plata:crear_venta' %}" class="btn btn-primary">
+                                        <i class="bi bi-plus-circle me-2"></i>Crear Primera Venta
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Paginación -->
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Paginación" class="mt-4">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if request.GET.fecha_inicio %}&fecha_inicio={{ request.GET.fecha_inicio }}{% endif %}{% if request.GET.fecha_fin %}&fecha_fin={{ request.GET.fecha_fin }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.agente %}&agente={{ request.GET.agente }}{% endif %}{% if request.GET.buscar %}&buscar={{ request.GET.buscar }}{% endif %}">
+                        <i class="bi bi-chevron-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.fecha_inicio %}&fecha_inicio={{ request.GET.fecha_inicio }}{% endif %}{% if request.GET.fecha_fin %}&fecha_fin={{ request.GET.fecha_fin }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.agente %}&agente={{ request.GET.agente }}{% endif %}{% if request.GET.buscar %}&buscar={{ request.GET.buscar }}{% endif %}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if request.GET.fecha_inicio %}&fecha_inicio={{ request.GET.fecha_inicio }}{% endif %}{% if request.GET.fecha_fin %}&fecha_fin={{ request.GET.fecha_fin }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.agente %}&agente={{ request.GET.agente }}{% endif %}{% if request.GET.buscar %}&buscar={{ request.GET.buscar }}{% endif %}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.fecha_inicio %}&fecha_inicio={{ request.GET.fecha_inicio }}{% endif %}{% if request.GET.fecha_fin %}&fecha_fin={{ request.GET.fecha_fin }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.agente %}&agente={{ request.GET.agente }}{% endif %}{% if request.GET.buscar %}&buscar={{ request.GET.buscar }}{% endif %}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.fecha_inicio %}&fecha_inicio={{ request.GET.fecha_inicio }}{% endif %}{% if request.GET.fecha_fin %}&fecha_fin={{ request.GET.fecha_fin }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.agente %}&agente={{ request.GET.agente }}{% endif %}{% if request.GET.buscar %}&buscar={{ request.GET.buscar }}{% endif %}">
+                        <i class="bi bi-chevron-double-right"></i>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-submit del formulario de filtros cuando cambian los selects
+        const selects = document.querySelectorAll('select');
+        selects.forEach(select => {
+            select.addEventListener('change', function() {
+                this.form.submit();
+            });
+        });
+        
+        // Limpiar filtros
+        const clearFilters = document.getElementById('clear-filters');
+        if (clearFilters) {
+            clearFilters.addEventListener('click', function() {
+                window.location.href = '{% url "tarjeta_plata:lista_ventas" %}';
+            });
+        }
+    });
+</script>
+{% endblock %}

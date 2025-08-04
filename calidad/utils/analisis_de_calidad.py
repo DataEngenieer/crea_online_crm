@@ -74,7 +74,7 @@ class AnalizadorTranscripciones:
 
 
         return f"""Situacion: Eres un experto analista de calidad en un call center para llamadas de ventas outbound en telefonica movistar. 
-                Tarea: Realizar un análisis exhaustivo y detallado de una transcripción de llamada de servicio al cliente, 
+                Tarea: Realizar un análisis exhaustivo y detallado de una transcripción de llamada de ventas, 
                 evaluando sistemáticamente los siguientes indicadores de calidad:
 
             {indicadores_str}

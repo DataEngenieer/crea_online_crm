@@ -69,7 +69,7 @@ class LoginAuditoriaView(LoginView):
         # Si se selecciona un módulo específico, verificar el acceso del usuario
         if selected_module != 'core':
             try:
-                campana = Campana.objects.get(nombre__iexact=selected_module)
+                campana = Campana.objects.get(modulo=selected_module)
                 # Los superusuarios tienen acceso a todo
                 if not user.is_superuser and user not in campana.usuarios.all():
                     messages.error(self.request, f"No tienes permiso para acceder al módulo '{campana.nombre}'.")
@@ -89,6 +89,8 @@ class LoginAuditoriaView(LoginView):
             return redirect('telefonica:dashboard')
         elif selected_module == 'calidad':
             return redirect('calidad:dashboard')
+        elif selected_module == 'tarjeta_plata':
+            return redirect('tarjeta_plata:dashboard')
         return redirect('core:dashboard')
     
     def form_invalid(self, form):

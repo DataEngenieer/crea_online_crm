@@ -1,0 +1,353 @@
+{% extends 'tarjeta_plata/base_tarjeta_plata.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .info-card {
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    
+    .venta-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 1.5rem;
+    }
+    
+    .section-icon {
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+    
+    .detail-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        transition: transform 0.2s ease;
+    }
+    
+    .detail-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .detail-value {
+        font-size: 1.1rem;
+        color: #2c3e50;
+        font-weight: 500;
+    }
+    
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .status-nueva {
+        background: linear-gradient(45deg, #ffecd2 0%, #fcb69f 100%);
+        color: #8b4513;
+    }
+    
+    .status-aceptada {
+        background: linear-gradient(45deg, #a8edea 0%, #fed6e3 100%);
+        color: #155724;
+    }
+    
+    .status-rechazada {
+        background: linear-gradient(45deg, #ffecd2 0%, #fcb69f 100%);
+        color: #721c24;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e9ecef;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -23px;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #667eea;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 3px #e9ecef;
+    }
+    
+    .btn-action {
+        border-radius: 25px;
+        padding: 0.5rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-validar {
+        background: linear-gradient(45deg, #56ab2f 0%, #a8e6cf 100%);
+        border: none;
+        color: white;
+    }
+    
+    .btn-rechazar {
+        background: linear-gradient(45deg, #ff416c 0%, #ff4b2b 100%);
+        border: none;
+        color: white;
+    }
+    
+    .btn-editar {
+        background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block contenido_tarjeta_plata %}
+<div class="container-fluid">
+    <!-- Cabecera con información principal -->
+    <div class="card shadow-lg mb-4 info-card">
+        <div class="card-header venta-header text-white d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="section-icon bg-white text-secondary me-3">
+                    <i class="fas fa-credit-card"></i>
+                </div>
+                <div>
+                    <h5 class="mb-0">Detalle de Venta - Tarjeta Plata</h5>
+                    <small class="opacity-75">#{{ venta.id_preap }}</small>
+                </div>
+            </div>
+            <div class="status-badge status-{{ venta.estado|lower }}">
+                <i class="fas fa-circle me-1"></i>{{ venta.get_estado_display }}
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <!-- Información del Cliente -->
+            <div class="row mb-4">
+                <div class="col-lg-6">
+                    <div class="detail-card p-3 h-100">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="section-icon bg-light text-secondary me-3">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <h6 class="mb-0 text-secondary">Información del Cliente</h6>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <div class="detail-label">Nombre Completo</div>
+                                <div class="detail-value">{{ venta.nombre }}</div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="detail-label">RFC</div>
+                                <div class="detail-value">{{ venta.rfc|default:"No proporcionado" }}</div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="detail-label">INE</div>
+                                <div class="detail-value">{{ venta.ine|default:"No proporcionado" }}</div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="detail-label">Teléfono</div>
+                                <div class="detail-value">{{ venta.telefono }}</div>
+                            </div>
+                            <div class="col-12">
+                                <div class="detail-label">Correo Electrónico</div>
+                                <div class="detail-value">{{ venta.correo|default:"No proporcionado" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="detail-card p-3 h-100">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="section-icon bg-light text-secondary me-3">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <h6 class="mb-0 text-secondary">Información de Dirección</h6>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <div class="detail-label">Dirección Completa</div>
+                                <div class="detail-value">{{ venta.direccion|default:"No proporcionada" }}</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="detail-label">Código Postal</div>
+                                <div class="detail-value">{{ venta.codigo_postal|default:"No proporcionado" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información de la Venta -->
+            <div class="row mb-4">
+                <div class="col-lg-8">
+                    <div class="detail-card p-3 h-100">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="section-icon bg-light text-secondary me-3">
+                                <i class="fas fa-file-invoice"></i>
+                            </div>
+                            <h6 class="mb-0 text-secondary">Detalles de la Venta</h6>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="detail-label">ID PreAp</div>
+                                <div class="detail-value"><strong class="text-primary">{{ venta.id_preap }}</strong></div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="detail-label">Fecha de Creación</div>
+                                <div class="detail-value">{{ venta.fecha_creacion|date:"d/m/Y H:i" }}</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="detail-label">Agente</div>
+                                <div class="detail-value">{{ venta.agente.get_full_name|default:venta.agente.username }}</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="detail-label">Estado</div>
+                                <div class="detail-value">{{ venta.get_estado_display }}</div>
+                            </div>
+                            {% if venta.observaciones %}
+                            <div class="col-12">
+                                <div class="detail-label">Observaciones</div>
+                                <div class="detail-value">{{ venta.observaciones }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="detail-card p-3 h-100">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="section-icon bg-light text-secondary me-3">
+                                <i class="fas fa-cogs"></i>
+                            </div>
+                            <h6 class="mb-0 text-secondary">Acciones</h6>
+                        </div>
+                        <div class="d-grid gap-2">
+                            {% if venta.estado == 'nueva' and perms.tarjeta_plata.change_ventatarjetaplata %}
+                                <a href="{% url 'tarjeta_plata:validar_venta' venta.pk %}" class="btn btn-validar">
+                                    <i class="fas fa-check me-2"></i>Validar Venta
+                                </a>
+                                <button type="button" class="btn btn-rechazar" data-bs-toggle="modal" data-bs-target="#rechazarModal">
+                                    <i class="fas fa-times me-2"></i>Rechazar Venta
+                                </button>
+                            {% endif %}
+                            {% if perms.tarjeta_plata.change_ventatarjetaplata %}
+                                <a href="{% url 'tarjeta_plata:editar_venta' venta.pk %}" class="btn btn-editar">
+                                    <i class="fas fa-edit me-2"></i>Editar Venta
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'tarjeta_plata:lista_ventas' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver a Lista
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historial de Gestión -->
+            {% if gestiones %}
+            <div class="detail-card p-3">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="section-icon bg-light text-secondary me-3">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h6 class="mb-0 text-secondary">Historial de Gestión</h6>
+                </div>
+                <div class="timeline">
+                    {% for gestion in gestiones %}
+                    <div class="timeline-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ gestion.get_accion_display }}</h6>
+                                <p class="text-muted mb-1">{{ gestion.observaciones|default:"Sin observaciones" }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-user me-1"></i>{{ gestion.usuario.get_full_name|default:gestion.usuario.username }}
+                                </small>
+                            </div>
+                            <small class="text-muted">{{ gestion.fecha_gestion|date:"d/m/Y H:i" }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Rechazar Venta -->
+<div class="modal fade" id="rechazarModal" tabindex="-1" aria-labelledby="rechazarModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rechazarModalLabel">Rechazar Venta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'tarjeta_plata:rechazar_venta' venta.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="motivo_rechazo" class="form-label">Motivo de Rechazo</label>
+                        <select class="form-select" id="motivo_rechazo" name="motivo_rechazo" required>
+                            <option value="">Seleccionar motivo...</option>
+                            <option value="documentos_incompletos">Documentos incompletos</option>
+                            <option value="datos_incorrectos">Datos incorrectos</option>
+                            <option value="no_cumple_requisitos">No cumple requisitos</option>
+                            <option value="duplicado">Solicitud duplicada</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="observaciones_rechazo" class="form-label">Observaciones</label>
+                        <textarea class="form-control" id="observaciones_rechazo" name="observaciones" rows="3" placeholder="Detalles adicionales del rechazo..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Rechazar Venta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    // Auto-actualizar estado si es necesario
+    document.addEventListener('DOMContentLoaded', function() {
+        // Aquí se puede agregar lógica para actualizar el estado en tiempo real
+        console.log('Detalle de venta cargado: {{ venta.id_preap }}');
+    });
+</script>
+{% endblock %}

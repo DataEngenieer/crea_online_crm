@@ -1,0 +1,580 @@
+{% extends 'tarjeta_plata/base_tarjeta_plata.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .form-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .form-header h2 {
+        margin: 0;
+        font-weight: 600;
+    }
+    
+    .form-body {
+        padding: 2rem;
+    }
+    
+    .venta-info-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: none;
+    }
+    
+    .venta-info-title {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .venta-info-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+    }
+    
+    .validation-form-card {
+        background: #fff;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    
+    .validation-form-title {
+        color: #667eea;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .validation-form-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(45deg, #28a745 0%, #20c997 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    .btn-validar {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 12px 30px;
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-validar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(40, 167, 69, 0.3);
+        color: white;
+    }
+    
+    .btn-cancelar {
+        background: #6c757d;
+        border: none;
+        border-radius: 25px;
+        padding: 12px 30px;
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-cancelar:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+        color: white;
+    }
+    
+    .estado-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .estado-nueva {
+        background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+        color: white;
+    }
+    
+    .estado-aceptada {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+    
+    .estado-rechazada {
+        background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+        color: white;
+    }
+    
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f1f3f4;
+    }
+    
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .detail-value {
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    
+    .alert {
+        border-radius: 15px;
+        border: none;
+        padding: 1.5rem;
+    }
+    
+    .upload-area-small {
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        padding: 1rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .upload-area-small:hover {
+        border-color: #667eea;
+        background: #f0f2ff;
+    }
+    
+    .upload-area-small input[type="file"] {
+        border: none;
+        background: transparent;
+    }
+    
+    .upload-area-small input[type="file"]:focus {
+         box-shadow: none;
+         border-color: transparent;
+     }
+     
+     .upload-area-small.required {
+         border-color: #ffc107;
+         background: #fffbf0;
+     }
+     
+     .upload-area-small.required::before {
+         content: "*";
+         color: #dc3545;
+         font-weight: bold;
+         position: absolute;
+         top: -5px;
+         right: 10px;
+         font-size: 1.2rem;
+     }
+     
+     .upload-area-small {
+         position: relative;
+     }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="form-container">
+                <div class="form-header">
+                    <h2><i class="bi bi-check-square me-2"></i>{{ titulo }}</h2>
+                    <p class="mb-0 mt-2">Revisa los datos de la venta y selecciona el nuevo estado</p>
+                </div>
+                
+                <div class="form-body">
+                    <!-- Información de la venta -->
+                    <div class="venta-info-card">
+                        <div class="venta-info-title">
+                            <div class="venta-info-icon">
+                                <i class="bi bi-file-text"></i>
+                            </div>
+                            Información de la Venta
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <span class="detail-label">ID PreAp:</span>
+                                    <span class="detail-value">#{{ venta.id_preap }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Cliente:</span>
+                                    <span class="detail-value">{{ venta.nombre }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">RFC:</span>
+                                    <span class="detail-value">{{ venta.rfc }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Teléfono:</span>
+                                    <span class="detail-value">{{ venta.telefono }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Correo:</span>
+                                    <span class="detail-value">{{ venta.correo|default:"No especificado" }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <span class="detail-label">Estado Actual:</span>
+                                    <span class="estado-badge estado-{{ venta.estado_venta }}">{{ venta.get_estado_venta_display }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Agente:</span>
+                                    <span class="detail-value">{{ venta.agente.get_full_name|default:venta.agente.username }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Fecha Creación:</span>
+                                    <span class="detail-value">{{ venta.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">INE:</span>
+                                    <span class="detail-value">{{ venta.ine|default:"No especificado" }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Dirección:</span>
+                                    <span class="detail-value">{{ venta.direccion|default:"No especificada" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if venta.observaciones %}
+                        <div class="mt-3">
+                            <div class="detail-item">
+                                <span class="detail-label">Observaciones:</span>
+                            </div>
+                            <div class="alert alert-info mt-2 mb-0">
+                                <i class="bi bi-info-circle me-2"></i>
+                                {{ venta.observaciones }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Formulario de validación -->
+                    <div class="validation-form-card">
+                        <div class="validation-form-title">
+                            <div class="validation-form-icon">
+                                <i class="bi bi-check-circle"></i>
+                            </div>
+                            Validar Venta
+                        </div>
+                        
+                        <form method="post" enctype="multipart/form-data" id="validationForm">
+                            {% csrf_token %}
+                            
+                            {% if form.non_field_errors %}
+                                <div class="alert alert-danger">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    {% for error in form.non_field_errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.nuevo_estado.id_for_label }}" class="form-label">
+                                            <i class="bi bi-arrow-right-circle me-2"></i>{{ form.nuevo_estado.label }}
+                                        </label>
+                                        {{ form.nuevo_estado|add_class:"form-select" }}
+                                        {% if form.nuevo_estado.errors %}
+                                            <div class="text-danger mt-1">
+                                                {% for error in form.nuevo_estado.errors %}
+                                                    <small>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <small class="form-text text-muted">
+                                            Selecciona el nuevo estado para esta venta
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.comentario.id_for_label }}" class="form-label">
+                                            <i class="bi bi-chat-text me-2"></i>{{ form.comentario.label }}
+                                        </label>
+                                        {{ form.comentario|add_class:"form-control" }}
+                                        {% if form.comentario.errors %}
+                                            <div class="text-danger mt-1">
+                                                {% for error in form.comentario.errors %}
+                                                    <small>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <small class="form-text text-muted">
+                                            Describe el motivo de la validación o cualquier observación relevante
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Campo para archivo de llamada -->
+                            <div class="row mt-3">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="{{ form.archivo_llamada.id_for_label }}" class="form-label">
+                                            <i class="bi bi-file-earmark-music me-2"></i>{{ form.archivo_llamada.label }}
+                                        </label>
+                                        <div class="upload-area-small required">
+                                            {{ form.archivo_llamada|add_class:"form-control" }}
+                                            {% if form.archivo_llamada.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.archivo_llamada.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <small class="form-text text-muted">
+                                                 <i class="bi bi-exclamation-triangle me-1 text-warning"></i>
+                                                 <strong>Obligatorio:</strong> Sube el archivo de audio de la llamada de venta. Formatos soportados: MP3, WAV, M4A, AAC, OGG
+                                             </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-warning mt-3">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <strong>Importante:</strong> Esta acción cambiará el estado de la venta y se registrará en el historial de gestiones. Asegúrate de revisar todos los datos antes de continuar.
+                            </div>
+                            
+                            <div class="text-center mt-4">
+                                <a href="{% url 'tarjeta_plata:bandeja_nuevas' %}" class="btn btn-cancelar me-3">
+                                    <i class="bi bi-arrow-left me-2"></i>Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-validar" id="submitBtn">
+                                    <i class="bi bi-check-circle me-2"></i>Validar Venta
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Historial de gestiones (si existen) -->
+                    {% if venta.gestiones_backoffice.exists %}
+                    <div class="validation-form-card">
+                        <div class="validation-form-title">
+                            <div class="validation-form-icon" style="background: linear-gradient(45deg, #6f42c1 0%, #e83e8c 100%);">
+                                <i class="bi bi-clock-history"></i>
+                            </div>
+                            Historial de Gestiones
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Usuario</th>
+                                        <th>Estado Anterior</th>
+                                        <th>Estado Nuevo</th>
+                                        <th>Comentario</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for gestion in venta.gestiones_backoffice.all %}
+                                    <tr>
+                                        <td>{{ gestion.fecha_gestion|date:"d/m/Y H:i" }}</td>
+                                        <td>{{ gestion.backoffice.get_full_name|default:gestion.backoffice.username }}</td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ gestion.get_estado_anterior_display }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ gestion.get_estado_nuevo_display }}</span>
+                                        </td>
+                                        <td>{{ gestion.comentario|truncatechars:50 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('validationForm');
+    const submitButton = document.getElementById('submitBtn');
+    const estadoSelect = document.getElementById('{{ form.nuevo_estado.id_for_label }}');
+    const comentarioTextarea = document.getElementById('{{ form.comentario.id_for_label }}');
+    const archivoInput = document.getElementById('{{ form.archivo_llamada.id_for_label }}');
+    
+    // Validación del formulario
+    form.addEventListener('submit', function(e) {
+        // Validar que se haya seleccionado un estado
+        if (!estadoSelect.value) {
+            e.preventDefault();
+            alert('Por favor, selecciona un nuevo estado para la venta.');
+            estadoSelect.focus();
+            return;
+        }
+        
+        // Validar que se haya ingresado un comentario
+        if (!comentarioTextarea.value.trim()) {
+            e.preventDefault();
+            alert('Por favor, ingresa un comentario explicando la validación.');
+            comentarioTextarea.focus();
+            return;
+        }
+        
+        // Validar archivo de llamada (obligatorio)
+        if (archivoInput.files.length === 0) {
+            e.preventDefault();
+            alert('Por favor, selecciona un archivo de audio de la llamada. Este campo es obligatorio.');
+            archivoInput.focus();
+            return;
+        }
+        
+        const archivo = archivoInput.files[0];
+        const tiposPermitidos = ['audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/aac', 'audio/ogg'];
+        const tamañoMaximo = 50 * 1024 * 1024; // 50MB
+        
+        if (!tiposPermitidos.includes(archivo.type)) {
+            e.preventDefault();
+            alert('Por favor, selecciona un archivo de audio válido (MP3, WAV, M4A, AAC, OGG).');
+            archivoInput.focus();
+            return;
+        }
+        
+        if (archivo.size > tamañoMaximo) {
+            e.preventDefault();
+            alert('El archivo es demasiado grande. El tamaño máximo permitido es 50MB.');
+            archivoInput.focus();
+            return;
+        }
+        
+        // Confirmar la acción
+        const estadoTexto = estadoSelect.options[estadoSelect.selectedIndex].text;
+        if (!confirm(`¿Estás seguro de cambiar el estado de la venta a "${estadoTexto}"?\n\nEsta acción se registrará en el historial y no se puede deshacer.`)) {
+            e.preventDefault();
+            return;
+        }
+        
+        // Deshabilitar botón y mostrar indicador de carga
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando...';
+    });
+    
+    // Mejorar la experiencia del usuario con el select de estado
+    estadoSelect.addEventListener('change', function() {
+        const selectedValue = this.value;
+        const comentarioLabel = document.querySelector('label[for="{{ form.comentario.id_for_label }}"]');
+        
+        // Cambiar el placeholder del comentario según el estado seleccionado
+        if (selectedValue === 'aceptada') {
+            comentarioTextarea.placeholder = 'Describe por qué se acepta esta venta...';
+            comentarioLabel.innerHTML = '<i class="bi bi-chat-text me-2"></i>Comentario de Aceptación';
+        } else if (selectedValue === 'rechazada') {
+            comentarioTextarea.placeholder = 'Describe el motivo del rechazo...';
+            comentarioLabel.innerHTML = '<i class="bi bi-chat-text me-2"></i>Motivo de Rechazo';
+        } else {
+            comentarioTextarea.placeholder = 'Describe el motivo de la validación o cualquier observación relevante...';
+            comentarioLabel.innerHTML = '<i class="bi bi-chat-text me-2"></i>Comentario de la Gestión';
+        }
+    });
+    
+    // Auto-resize del textarea
+    comentarioTextarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+    
+    // Mostrar nombre del archivo seleccionado
+    archivoInput.addEventListener('change', function() {
+        const uploadArea = this.closest('.upload-area-small');
+        const fileInfo = uploadArea.querySelector('.file-info');
+        
+        if (this.files.length > 0) {
+            const archivo = this.files[0];
+            const tamañoMB = (archivo.size / (1024 * 1024)).toFixed(2);
+            
+            // Crear o actualizar información del archivo
+            if (!fileInfo) {
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'file-info mt-2 p-2 bg-light rounded';
+                infoDiv.innerHTML = `
+                    <i class="bi bi-file-earmark-music text-primary me-2"></i>
+                    <strong>${archivo.name}</strong> (${tamañoMB} MB)
+                `;
+                uploadArea.appendChild(infoDiv);
+            } else {
+                fileInfo.innerHTML = `
+                    <i class="bi bi-file-earmark-music text-primary me-2"></i>
+                    <strong>${archivo.name}</strong> (${tamañoMB} MB)
+                `;
+            }
+            
+            uploadArea.style.borderColor = '#28a745';
+            uploadArea.style.backgroundColor = '#f8fff9';
+        } else {
+            if (fileInfo) {
+                fileInfo.remove();
+            }
+            uploadArea.style.borderColor = '#dee2e6';
+            uploadArea.style.backgroundColor = '#f8f9fa';
+        }
+    });
+});
+</script>
+{% endblock %}

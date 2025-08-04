@@ -1,0 +1,555 @@
+{% extends 'tarjeta_plata/base_tarjeta_plata.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    :root {
+        --primary-color: #6f42c1;
+        --primary-dark: #5a2d91;
+        --primary-light: #f3f0ff;
+        --success-color: #28a745;
+        --success-dark: #1e7e34;
+        --success-light: #e6fff0;
+        --accent-color: #6f42c1;
+        --accent-dark: #5a2d91;
+        --danger-color: #dc3545;
+        --info-color: #17a2b8;
+        --light-color: #f8f9fa;
+        --dark-color: #343a40;
+        --border-radius: 10px;
+        --input-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        --input-focus-shadow: 0 0 0 3px rgba(111, 66, 193, 0.15);
+    }
+    
+    .card {
+        border: none;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+    }
+    
+    .card-header.bg-gradient-primary {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    }
+    
+    .section-container {
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        background-color: #fff;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .section-container:hover {
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        transform: translateY(-3px);
+    }
+    
+    .border-left-tarjeta {
+        border-left: 4px solid var(--primary-color) !important;
+    }
+    
+    .form-control {
+        border: 1px solid #e3e6f0;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        box-shadow: var(--input-shadow);
+    }
+    
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: var(--input-focus-shadow);
+        transform: translateY(-1px);
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: var(--dark-color);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(111, 66, 193, 0.3);
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(111, 66, 193, 0.4);
+    }
+    
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+    }
+    
+    .btn-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+    }
+    
+    .section-title {
+        color: var(--primary-color);
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        position: relative;
+        padding-bottom: 0.5rem;
+    }
+    
+    .section-title::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 50px;
+        height: 3px;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        border-radius: 2px;
+    }
+    
+    .form-row {
+        margin-bottom: 1.5rem;
+    }
+    
+    .invalid-feedback {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--danger-color);
+        margin-top: 0.25rem;
+    }
+    
+    .alert {
+        border: none;
+        border-radius: var(--border-radius);
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .alert-info {
+        background: linear-gradient(135deg, var(--info-color) 0%, #138496 100%);
+        color: white;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, var(--primary-light) 0%, #ffffff 100%);
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: var(--border-radius);
+    }
+    
+    .breadcrumb {
+        background: transparent;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .breadcrumb-item a {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+    
+    .breadcrumb-item.active {
+        color: var(--dark-color);
+    }
+    
+    .form-floating {
+        position: relative;
+    }
+    
+    .form-floating > .form-control {
+        height: calc(3.5rem + 2px);
+        line-height: 1.25;
+        padding: 1rem 0.75rem;
+    }
+    
+    .form-floating > label {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        padding: 1rem 0.75rem;
+        pointer-events: none;
+        border: 1px solid transparent;
+        transform-origin: 0 0;
+        transition: opacity .1s ease-in-out,transform .1s ease-in-out;
+    }
+    
+    .required-field::after {
+        content: " *";
+        color: var(--danger-color);
+        font-weight: bold;
+    }
+    
+    .info-box {
+        background: linear-gradient(135deg, var(--primary-light) 0%, #ffffff 100%);
+        border: 1px solid var(--primary-color);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-box .info-title {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-box .info-content {
+        color: var(--dark-color);
+        font-size: 0.9rem;
+    }
+    
+    @media (max-width: 768px) {
+        .section-container {
+            padding: 1rem;
+        }
+        
+        .btn-primary, .btn-secondary {
+            padding: 0.6rem 1.5rem;
+            font-size: 0.9rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block contenido_tarjeta_plata %}
+<div class="container-fluid">
+    <!-- Header de la página -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'tarjeta_plata:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'tarjeta_plata:lista_ventas' %}">Ventas</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'tarjeta_plata:detalle_venta' venta.id %}">Venta {{ venta.id_preap }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Editar</li>
+                    </ol>
+                </nav>
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="bi bi-pencil-square me-2"></i>{{ titulo }}
+                </h1>
+                <p class="mb-0 text-muted">Modifica los datos de la venta</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información de la venta -->
+    <div class="info-box">
+        <div class="info-title">
+            <i class="bi bi-info-circle me-2"></i>Información de la Venta
+        </div>
+        <div class="info-content">
+            <strong>ID Preaprobación:</strong> {{ venta.id_preap }} | 
+            <strong>Estado:</strong> 
+            <span class="badge badge-{% if venta.estado_venta == 'nueva' %}warning{% elif venta.estado_venta == 'aceptada' %}success{% else %}danger{% endif %}">
+                {{ venta.get_estado_venta_display }}
+            </span> | 
+            <strong>Agente:</strong> {{ venta.agente.get_full_name|default:venta.agente.username }} |
+            <strong>Fecha:</strong> {{ venta.fecha_creacion|date:"d/m/Y H:i" }}
+        </div>
+    </div>
+
+    <!-- Formulario de edición -->
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <form method="post" id="editarVentaForm">
+                {% csrf_token %}
+                
+                <!-- Datos del Cliente -->
+                <div class="section-container border-left-tarjeta mb-4">
+                    <h4 class="section-title">
+                        <i class="bi bi-person-fill me-2"></i>Datos del Cliente
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.nombre.id_for_label }}" class="form-label required-field">{{ form.nombre.label }}</label>
+                            {{ form.nombre|add_class:"form-control" }}
+                            {% if form.nombre.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.nombre.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.ine.id_for_label }}" class="form-label required-field">{{ form.ine.label }}</label>
+                            {{ form.ine|add_class:"form-control" }}
+                            {% if form.ine.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.ine.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.rfc.id_for_label }}" class="form-label required-field">{{ form.rfc.label }}</label>
+                            {{ form.rfc|add_class:"form-control" }}
+                            {% if form.rfc.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.rfc.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.telefono.id_for_label }}" class="form-label required-field">{{ form.telefono.label }}</label>
+                            {{ form.telefono|add_class:"form-control" }}
+                            {% if form.telefono.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.telefono.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.correo.id_for_label }}" class="form-label required-field">{{ form.correo.label }}</label>
+                            {{ form.correo|add_class:"form-control" }}
+                            {% if form.correo.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.correo.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Datos de la Venta -->
+                <div class="section-container border-left-tarjeta mb-4">
+                    <h4 class="section-title">
+                        <i class="bi bi-credit-card me-2"></i>Datos de la Venta
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.id_preap.id_for_label }}" class="form-label required-field">{{ form.id_preap.label }}</label>
+                            {{ form.id_preap|add_class:"form-control" }}
+                            {% if form.id_preap.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.id_preap.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.item.id_for_label }}" class="form-label required-field">{{ form.item.label }}</label>
+                            {{ form.item|add_class:"form-control" }}
+                            {% if form.item.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.item.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Dirección -->
+                <div class="section-container border-left-tarjeta mb-4">
+                    <h4 class="section-title">
+                        <i class="bi bi-geo-alt-fill me-2"></i>Dirección
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="{{ form.direccion.id_for_label }}" class="form-label required-field">{{ form.direccion.label }}</label>
+                            {{ form.direccion|add_class:"form-control" }}
+                            {% if form.direccion.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.direccion.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.codigo_postal.id_for_label }}" class="form-label required-field">{{ form.codigo_postal.label }}</label>
+                            {{ form.codigo_postal|add_class:"form-control" }}
+                            {% if form.codigo_postal.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.codigo_postal.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Observaciones -->
+                <div class="section-container border-left-tarjeta mb-4">
+                    <h4 class="section-title">
+                        <i class="bi bi-chat-text me-2"></i>Observaciones
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.observaciones.id_for_label }}" class="form-label">{{ form.observaciones.label }}</label>
+                            {{ form.observaciones|add_class:"form-control" }}
+                            {% if form.observaciones.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.observaciones.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Información adicional sobre la venta o el cliente
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Botones de acción -->
+                <div class="text-center mb-4">
+                    <button type="submit" class="btn btn-primary me-3">
+                        <i class="bi bi-check-circle me-2"></i>Actualizar Venta
+                    </button>
+                    <a href="{% url 'tarjeta_plata:detalle_venta' venta.id %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('editarVentaForm');
+    const submitButton = form.querySelector('button[type="submit"]');
+    
+    // Validación del formulario
+    form.addEventListener('submit', function(e) {
+        // Validar campos requeridos
+        const requiredFields = form.querySelectorAll('input[required], select[required], textarea[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                isValid = false;
+                field.classList.add('is-invalid');
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Por favor, completa todos los campos requeridos.');
+            return;
+        }
+        
+        // Validar formato de email
+        const emailField = form.querySelector('input[type="email"]');
+        if (emailField && emailField.value) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailField.value)) {
+                e.preventDefault();
+                emailField.classList.add('is-invalid');
+                alert('Por favor, ingresa un email válido.');
+                return;
+            }
+        }
+        
+        // Validar RFC (13 caracteres)
+        const rfcField = form.querySelector('#id_rfc');
+        if (rfcField && rfcField.value) {
+            if (rfcField.value.length !== 13) {
+                e.preventDefault();
+                rfcField.classList.add('is-invalid');
+                alert('El RFC debe tener exactamente 13 caracteres.');
+                return;
+            }
+        }
+        
+        // Validar código postal (5 dígitos)
+        const cpField = form.querySelector('#id_codigo_postal');
+        if (cpField && cpField.value) {
+            const cpRegex = /^\d{5}$/;
+            if (!cpRegex.test(cpField.value)) {
+                e.preventDefault();
+                cpField.classList.add('is-invalid');
+                alert('El código postal debe tener 5 dígitos.');
+                return;
+            }
+        }
+        
+        // Confirmar actualización
+        if (!confirm('¿Estás seguro de que deseas actualizar esta venta?')) {
+            e.preventDefault();
+            return;
+        }
+        
+        // Deshabilitar botón y mostrar indicador de carga
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Actualizando...';
+    });
+    
+    // Formatear RFC en mayúsculas
+    const rfcField = form.querySelector('#id_rfc');
+    if (rfcField) {
+        rfcField.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    }
+    
+    // Auto-resize del textarea de observaciones
+    const observacionesField = form.querySelector('#id_observaciones');
+    if (observacionesField) {
+        observacionesField.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+    }
+    
+    // Remover clase de error al escribir
+    const allFields = form.querySelectorAll('input, select, textarea');
+    allFields.forEach(field => {
+        field.addEventListener('input', function() {
+            this.classList.remove('is-invalid');
+        });
+    });
+});
+</script>
+{% endblock %}
