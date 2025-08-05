@@ -24,6 +24,11 @@ class IPRestrictionMiddleware(MiddlewareMixin):
         '/admin/',  # Panel de administración de Django
         '/static/',  # Archivos estáticos
         '/media/',   # Archivos de media
+        '/login/',   # Página de login para evitar bucles infinitos
+        '/logout/',  # Página de logout
+        '/password_reset/',  # Páginas de recuperación de contraseña
+        '/reset/',   # Páginas de confirmación de reset
+        '/favicon.ico',  # Favicon
     ]
     
     def __init__(self, get_response):
