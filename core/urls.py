@@ -5,6 +5,7 @@ from . import views
 from . import views_acuerdos
 from . import views_reportes
 from . import views_api
+from . import views_ip_management
 from django.contrib.auth.views import (
     LoginView, LogoutView, PasswordResetView, PasswordResetDoneView, PasswordResetConfirmView, PasswordResetCompleteView
 )
@@ -57,6 +58,17 @@ urlpatterns = [
     
     # API para verificación de sesión
     path('api/check-session/', views_api.check_session, name='check_session'),
+    
+    # Gestión de IPs permitidas
+    path('admin/ips-permitidas/', views_ip_management.gestionar_ips_permitidas, name='gestionar_ips_permitidas'),
+    path('admin/ips-permitidas/agregar/', views_ip_management.agregar_ip_permitida, name='agregar_ip_permitida'),
+    path('admin/ips-permitidas/<int:ip_id>/toggle/', views_ip_management.toggle_ip_status, name='toggle_ip_status'),
+    path('admin/ips-permitidas/<int:ip_id>/eliminar/', views_ip_management.eliminar_ip_permitida, name='eliminar_ip_permitida'),
+    path('admin/registros-acceso-ip/', views_ip_management.registros_acceso_ip, name='registros_acceso_ip'),
+    
+    # APIs para gestión de IPs
+    path('api/consultar-ip-info/', views_ip_management.consultar_ip_info, name='consultar_ip_info'),
+    path('api/obtener-mi-ip/', views_ip_management.obtener_mi_ip, name='obtener_mi_ip'),
 ]
 
 if settings.DEBUG:

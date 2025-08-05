@@ -487,7 +487,9 @@ class LoginUser(models.Model):
 
 
 class Campana(models.Model):
-    """Modelo para gestionar las diferentes campañas en el sistema."""
+    """
+    Modelo para gestionar las campañas del sistema.
+    """
     nombre = models.CharField(max_length=100, verbose_name=_('Nombre'))
     codigo = models.CharField(max_length=50, unique=True, verbose_name=_('Código'))
     descripcion = models.TextField(blank=True, null=True, verbose_name=_('Descripción'))
@@ -508,4 +510,78 @@ class Campana(models.Model):
         ordering = ['nombre']
         
     def __str__(self):
-        return f"{self.nombre} ({self.codigo})"
+        return self.nombre
+
+
+class IPPermitida(models.Model):
+    """
+    Modelo para gestionar las IPs permitidas para acceder al CRM en producción.
+    """
+    ip_address = models.GenericIPAddressField(verbose_name=_('Dirección IP'))
+    descripcion = models.CharField(max_length=200, verbose_name=_('Descripción'), help_text=_('Descripción de la IP (ej: Oficina principal, Casa del gerente, etc.)'))
+    activa = models.BooleanField(default=True, verbose_name=_('Activa'))
+    usuario_creacion = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='ips_creadas', verbose_name=_('Usuario que creó'))
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_('Fecha de creación'))
+    fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name=_('Fecha de actualización'))
+    ultimo_acceso = models.DateTimeField(null=True, blank=True, verbose_name=_('Último acceso'))
+    
+    class Meta:
+        verbose_name = _('IP Permitida')
+        verbose_name_plural = _('IPs Permitidas')
+        ordering = ['-fecha_creacion']
+        unique_together = ['ip_address']
+        
+    def __str__(self):
+        return f"{self.ip_address} - {self.descripcion}"
+    
+    @classmethod
+    def ip_esta_permitida(cls, ip_address):
+        """
+        Verifica si una IP está permitida y activa.
+        """
+        return cls.objects.filter(ip_address=ip_address, activa=True).exists()
+    
+    @classmethod
+    def registrar_acceso(cls, ip_address):
+        """
+        Registra el último acceso de una IP permitida.
+        """
+        try:
+            ip_obj = cls.objects.get(ip_address=ip_address, activa=True)
+            ip_obj.ultimo_acceso = timezone.now()
+            ip_obj.save(update_fields=['ultimo_acceso'])
+        except cls.DoesNotExist:
+            pass
+
+
+class RegistroAccesoIP(models.Model):
+    """
+    Modelo para registrar todos los intentos de acceso al sistema con información de IP.
+    """
+    TIPO_ACCESO_CHOICES = [
+        ('login_exitoso', 'Login Exitoso'),
+        ('login_fallido', 'Login Fallido'),
+        ('ip_bloqueada', 'IP Bloqueada'),
+        ('acceso_permitido', 'Acceso Permitido'),
+    ]
+    
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='registros_acceso_ip', verbose_name=_('Usuario'))
+    ip_address = models.GenericIPAddressField(verbose_name=_('Dirección IP'))
+    tipo_acceso = models.CharField(max_length=20, choices=TIPO_ACCESO_CHOICES, verbose_name=_('Tipo de acceso'))
+    user_agent = models.TextField(blank=True, null=True, verbose_name=_('User Agent'))
+    pais = models.CharField(max_length=100, blank=True, null=True, verbose_name=_('País'))
+    ciudad = models.CharField(max_length=100, blank=True, null=True, verbose_name=_('Ciudad'))
+    isp = models.CharField(max_length=200, blank=True, null=True, verbose_name=_('ISP'))
+    es_vpn = models.BooleanField(default=False, verbose_name=_('Es VPN'))
+    es_proxy = models.BooleanField(default=False, verbose_name=_('Es Proxy'))
+    puntuacion_riesgo = models.IntegerField(default=0, verbose_name=_('Puntuación de riesgo'))
+    fecha_acceso = models.DateTimeField(auto_now_add=True, verbose_name=_('Fecha de acceso'))
+    
+    class Meta:
+        verbose_name = _('Registro de Acceso IP')
+        verbose_name_plural = _('Registros de Acceso IP')
+        ordering = ['-fecha_acceso']
+        
+    def __str__(self):
+        usuario_str = self.usuario.username if self.usuario else 'Anónimo'
+        return f"{self.ip_address} - {usuario_str} - {self.get_tipo_acceso_display()} ({self.puntuacion_riesgo})"

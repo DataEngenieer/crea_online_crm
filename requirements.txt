@@ -23,3 +23,4 @@ pdf2image
 pytesseract
 minio
 werkzeug
+requests>=2.25.0

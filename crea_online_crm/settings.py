@@ -17,6 +17,10 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 #DEBUG = False
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,crea_online_crm.up.railway.app').split(',')
 
+# Configuración del sistema de restricción de IPs
+# Controla si el middleware de restricción de IP está activo
+IP_RESTRICTION_ENABLED = os.getenv('IP_RESTRICTION_ENABLED', 'False') == 'True'
+
 # Configuración para entornos de producción
 if not DEBUG:
     CSRF_COOKIE_SECURE = True
@@ -56,6 +60,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.ip_middleware.IPRestrictionMiddleware',  # Middleware de restricción de IP para producción
     'core.middleware.LoginRequiredMiddleware',  # Middleware personalizado para requerir login
     'telefonica.middleware.TelefonicaMenuMiddleware',  # Middleware para el menú de Telefónica
     'django.contrib.messages.middleware.MessageMiddleware',

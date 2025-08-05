@@ -1,14 +1,21 @@
 # Exportación de Datos - MatrizCalidad
 
-Este documento describe cómo usar los scripts para exportar todos los datos del modelo `MatrizCalidad` a formato JSON.
+Este documento describe cómo usar los scripts para exportar todos los datos del modelo `MatrizCalidad` a formato JSON. El sistema incluye funcionalidades avanzadas de exportación con múltiples formatos y opciones de configuración.
 
 ## 📁 Archivos Disponibles
 
-### 1. Management Command de Django
+### 1. Management Command de Django (Recomendado)
 **Archivo:** `calidad/management/commands/export_matriz_calidad.py`
+- Integración completa con Django
+- Soporte para múltiples formatos
+- Validación de datos automática
+- Estadísticas detalladas
 
 ### 2. Script Independiente
 **Archivo:** `export_matriz_calidad_script.py`
+- Ejecución independiente
+- Configuración simplificada
+- Ideal para automatización
 
 ---
 
@@ -139,10 +146,13 @@ python manage.py export_matriz_calidad --output matrices_custom.json --format cu
 
 ## 🛠️ Requisitos
 
-- **Django**: Configurado y funcionando
+- **Django**: 5.2.1 o superior
+- **Python**: 3.8 o superior
+- **Base de datos**: PostgreSQL (producción) / SQLite (desarrollo)
 - **Modelo MatrizCalidad**: Debe existir en la base de datos
 - **Permisos**: Acceso de lectura a la base de datos
-- **Python**: 3.8 o superior
+- **MinIO**: Configurado para almacenamiento de archivos (opcional)
+- **Variables de entorno**: Configuradas según el entorno
 
 ---
 
@@ -153,6 +163,10 @@ python manage.py export_matriz_calidad --output matrices_custom.json --format cu
 3. **Codificación**: Los archivos se guardan en UTF-8 para soportar caracteres especiales
 4. **Relaciones**: Se incluye información completa del usuario creador
 5. **Fechas**: Se exportan en formato ISO 8601
+6. **Seguridad**: Los datos exportados pueden contener información sensible
+7. **Integración con IA**: Los datos pueden incluir métricas de procesamiento de IA
+8. **MinIO**: En producción, considere almacenar exportaciones en MinIO
+9. **Restricción de IP**: El comando respeta las restricciones de IP configuradas
 
 ---
 

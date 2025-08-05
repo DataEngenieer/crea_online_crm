@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from .models import LoginUser, Empleado, Cliente, Gestion, AcuerdoPago, CuotaAcuerdo, Campana, UsuariosPlataformas
+from .models import LoginUser, Empleado, Cliente, Gestion, AcuerdoPago, CuotaAcuerdo, Campana, UsuariosPlataformas, IPPermitida, RegistroAccesoIP
 
 # Personalizar el panel de administración
 class ClienteAdmin(admin.ModelAdmin):
@@ -57,7 +57,49 @@ class UsuariosPlataformasAdmin(admin.ModelAdmin):
     list_filter = ('fecha_creacion', 'fecha_actualizacion')
     date_hierarchy = 'fecha_creacion'
 
-# Registrar modelos con sus configuraciones personalizadas
+
+class IPPermitidaAdmin(admin.ModelAdmin):
+    """
+    Configuración del admin para gestionar las IPs permitidas.
+    """
+    list_display = ('ip_address', 'descripcion', 'activa', 'usuario_creacion', 'ultimo_acceso', 'fecha_creacion')
+    list_filter = ('activa', 'fecha_creacion', 'ultimo_acceso')
+    search_fields = ('ip_address', 'descripcion')
+    date_hierarchy = 'fecha_creacion'
+    readonly_fields = ('fecha_creacion', 'fecha_actualizacion', 'ultimo_acceso')
+    
+    def save_model(self, request, obj, form, change):
+        """
+        Asignar automáticamente el usuario que crea la IP permitida.
+        """
+        if not change:  # Solo al crear, no al editar
+            obj.usuario_creacion = request.user
+        super().save_model(request, obj, form, change)
+
+
+class RegistroAccesoIPAdmin(admin.ModelAdmin):
+    """
+    Configuración del admin para ver los registros de acceso por IP.
+    """
+    list_display = ('ip_address', 'usuario', 'tipo_acceso', 'pais', 'ciudad', 'isp', 'es_vpn', 'es_proxy', 'puntuacion_riesgo', 'fecha_acceso')
+    list_filter = ('tipo_acceso', 'es_vpn', 'es_proxy', 'pais', 'fecha_acceso')
+    search_fields = ('ip_address', 'usuario__username', 'ciudad', 'isp')
+    date_hierarchy = 'fecha_acceso'
+    readonly_fields = ('usuario', 'ip_address', 'tipo_acceso', 'user_agent', 'pais', 'ciudad', 'isp', 'es_vpn', 'es_proxy', 'puntuacion_riesgo', 'fecha_acceso')
+    
+    def has_add_permission(self, request):
+        """
+        No permitir agregar registros manualmente, solo se crean automáticamente.
+        """
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        """
+        No permitir editar registros, solo visualización.
+        """
+        return False
+
+# Registrar los modelos en el admin
 admin.site.register(LoginUser, LoginUserAdmin)
 admin.site.register(Cliente, ClienteAdmin)
 admin.site.register(Empleado, EmpleadoAdmin)
@@ -66,6 +108,8 @@ admin.site.register(AcuerdoPago, AcuerdoPagoAdmin)
 admin.site.register(CuotaAcuerdo, CuotaAcuerdoAdmin)
 admin.site.register(Campana, CampanaAdmin)
 admin.site.register(UsuariosPlataformas, UsuariosPlataformasAdmin)
+admin.site.register(IPPermitida, IPPermitidaAdmin)
+admin.site.register(RegistroAccesoIP, RegistroAccesoIPAdmin)
 
 # Personalizar el título del panel de administración
 admin.site.site_header = 'CREA CRM - Panel de Administración'

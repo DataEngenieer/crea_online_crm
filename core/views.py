@@ -52,8 +52,9 @@ import logging
 from django.conf import settings
 
 from .utils import determinar_estado_cliente
-from .models import Cliente, Gestion, AcuerdoPago, CuotaAcuerdo, LoginUser, Campana
+from .models import Cliente, Gestion, AcuerdoPago, CuotaAcuerdo, LoginUser, Campana, RegistroAccesoIP
 from .forms import EmailAuthenticationForm, ClienteForm, GestionForm
+import requests
 
 
 class LoginAuditoriaView(LoginView):
@@ -78,8 +79,13 @@ class LoginAuditoriaView(LoginView):
                 messages.error(self.request, f"El módulo seleccionado ('{selected_module}') no existe.")
                 return redirect('core:login')
 
+        # Obtener IP del cliente
+        ip = self._get_client_ip()
+        
+        # Registrar login exitoso con información detallada de IP
+        self._registrar_login_exitoso(user, ip)
+        
         # Si el usuario tiene acceso, proceder con el login
-        ip = self.request.META.get('REMOTE_ADDR')
         LoginUser.registrar(user, tipo='login', ip=ip)
         login(self.request, user)
         self.request.session['selected_module'] = selected_module
@@ -95,6 +101,12 @@ class LoginAuditoriaView(LoginView):
     
     def form_invalid(self, form):
         """Maneja un formulario de inicio de sesión inválido."""
+        # Obtener IP del cliente
+        ip = self._get_client_ip()
+        
+        # Registrar intento de login fallido
+        self._registrar_login_fallido(ip)
+        
         # Mostrar mensajes de error del formulario
         for field, errors in form.errors.items():
             for error in errors:
@@ -116,7 +128,111 @@ class LoginAuditoriaView(LoginView):
         """URL a la que redirigir después de un inicio de sesión exitoso."""
         # Este método solo se usará como respaldo si form_valid no redirecciona
         return reverse('core:dashboard')
-        return reverse('core:dashboard')
+    
+    def _get_client_ip(self):
+        """Obtiene la IP real del cliente considerando proxies."""
+        x_forwarded_for = self.request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = self.request.META.get('REMOTE_ADDR')
+        
+        # Verificar si es una IP de Cloudflare
+        cf_connecting_ip = self.request.META.get('HTTP_CF_CONNECTING_IP')
+        if cf_connecting_ip:
+            ip = cf_connecting_ip
+            
+        return ip
+    
+    def _get_ip_info(self, ip_address):
+        """Obtiene información de la IP usando la API de ipquery.io."""
+        try:
+            response = requests.get(f'https://api.ipquery.io/{ip_address}', timeout=5)
+            if response.status_code == 200:
+                return response.json()
+        except Exception as e:
+            logger.error(f"Error al consultar IP {ip_address}: {str(e)}")
+        return None
+    
+    def _registrar_login_exitoso(self, user, ip_address):
+        """Registra un login exitoso con información detallada de IP."""
+        try:
+            ip_info = self._get_ip_info(ip_address)
+            
+            # Extraer información de la respuesta
+            pais = None
+            ciudad = None
+            isp = None
+            es_vpn = False
+            es_proxy = False
+            puntuacion_riesgo = 0
+            
+            if ip_info:
+                location = ip_info.get('location', {})
+                isp_info = ip_info.get('isp', {})
+                risk_info = ip_info.get('risk', {})
+                
+                pais = location.get('country')
+                ciudad = location.get('city')
+                isp = isp_info.get('isp')
+                es_vpn = risk_info.get('is_vpn', False)
+                es_proxy = risk_info.get('is_proxy', False)
+                puntuacion_riesgo = risk_info.get('risk_score', 0)
+            
+            RegistroAccesoIP.objects.create(
+                usuario=user,
+                ip_address=ip_address,
+                tipo_acceso='login_exitoso',
+                user_agent=self.request.META.get('HTTP_USER_AGENT', '')[:500],
+                pais=pais,
+                ciudad=ciudad,
+                isp=isp,
+                es_vpn=es_vpn,
+                es_proxy=es_proxy,
+                puntuacion_riesgo=puntuacion_riesgo
+            )
+        except Exception as e:
+            logger.error(f"Error al registrar login exitoso: {str(e)}")
+    
+    def _registrar_login_fallido(self, ip_address):
+        """Registra un intento de login fallido."""
+        try:
+            ip_info = self._get_ip_info(ip_address)
+            
+            # Extraer información básica
+            pais = None
+            ciudad = None
+            isp = None
+            es_vpn = False
+            es_proxy = False
+            puntuacion_riesgo = 0
+            
+            if ip_info:
+                location = ip_info.get('location', {})
+                isp_info = ip_info.get('isp', {})
+                risk_info = ip_info.get('risk', {})
+                
+                pais = location.get('country')
+                ciudad = location.get('city')
+                isp = isp_info.get('isp')
+                es_vpn = risk_info.get('is_vpn', False)
+                es_proxy = risk_info.get('is_proxy', False)
+                puntuacion_riesgo = risk_info.get('risk_score', 0)
+            
+            RegistroAccesoIP.objects.create(
+                usuario=None,  # No hay usuario en login fallido
+                ip_address=ip_address,
+                tipo_acceso='login_fallido',
+                user_agent=self.request.META.get('HTTP_USER_AGENT', '')[:500],
+                pais=pais,
+                ciudad=ciudad,
+                isp=isp,
+                es_vpn=es_vpn,
+                es_proxy=es_proxy,
+                puntuacion_riesgo=puntuacion_riesgo
+            )
+        except Exception as e:
+            logger.error(f"Error al registrar login fallido: {str(e)}")
 
 class LogoutAuditoriaView(LogoutView):
     next_page = 'core:login'  # Especifica el nombre de la URL de login

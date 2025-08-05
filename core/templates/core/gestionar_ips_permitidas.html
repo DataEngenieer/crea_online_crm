@@ -1,0 +1,420 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Gestión de IPs Permitidas - CREA CRM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ip-card {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    .ip-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .ip-status-active {
+        color: #28a745;
+    }
+    .ip-status-inactive {
+        color: #dc3545;
+    }
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+    }
+    .btn-ip-action {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">Gestión de IPs Permitidas</h2>
+                    <p class="text-muted mb-0">Control de acceso al CRM por dirección IP</p>
+                </div>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgregarIP">
+                    <i class="fas fa-plus me-2"></i>Agregar IP
+                </button>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card stats-card">
+                        <div class="card-body text-center">
+                            <h3 class="mb-1">{{ total_ips }}</h3>
+                            <p class="mb-0">Total IPs</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card">
+                        <div class="card-body text-center">
+                            <h3 class="mb-1">{{ ips_activas }}</h3>
+                            <p class="mb-0">IPs Activas</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <button class="btn btn-outline-primary btn-sm" onclick="obtenerMiIP()">
+                                <i class="fas fa-search me-1"></i>Mi IP Actual
+                            </button>
+                            <div id="mi-ip-resultado" class="mt-2"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <a href="{% url 'core:registros_acceso_ip' %}" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-chart-line me-1"></i>Ver Registros
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-8">
+                            <input type="text" class="form-control" name="search" 
+                                   value="{{ search_query }}" 
+                                   placeholder="Buscar por IP o descripción...">
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search me-1"></i>Buscar
+                                </button>
+                                <a href="{% url 'core:gestionar_ips_permitidas' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-1"></i>Limpiar
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Lista de IPs -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">IPs Permitidas ({{ page_obj.paginator.count }} resultados)</h5>
+                </div>
+                <div class="card-body">
+                    {% if page_obj %}
+                        <div class="row">
+                            {% for ip in page_obj %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card ip-card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="card-title mb-0">{{ ip.ip_address }}</h6>
+                                            <span class="badge {% if ip.activa %}bg-success{% else %}bg-danger{% endif %}">
+                                                {% if ip.activa %}Activa{% else %}Inactiva{% endif %}
+                                            </span>
+                                        </div>
+                                        <p class="card-text text-muted small mb-2">{{ ip.descripcion }}</p>
+                                        
+                                        <div class="small text-muted mb-3">
+                                            <div><strong>Creada:</strong> {{ ip.fecha_creacion|date:"d/m/Y H:i" }}</div>
+                                            {% if ip.ultimo_acceso %}
+                                            <div><strong>Último acceso:</strong> {{ ip.ultimo_acceso|date:"d/m/Y H:i" }}</div>
+                                            {% endif %}
+                                            {% if ip.usuario_creacion %}
+                                            <div><strong>Por:</strong> {{ ip.usuario_creacion.username }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="d-flex gap-1">
+                                            <button class="btn btn-outline-info btn-ip-action" 
+                                                    onclick="consultarIPInfo('{{ ip.ip_address }}')" 
+                                                    title="Consultar información">
+                                                <i class="fas fa-info-circle"></i>
+                                            </button>
+                                            
+                                            <form method="POST" action="{% url 'core:toggle_ip_status' ip.id %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" 
+                                                        class="btn {% if ip.activa %}btn-outline-warning{% else %}btn-outline-success{% endif %} btn-ip-action"
+                                                        title="{% if ip.activa %}Desactivar{% else %}Activar{% endif %}">
+                                                    <i class="fas {% if ip.activa %}fa-pause{% else %}fa-play{% endif %}"></i>
+                                                </button>
+                                            </form>
+                                            
+                                            <form method="POST" action="{% url 'core:eliminar_ip_permitida' ip.id %}" 
+                                                  class="d-inline" 
+                                                  onsubmit="return confirm('¿Está seguro de eliminar esta IP?')">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-outline-danger btn-ip-action" title="Eliminar">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Paginación -->
+                        {% if page_obj.has_other_pages %}
+                        <nav aria-label="Paginación">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                                            Anterior
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                                            Siguiente
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-network-wired fa-3x text-muted mb-3"></i>
+                            <h5>No hay IPs permitidas registradas</h5>
+                            <p class="text-muted">Agregue la primera IP permitida para comenzar.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar IP -->
+<div class="modal fade" id="modalAgregarIP" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{% url 'core:agregar_ip_permitida' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Agregar IP Permitida</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="ip_address" class="form-label">Dirección IP *</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="ip_address" name="ip_address" 
+                                   placeholder="Ej: 192.168.1.100" required>
+                            <button type="button" class="btn btn-outline-secondary" onclick="autocompletarMiIP()">
+                                <i class="fas fa-magic"></i> Mi IP
+                            </button>
+                        </div>
+                        <div class="form-text">Ingrese una dirección IPv4 o IPv6 válida</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción *</label>
+                        <input type="text" class="form-control" id="descripcion" name="descripcion" 
+                               placeholder="Ej: Oficina principal, Casa del gerente" required>
+                        <div class="form-text">Descripción para identificar esta IP</div>
+                    </div>
+                    <div id="ip-info-preview" class="alert alert-info d-none">
+                        <h6>Información de la IP:</h6>
+                        <div id="ip-info-content"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-info" onclick="previsualizarIP()">Previsualizar</button>
+                    <button type="submit" class="btn btn-primary">Agregar IP</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para información de IP -->
+<div class="modal fade" id="modalInfoIP" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Información de IP</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="ip-info-loading" class="text-center d-none">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2">Consultando información de la IP...</p>
+                </div>
+                <div id="ip-info-result"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Función para obtener la IP actual del usuario
+function obtenerMiIP() {
+    fetch('{% url "core:obtener_mi_ip" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('mi-ip-resultado').innerHTML = 
+                    `<small class="text-success"><strong>${data.ip}</strong></small>`;
+            } else {
+                document.getElementById('mi-ip-resultado').innerHTML = 
+                    '<small class="text-danger">Error al obtener IP</small>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('mi-ip-resultado').innerHTML = 
+                '<small class="text-danger">Error de conexión</small>';
+        });
+}
+
+// Función para autocompletar con la IP actual
+function autocompletarMiIP() {
+    fetch('{% url "core:obtener_mi_ip" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('ip_address').value = data.ip;
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+// Función para previsualizar información de IP
+function previsualizarIP() {
+    const ip = document.getElementById('ip_address').value.trim();
+    if (!ip) {
+        alert('Por favor ingrese una dirección IP');
+        return;
+    }
+    
+    consultarIPInfo(ip, true);
+}
+
+// Función para consultar información de IP
+function consultarIPInfo(ip, isPreview = false) {
+    const modalId = isPreview ? null : '#modalInfoIP';
+    const loadingId = isPreview ? null : 'ip-info-loading';
+    const resultId = isPreview ? 'ip-info-content' : 'ip-info-result';
+    const previewContainer = isPreview ? 'ip-info-preview' : null;
+    
+    if (!isPreview) {
+        document.getElementById(loadingId).classList.remove('d-none');
+        document.getElementById(resultId).innerHTML = '';
+        new bootstrap.Modal(document.querySelector(modalId)).show();
+    } else {
+        document.getElementById(resultId).innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div> Consultando...';
+        document.getElementById(previewContainer).classList.remove('d-none');
+    }
+    
+    fetch(`{% url "core:consultar_ip_info" %}?ip=${encodeURIComponent(ip)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (!isPreview) {
+                document.getElementById(loadingId).classList.add('d-none');
+            }
+            
+            if (data.success) {
+                const info = data.data;
+                const html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Ubicación</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>País:</strong> ${info.pais || 'N/A'}</li>
+                                <li><strong>Ciudad:</strong> ${info.ciudad || 'N/A'}</li>
+                                <li><strong>Región:</strong> ${info.region || 'N/A'}</li>
+                                <li><strong>Zona horaria:</strong> ${info.zona_horaria || 'N/A'}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Proveedor</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>ISP:</strong> ${info.isp || 'N/A'}</li>
+                                <li><strong>Organización:</strong> ${info.organizacion || 'N/A'}</li>
+                                <li><strong>ASN:</strong> ${info.asn || 'N/A'}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6>Análisis de Riesgo</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <span class="badge ${info.es_vpn ? 'bg-warning' : 'bg-success'} me-2">
+                                        VPN: ${info.es_vpn ? 'Sí' : 'No'}
+                                    </span>
+                                    <span class="badge ${info.es_proxy ? 'bg-warning' : 'bg-success'} me-2">
+                                        Proxy: ${info.es_proxy ? 'Sí' : 'No'}
+                                    </span>
+                                    <span class="badge ${info.es_movil ? 'bg-info' : 'bg-secondary'} me-2">
+                                        Móvil: ${info.es_movil ? 'Sí' : 'No'}
+                                    </span>
+                                </div>
+                                <div class="col-md-6">
+                                    <span class="badge ${info.puntuacion_riesgo > 50 ? 'bg-danger' : info.puntuacion_riesgo > 25 ? 'bg-warning' : 'bg-success'}">
+                                        Riesgo: ${info.puntuacion_riesgo}%
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById(resultId).innerHTML = html;
+            } else {
+                document.getElementById(resultId).innerHTML = 
+                    `<div class="alert alert-danger">Error: ${data.error}</div>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (!isPreview) {
+                document.getElementById(loadingId).classList.add('d-none');
+            }
+            document.getElementById(resultId).innerHTML = 
+                '<div class="alert alert-danger">Error de conexión al consultar la información de la IP</div>';
+        });
+}
+
+// Cargar la IP actual al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    obtenerMiIP();
+});
+</script>
+{% endblock %}
