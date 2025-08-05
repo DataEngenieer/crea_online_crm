@@ -45,14 +45,14 @@ class IPRestrictionMiddleware(MiddlewareMixin):
                 # Obtener la IP real del cliente
                 ip_cliente = self._get_client_ip(request)
                 
-                # Verificar si el usuario es superusuario o administrador
-                if self._is_privileged_user(request):
-                    # Registrar acceso de usuario privilegiado
-                    self._registrar_acceso(request, ip_cliente, 'acceso_permitido')
-                    return self.get_response(request)
-                
                 # Verificar si la IP está permitida
                 if not IPPermitida.ip_esta_permitida(ip_cliente):
+                    # Verificar si el usuario es superusuario o administrador (bypass para emergencias)
+                    if self._is_privileged_user(request):
+                        # Registrar acceso de usuario privilegiado con IP no permitida
+                        self._registrar_acceso(request, ip_cliente, 'acceso_privilegiado_bypass')
+                        return self.get_response(request)
+                    
                     # Obtener información detallada de la IP
                     ip_info = self._get_ip_info(ip_cliente)
                     
@@ -62,9 +62,13 @@ class IPRestrictionMiddleware(MiddlewareMixin):
                     # Bloquear acceso
                     return self._block_access(request, ip_cliente, ip_info)
                 else:
+                    # IP permitida - permitir acceso a cualquier usuario autenticado
                     # Registrar acceso exitoso y actualizar último acceso
                     IPPermitida.registrar_acceso(ip_cliente)
-                    self._registrar_acceso(request, ip_cliente, 'acceso_permitido')
+                    
+                    # Determinar tipo de acceso según el usuario
+                    tipo_acceso = 'acceso_privilegiado' if self._is_privileged_user(request) else 'acceso_permitido'
+                    self._registrar_acceso(request, ip_cliente, tipo_acceso)
         
         return self.get_response(request)
     
