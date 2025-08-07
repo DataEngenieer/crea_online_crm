@@ -273,6 +273,52 @@
                 </div>
             </div>
 
+            <!-- Datos Adicionales -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="detail-card p-3">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="section-icon bg-light text-secondary me-3">
+                                <i class="fas fa-plus-circle"></i>
+                            </div>
+                            <h6 class="mb-0 text-secondary">Datos Adicionales</h6>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="detail-label">Usuario C8</div>
+                                <div class="detail-value">{{ venta.usuario_c8|default:"No proporcionado" }}</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="detail-label">Tipo de Entrega</div>
+                                <div class="detail-value">{{ venta.get_entrega_display|default:"No especificado" }}</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="detail-label">DN</div>
+                                <div class="detail-value">{{ venta.dn|default:"No proporcionado" }}</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="detail-label">Estado República</div>
+                                <div class="detail-value">{{ venta.estado_republica|default:"No proporcionado" }}</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="detail-label">Ingreso Mensual Cliente</div>
+                                <div class="detail-value">
+                                    {% if venta.ingreso_mensual_cliente %}
+                                        ${{ venta.ingreso_mensual_cliente|floatformat:2 }} MXN
+                                    {% else %}
+                                        No proporcionado
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="detail-label">Resultado</div>
+                                <div class="detail-value">{{ venta.get_resultado_display|default:"No especificado" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Historial de Gestión -->
             {% if gestiones %}
             <div class="detail-card p-3">

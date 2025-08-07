@@ -40,6 +40,21 @@ CALL_REVIEW_CHOICES = [
     ('no', 'No'),
 ]
 
+# Opciones para tipo de entrega
+ENTREGA_CHOICES = [
+    ('domicilio', 'Domicilio'),
+    ('centro_comercial', 'Centro Comercial'),
+]
+
+# Opciones para resultado de venta
+RESULTADO_CHOICES = [
+    ('venta_bbd', 'Venta BBD'),
+    ('venta_referidos', 'Venta Referidos'),
+    ('rechazada', 'Rechazada'),
+    ('venta_md', 'Venta MD'),
+    ('otro', 'Otro'),
+]
+
 
 class ClienteTarjetaPlata(models.Model):
     """Modelo para almacenar los clientes potenciales de tarjeta de crédito mexicanos"""
@@ -107,10 +122,11 @@ class VentaTarjetaPlata(models.Model):
     
     # Campos principales
     id_preap = models.CharField(
-        max_length=50, 
+        max_length=5, 
         unique=True, 
+        blank=True,
         verbose_name=_("ID PreAp"),
-        help_text=_("ID de preaprobación obtenido de la plataforma del banco")
+        help_text=_("ID de preaprobación generado automáticamente por el sistema")
     )
     item = models.CharField(max_length=50, verbose_name=_("Item"))
     nombre = models.CharField(max_length=200, verbose_name=_("Nombre"))
@@ -136,6 +152,47 @@ class VentaTarjetaPlata(models.Model):
         choices=ESTADO_VENTA_TARJETA_CHOICES, 
         default='nueva', 
         verbose_name=_("Estado Venta")
+    )
+    
+    # Nuevos campos agregados
+    usuario_c8 = models.CharField(
+        max_length=100, 
+        null=True, 
+        blank=True, 
+        verbose_name=_("Usuario C8")
+    )
+    entrega = models.CharField(
+        max_length=20, 
+        choices=ENTREGA_CHOICES, 
+        null=True, 
+        blank=True, 
+        verbose_name=_("Tipo de Entrega")
+    )
+    dn = models.CharField(
+        max_length=100, 
+        null=True, 
+        blank=True, 
+        verbose_name=_("DN")
+    )
+    estado_republica = models.CharField(
+        max_length=100, 
+        null=True, 
+        blank=True, 
+        verbose_name=_("Estado República")
+    )
+    ingreso_mensual_cliente = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        null=True, 
+        blank=True, 
+        verbose_name=_("Ingreso Mensual Cliente")
+    )
+    resultado = models.CharField(
+        max_length=20, 
+        choices=RESULTADO_CHOICES, 
+        null=True, 
+        blank=True, 
+        verbose_name=_("Resultado")
     )
     
     # Usuarios relacionados
@@ -172,13 +229,57 @@ class VentaTarjetaPlata(models.Model):
     def __str__(self):
         return f"{self.id_preap} - {self.nombre}"
     
+    def generar_id_preap(self):
+        """Genera un ID PreAp único consecutivo alfanumérico de 5 dígitos"""
+        # Obtener el último ID PreAp creado
+        ultimo_id = VentaTarjetaPlata.objects.filter(
+            id_preap__isnull=False
+        ).exclude(
+            id_preap=''
+        ).order_by('-id').first()
+        
+        if ultimo_id and ultimo_id.id_preap:
+            # Extraer la parte numérica del último ID
+            try:
+                letra = ultimo_id.id_preap[0]
+                numero = int(ultimo_id.id_preap[1:])
+                
+                # Incrementar el número
+                numero += 1
+                
+                # Si el número excede 9999, cambiar a la siguiente letra
+                if numero > 9999:
+                    # Obtener la siguiente letra del alfabeto
+                    siguiente_letra_ord = ord(letra) + 1
+                    if siguiente_letra_ord > ord('Z'):
+                        siguiente_letra_ord = ord('A')  # Reiniciar en A
+                    letra = chr(siguiente_letra_ord)
+                    numero = 1
+                
+                return f"{letra}{numero:04d}"
+            except (ValueError, IndexError):
+                # Si hay error en el formato, empezar desde A0001
+                return "A0001"
+        else:
+            # Si no hay registros previos, empezar desde A0001
+            return "A0001"
+    
     def save(self, *args, **kwargs):
-        """Sobrescribe el método save para actualizar fecha_revision cuando cambia el estado"""
+        """Sobrescribe el método save para generar ID automático y actualizar fecha_revision"""
+        # Generar ID PreAp automáticamente si no existe
+        if not self.id_preap:
+            self.id_preap = self.generar_id_preap()
+            # Verificar que el ID generado sea único
+            while VentaTarjetaPlata.objects.filter(id_preap=self.id_preap).exists():
+                self.id_preap = self.generar_id_preap()
+        
+        # Lógica existente para fecha_revision
         if self.pk:
             # Si ya existe, verificar si cambió el estado
             original = VentaTarjetaPlata.objects.get(pk=self.pk)
             if original.estado_venta != self.estado_venta and self.estado_venta in ['aceptada', 'rechazada']:
                 self.fecha_revision = timezone.now()
+        
         super().save(*args, **kwargs)
 
 

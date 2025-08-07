@@ -356,15 +356,16 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="{{ form.id_preap.id_for_label }}" class="form-label required-field">{{ form.id_preap.label }}</label>
-                            {{ form.id_preap|add_class:"form-control" }}
-                            {% if form.id_preap.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.id_preap.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
+                            <label for="id_preap_display" class="form-label">ID PreAp</label>
+                            <div class="input-group input-group-custom">
+                                <span class="input-group-text">
+                                    <i class="bi bi-credit-card-2-front"></i>
+                                </span>
+                                <input type="text" id="id_preap_display" class="form-control" value="{{ venta.id_preap }}" readonly style="background-color: #f8f9fa; color: #6c757d;">
+                            </div>
+                            <small class="form-text text-muted">
+                                <i class="bi bi-info-circle"></i> ID generado automáticamente por el sistema
+                            </small>
                         </div>
                         
                         <div class="col-md-6 mb-3">
@@ -434,6 +435,94 @@
                             <small class="form-text text-muted">
                                 Información adicional sobre la venta o el cliente
                             </small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Datos Adicionales -->
+                <div class="section-container border-left-tarjeta mb-4">
+                    <h4 class="section-title">
+                        <i class="bi bi-plus-circle-fill me-2"></i>Datos Adicionales
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.usuario_c8.id_for_label }}" class="form-label">{{ form.usuario_c8.label }}</label>
+                            {{ form.usuario_c8|add_class:"form-control" }}
+                            {% if form.usuario_c8.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.usuario_c8.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.entrega.id_for_label }}" class="form-label">{{ form.entrega.label }}</label>
+                            {{ form.entrega|add_class:"form-select" }}
+                            {% if form.entrega.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.entrega.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.dn.id_for_label }}" class="form-label">{{ form.dn.label }}</label>
+                            {{ form.dn|add_class:"form-control" }}
+                            {% if form.dn.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.dn.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.estado_republica.id_for_label }}" class="form-label">{{ form.estado_republica.label }}</label>
+                            {{ form.estado_republica|add_class:"form-control" }}
+                            {% if form.estado_republica.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.estado_republica.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.ingreso_mensual_cliente.id_for_label }}" class="form-label">{{ form.ingreso_mensual_cliente.label }}</label>
+                            {{ form.ingreso_mensual_cliente|add_class:"form-control" }}
+                            {% if form.ingreso_mensual_cliente.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.ingreso_mensual_cliente.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Ingrese el monto en pesos mexicanos
+                            </small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.resultado.id_for_label }}" class="form-label">{{ form.resultado.label }}</label>
+                            {{ form.resultado|add_class:"form-select" }}
+                            {% if form.resultado.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.resultado.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

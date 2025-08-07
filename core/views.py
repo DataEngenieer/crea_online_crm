@@ -51,6 +51,9 @@ import pandas as pd
 import logging
 from django.conf import settings
 
+# Configurar logger
+logger = logging.getLogger(__name__)
+
 from .utils import determinar_estado_cliente
 from .models import Cliente, Gestion, AcuerdoPago, CuotaAcuerdo, LoginUser, Campana, RegistroAccesoIP
 from .forms import EmailAuthenticationForm, ClienteForm, GestionForm
@@ -157,6 +160,17 @@ class LoginAuditoriaView(LoginView):
     def _registrar_login_exitoso(self, user, ip_address):
         """Registra un login exitoso con información detallada de IP."""
         try:
+            # En desarrollo, registrar sin información detallada de IP para evitar lentitud
+            if settings.DEBUG:
+                RegistroAccesoIP.objects.create(
+                    usuario=user,
+                    ip_address=ip_address,
+                    tipo_acceso='login_exitoso',
+                    user_agent=self.request.META.get('HTTP_USER_AGENT', '')[:500]
+                )
+                return
+            
+            # En producción, obtener información detallada de la IP
             ip_info = self._get_ip_info(ip_address)
             
             # Extraer información de la respuesta
@@ -197,6 +211,17 @@ class LoginAuditoriaView(LoginView):
     def _registrar_login_fallido(self, ip_address):
         """Registra un intento de login fallido."""
         try:
+            # En desarrollo, registrar sin información detallada de IP para evitar lentitud
+            if settings.DEBUG:
+                RegistroAccesoIP.objects.create(
+                    usuario=None,  # No hay usuario en login fallido
+                    ip_address=ip_address,
+                    tipo_acceso='login_fallido',
+                    user_agent=self.request.META.get('HTTP_USER_AGENT', '')[:500]
+                )
+                return
+            
+            # En producción, obtener información detallada de la IP
             ip_info = self._get_ip_info(ip_address)
             
             # Extraer información básica

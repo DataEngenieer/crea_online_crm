@@ -15,16 +15,11 @@ class VentaTarjetaPlataForm(forms.ModelForm):
     class Meta:
         model = VentaTarjetaPlata
         fields = [
-            'id_preap', 'item', 'nombre', 'ine', 'rfc', 'telefono', 'correo', 
-            'direccion', 'codigo_postal', 'observaciones'
+            'item', 'nombre', 'ine', 'rfc', 'telefono', 'correo', 
+            'direccion', 'codigo_postal', 'usuario_c8', 'entrega', 'dn', 
+            'estado_republica', 'ingreso_mensual_cliente', 'resultado', 'observaciones'
         ]
         widgets = {
-            'id_preap': forms.TextInput(attrs={
-                'class': 'form-control', 
-                'placeholder': 'ID de preaprobación del banco',
-                'autocomplete': 'off',
-                'maxlength': '50'
-            }),
             'item': forms.TextInput(attrs={
                 'class': 'form-control', 
                 'placeholder': 'Ingrese el item del cliente',
@@ -67,6 +62,36 @@ class VentaTarjetaPlataForm(forms.ModelForm):
                 'placeholder': 'Código postal',
                 'autocomplete': 'off'
             }),
+            'usuario_c8': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Usuario C8',
+                'autocomplete': 'off'
+            }),
+            'entrega': forms.Select(attrs={
+                'class': 'form-select', 
+                'autocomplete': 'off'
+            }),
+            'dn': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'DN',
+                'autocomplete': 'off'
+            }),
+            'estado_republica': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Estado República',
+                'autocomplete': 'off'
+            }),
+            'ingreso_mensual_cliente': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Ingreso mensual del cliente',
+                'step': '0.01',
+                'min': '0',
+                'autocomplete': 'off'
+            }),
+            'resultado': forms.Select(attrs={
+                'class': 'form-select', 
+                'autocomplete': 'off'
+            }),
             'observaciones': forms.TextInput(attrs={
                 'class': 'form-control', 
                 'placeholder': 'Observaciones adicionales (opcional)',
@@ -74,7 +99,6 @@ class VentaTarjetaPlataForm(forms.ModelForm):
             }),
         }
         labels = {
-            'id_preap': 'ID PreAp',
             'item': 'Item',
             'nombre': 'Nombre Completo',
             'ine': 'INE',
@@ -83,25 +107,14 @@ class VentaTarjetaPlataForm(forms.ModelForm):
             'correo': 'Correo Electrónico',
             'direccion': 'Dirección',
             'codigo_postal': 'Código Postal',
+            'usuario_c8': 'Usuario C8',
+            'entrega': 'Tipo de Entrega',
+            'dn': 'DN',
+            'estado_republica': 'Estado República',
+            'ingreso_mensual_cliente': 'Ingreso Mensual Cliente',
+            'resultado': 'Resultado',
             'observaciones': 'Observaciones',
         }
-
-    def clean_id_preap(self):
-        """Validación personalizada para el ID PreAp"""
-        id_preap = self.cleaned_data.get('id_preap')
-        if not id_preap:
-            raise forms.ValidationError('El ID PreAp es obligatorio')
-        
-        id_preap = id_preap.strip().upper()
-        
-        if len(id_preap) < 5 or len(id_preap) > 50:
-            raise forms.ValidationError('El ID PreAp debe tener entre 5 y 50 caracteres')
-        
-        # Verificar que solo contenga caracteres alfanuméricos
-        if not id_preap.replace('-', '').replace('_', '').isalnum():
-            raise forms.ValidationError('El ID PreAp solo puede contener letras, números, guiones y guiones bajos')
-        
-        return id_preap
 
     def clean_rfc(self):
         """Validación personalizada para el RFC"""

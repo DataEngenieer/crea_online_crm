@@ -38,6 +38,9 @@ class IPRestrictionMiddleware(MiddlewareMixin):
         # Verificar si el sistema de restricción de IP está habilitado
         ip_restriction_enabled = getattr(settings, 'IP_RESTRICTION_ENABLED', False)
         
+        # Logging de depuración para entender por qué se ejecuta el middleware
+        logger.debug(f"IP Middleware Debug - ip_restriction_enabled: {ip_restriction_enabled}, DEBUG: {settings.DEBUG}")
+        
         # Solo aplicar restricciones si está habilitado y en producción
         if ip_restriction_enabled and not settings.DEBUG:
             # Verificar si la URL está exenta
@@ -46,8 +49,16 @@ class IPRestrictionMiddleware(MiddlewareMixin):
                 ip_cliente = self._get_client_ip(request)
                 
                 # Verificar si la IP está permitida
-                if not IPPermitida.ip_esta_permitida(ip_cliente):
-                    # Verificar si el usuario es superusuario o administrador (bypass para emergencias)
+                if IPPermitida.ip_esta_permitida(ip_cliente):
+                    # IP permitida - permitir acceso a cualquier usuario autenticado
+                    # Registrar acceso exitoso y actualizar último acceso
+                    IPPermitida.registrar_acceso(ip_cliente)
+                    
+                    # Determinar tipo de acceso según el usuario
+                    tipo_acceso = 'acceso_privilegiado' if self._is_privileged_user(request) else 'acceso_permitido'
+                    self._registrar_acceso(request, ip_cliente, tipo_acceso)
+                else:
+                    # IP no permitida - verificar si el usuario es privilegiado (bypass para emergencias)
                     if self._is_privileged_user(request):
                         # Registrar acceso de usuario privilegiado con IP no permitida
                         self._registrar_acceso(request, ip_cliente, 'acceso_privilegiado_bypass')
@@ -61,14 +72,6 @@ class IPRestrictionMiddleware(MiddlewareMixin):
                     
                     # Bloquear acceso
                     return self._block_access(request, ip_cliente, ip_info)
-                else:
-                    # IP permitida - permitir acceso a cualquier usuario autenticado
-                    # Registrar acceso exitoso y actualizar último acceso
-                    IPPermitida.registrar_acceso(ip_cliente)
-                    
-                    # Determinar tipo de acceso según el usuario
-                    tipo_acceso = 'acceso_privilegiado' if self._is_privileged_user(request) else 'acceso_permitido'
-                    self._registrar_acceso(request, ip_cliente, tipo_acceso)
         
         return self.get_response(request)
     
@@ -203,16 +206,71 @@ class IPRestrictionMiddleware(MiddlewareMixin):
                 'mensaje': mensaje_base
             }, status=403)
         
-        # Para peticiones normales, redirigir al login con mensaje
-        try:
-            login_url = reverse('core:login')
-        except:
-            login_url = '/login/'
+        # Para peticiones normales, devolver una respuesta HTTP 403 directa
+        # en lugar de redirigir al login para evitar bucles infinitos
+        from django.http import HttpResponseForbidden
         
-        response = redirect(f"{login_url}?next={request.path}")
+        html_content = f"""
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Acceso Restringido - CRM</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    background-color: #f8f9fa;
+                    margin: 0;
+                    padding: 0;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                }}
+                .container {{
+                    background: white;
+                    padding: 2rem;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    text-align: center;
+                    max-width: 500px;
+                }}
+                .error-icon {{
+                    font-size: 4rem;
+                    color: #dc3545;
+                    margin-bottom: 1rem;
+                }}
+                h1 {{
+                    color: #dc3545;
+                    margin-bottom: 1rem;
+                }}
+                p {{
+                    color: #6c757d;
+                    line-height: 1.6;
+                    margin-bottom: 1rem;
+                }}
+                .ip-info {{
+                    background-color: #f8f9fa;
+                    padding: 1rem;
+                    border-radius: 4px;
+                    margin: 1rem 0;
+                    font-family: monospace;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="error-icon">🚫</div>
+                <h1>Acceso Restringido</h1>
+                <p>{mensaje_base}</p>
+                <div class="ip-info">
+                    IP detectada: {ip_address}
+                </div>
+                <p><strong>Si cree que esto es un error, contacte al administrador del sistema.</strong></p>
+            </div>
+        </body>
+        </html>
+        """
         
-        # Agregar mensaje de error
-        if hasattr(request, '_messages'):
-            messages.error(request, mensaje_base, extra_tags='ip_restricted')
-        
-        return response
+        return HttpResponseForbidden(html_content)
