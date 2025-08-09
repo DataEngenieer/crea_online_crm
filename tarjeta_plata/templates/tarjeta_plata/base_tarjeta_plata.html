@@ -181,24 +181,10 @@
 {% block extra_js %}
 {{ block.super }}
 <script>
-    // Script para actualizar badges en tiempo real
-    function actualizarBadges() {
-        fetch('{% url "tarjeta_plata:api_estadisticas" %}')
-            .then(response => response.json())
-            .then(data => {
-                const badgeNuevas = document.getElementById('badge-nuevas');
-                if (badgeNuevas) {
-                    badgeNuevas.textContent = data.ventas_nuevas;
-                    badgeNuevas.style.display = data.ventas_nuevas > 0 ? 'inline' : 'none';
-                }
-            })
-            .catch(error => console.error('Error:', error));
-    }
-    
-    // Actualizar badges cada 30 segundos
-    setInterval(actualizarBadges, 30000);
-    
-    // Actualizar al cargar la página
-    document.addEventListener('DOMContentLoaded', actualizarBadges);
+    // Auto-refresh de badges eliminado para reducir tráfico innecesario al servidor
+    // Los badges se actualizan solo cuando el usuario navega entre páginas
+    document.addEventListener('DOMContentLoaded', function() {
+        // Funcionalidad básica de la página sin actualizaciones automáticas
+    });
 </script>
 {% endblock %}

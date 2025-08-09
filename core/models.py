@@ -400,29 +400,32 @@ class AcuerdoPago(models.Model):
     def __str__(self):
         return f"Acuerdo de {self.cliente.nombre_completo} por ${self.monto_total:,} del {self.fecha_acuerdo}"
     
-    def actualizar_estado(self):
+    def actualizar_estado(self, save_changes=True):
         """Actualiza el estado del acuerdo basado en el estado de sus cuotas"""
         cuotas = self.cuotas.all()
         total_cuotas = cuotas.count()
         
+        estado_anterior = self.estado
+        
         if total_cuotas == 0:
             self.estado = self.PENDIENTE
-            self.save()
-            return
-            
-        cuotas_pagadas = cuotas.filter(estado='pagada').count()
-        cuotas_vencidas = cuotas.filter(fecha_vencimiento__lt=timezone.now().date(), estado='pendiente').count()
-        
-        if cuotas_pagadas == total_cuotas:
-            self.estado = self.COMPLETADO
-        elif cuotas_vencidas > 0:
-            self.estado = self.INCUMPLIDO
-        elif cuotas_pagadas > 0:
-            self.estado = self.EN_CURSO
         else:
-            self.estado = self.PENDIENTE
+            cuotas_pagadas = cuotas.filter(estado='pagada').count()
+            cuotas_vencidas = cuotas.filter(fecha_vencimiento__lt=timezone.now().date(), estado='pendiente').count()
             
-        self.save()
+            if cuotas_pagadas == total_cuotas:
+                self.estado = self.COMPLETADO
+            elif cuotas_vencidas > 0:
+                self.estado = self.INCUMPLIDO
+            elif cuotas_pagadas > 0:
+                self.estado = self.EN_CURSO
+            else:
+                self.estado = self.PENDIENTE
+        
+        # Solo guardar si el estado cambió y se solicita guardar
+        if save_changes and self.estado != estado_anterior:
+            # Usar update_fields para evitar triggers innecesarios
+            self.save(update_fields=['estado', 'fecha_actualizacion'])
 
 
 class CuotaAcuerdo(models.Model):
@@ -464,10 +467,16 @@ class CuotaAcuerdo(models.Model):
         if self.estado == self.PENDIENTE and self.fecha_vencimiento < timezone.now().date():
             self.estado = self.VENCIDA
             
+        # Verificar si es una creación inicial o actualización
+        is_new = self.pk is None
+        
         super().save(*args, **kwargs)
         
-        # Actualizar el estado del acuerdo padre
-        self.acuerdo.actualizar_estado()
+        # Solo actualizar el estado del acuerdo padre si no es una creación masiva
+        # Esto evita múltiples llamadas durante la creación inicial de cuotas
+        update_parent = kwargs.pop('update_parent_state', True)
+        if update_parent and not getattr(self, '_skip_parent_update', False):
+            self.acuerdo.actualizar_estado()
 
 
 class LoginUser(models.Model):

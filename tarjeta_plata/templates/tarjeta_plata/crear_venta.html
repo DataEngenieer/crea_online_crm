@@ -276,6 +276,21 @@
                             </small>
                         </div>
                         
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.item.id_for_label }}" class="form-label required-field">{{ form.item.label }}</label>
+                            <div class="input-group input-group-custom">
+                                <span class="input-group-text">
+                                    <i class="bi bi-tag"></i>
+                                </span>
+                                {{ form.item|add_class:"form-control"|attr:"placeholder:Código del item" }}
+                            </div>
+                            {% if form.item.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.item.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
                         <div class="col-md-12 mb-3">
                             <label for="{{ form.nombre.id_for_label }}" class="form-label required-field">Nombre Completo</label>
                             <div class="input-group input-group-custom">
@@ -538,8 +553,42 @@
 {{ block.super }}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Script de depuración para verificar campos
+        console.log('=== DEPURACIÓN FORMULARIO TARJETA PLATA ===');
+        
+        // IDs reales de Django (patrón: id_[nombre_campo])
+        const camposObligatoriosIds = [
+            'id_item',
+            'id_nombre', 
+            'id_ine',
+            'id_rfc',
+            'id_telefono',
+            'id_correo',
+            'id_direccion',
+            'id_codigo_postal'
+        ];
+        
+        // Verificar que los campos existen
+        camposObligatoriosIds.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                const hasRequired = field.hasAttribute('required');
+                const value = field.value ? field.value.trim() : '';
+                console.log(`Campo ${fieldId}: EXISTE, Required: ${hasRequired}, Valor: "${value}"`);
+            } else {
+                console.log(`Campo ${fieldId}: NO EXISTE`);
+            }
+        });
+        
+        const form = document.querySelector('form');
+        if (form) {
+            console.log('Formulario encontrado:', form);
+        } else {
+            console.log('ERROR: Formulario no encontrado');
+            return;
+        }
         // Validación en tiempo real para RFC
-        const rfcInput = document.getElementById('{{ form.rfc.id_for_label }}');
+        const rfcInput = document.getElementById('id_rfc');
         if (rfcInput) {
             rfcInput.addEventListener('input', function() {
                 const rfc = this.value.toUpperCase();
@@ -556,7 +605,7 @@
         }
         
         // Validación para código postal
-        const cpInput = document.getElementById('{{ form.codigo_postal.id_for_label }}');
+        const cpInput = document.getElementById('id_codigo_postal');
         if (cpInput) {
             cpInput.addEventListener('input', function() {
                 const cp = this.value;
@@ -574,16 +623,23 @@
         }
         
         // Validación para teléfono
-        const telefonoInput = document.getElementById('{{ form.telefono.id_for_label }}');
+        const telefonoInput = document.getElementById('id_telefono');
         if (telefonoInput) {
             telefonoInput.addEventListener('input', function() {
                 // Solo permitir números
                 this.value = this.value.replace(/[^0-9]/g, '');
+                
+                // Validar longitud (10 dígitos)
+                if (this.value.length > 0 && this.value.length !== 10) {
+                    this.classList.add('is-invalid');
+                } else {
+                    this.classList.remove('is-invalid');
+                }
             });
         }
         
         // Convertir nombre a mayúsculas
-        const nombreInput = document.getElementById('{{ form.nombre.id_for_label }}');
+        const nombreInput = document.getElementById('id_nombre');
         if (nombreInput) {
             nombreInput.addEventListener('input', function() {
                 this.value = this.value.toUpperCase();
@@ -591,24 +647,101 @@
         }
         
         // Validación del formulario antes del envío
-        const form = document.querySelector('form');
         form.addEventListener('submit', function(e) {
-            let isValid = true;
+            console.log('=== VALIDACIÓN ANTES DEL ENVÍO ===');
             
-            // Validar campos requeridos
-            const requiredFields = form.querySelectorAll('[required]');
-            requiredFields.forEach(field => {
-                if (!field.value.trim()) {
-                    field.classList.add('is-invalid');
-                    isValid = false;
+            let camposVacios = [];
+            let todosLosValores = {};
+            let isValid = true;
+            let firstInvalidField = null;
+            
+            // Validar cada campo obligatorio usando IDs reales
+            camposObligatoriosIds.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    const value = field.value ? field.value.trim() : '';
+                    todosLosValores[fieldId] = value;
+                    
+                    if (!value) {
+                        camposVacios.push(fieldId);
+                        field.classList.add('is-invalid');
+                        if (!firstInvalidField) {
+                            firstInvalidField = field;
+                        }
+                        isValid = false;
+                        console.log(`Campo vacío: ${fieldId}`);
+                    } else {
+                        field.classList.remove('is-invalid');
+                        console.log(`Campo completo: ${fieldId} = "${value}"`);
+                    }
                 } else {
-                    field.classList.remove('is-invalid');
+                    console.log(`Campo no encontrado: ${fieldId}`);
+                    camposVacios.push(fieldId);
+                    isValid = false;
                 }
             });
             
+            // Validar RFC si tiene valor
+            const rfcField = document.getElementById('id_rfc');
+            if (rfcField && rfcField.value.trim()) {
+                const rfcPattern = /^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/;
+                if (!rfcPattern.test(rfcField.value.trim())) {
+                    rfcField.classList.add('is-invalid');
+                    if (!firstInvalidField) {
+                        firstInvalidField = rfcField;
+                    }
+                    isValid = false;
+                }
+            }
+            
+            // Validar código postal si tiene valor
+            const cpField = document.getElementById('id_codigo_postal');
+            if (cpField && cpField.value.trim()) {
+                if (cpField.value.trim().length !== 5 || !/^[0-9]{5}$/.test(cpField.value.trim())) {
+                    cpField.classList.add('is-invalid');
+                    if (!firstInvalidField) {
+                        firstInvalidField = cpField;
+                    }
+                    isValid = false;
+                }
+            }
+            
+            console.log('Todos los valores:', todosLosValores);
+            console.log('Campos vacíos encontrados:', camposVacios);
+            
             if (!isValid) {
                 e.preventDefault();
-                alert('Por favor, complete todos los campos requeridos.');
+                console.log('ENVÍO BLOQUEADO - Campos vacíos:', camposVacios);
+                
+                // Mostrar nombres de campos más amigables
+                const nombresAmigables = {
+                    'id_item': 'Producto',
+                    'id_nombre': 'Nombre',
+                    'id_ine': 'INE',
+                    'id_rfc': 'RFC',
+                    'id_telefono': 'Teléfono',
+                    'id_correo': 'Correo',
+                    'id_direccion': 'Dirección',
+                    'id_codigo_postal': 'Código Postal'
+                };
+                
+                const camposAmigables = camposVacios.map(id => nombresAmigables[id] || id);
+                alert('Por favor, complete todos los campos obligatorios: ' + camposAmigables.join(', '));
+                
+                if (firstInvalidField) {
+                    firstInvalidField.focus();
+                    firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } else {
+                console.log('✅ VALIDACIÓN EXITOSA - Todos los campos completos');
+                console.log('🚀 Enviando formulario...');
+                
+                // Agregar indicador de envío para evitar doble clic
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Guardando...';
+                }
             }
         });
     });

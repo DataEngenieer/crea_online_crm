@@ -445,15 +445,7 @@
         window.location.href = '{% url "tarjeta_plata:bandeja_aceptadas" %}?' + params.toString();
     }
     
-    // Auto-actualización de estadísticas cada 30 segundos
-    setInterval(function() {
-        fetch('{% url "tarjeta_plata:api_estadisticas" %}')
-            .then(response => response.json())
-            .then(data => {
-                // Actualizar estadísticas sin recargar la página
-                console.log('Estadísticas actualizadas:', data);
-            })
-            .catch(error => console.error('Error al actualizar estadísticas:', error));
-    }, 30000);
+    // Nota: La actualización de estadísticas se maneja globalmente en base_tarjeta_plata.html
+    // para evitar llamadas AJAX duplicadas
 </script>
 {% endblock %}

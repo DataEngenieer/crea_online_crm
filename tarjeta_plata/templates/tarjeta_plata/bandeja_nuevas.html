@@ -397,49 +397,11 @@
 {{ block.super }}
 <script>
     let ventaIdParaRechazar = null;
-    let autoRefreshInterval = null;
     
     document.addEventListener('DOMContentLoaded', function() {
-        // Configurar auto-refresh
-        const autoRefreshCheckbox = document.getElementById('autoRefresh');
-        if (autoRefreshCheckbox.checked) {
-            startAutoRefresh();
-        }
-        
-        autoRefreshCheckbox.addEventListener('change', function() {
-            if (this.checked) {
-                startAutoRefresh();
-            } else {
-                stopAutoRefresh();
-            }
-        });
-        
-
+        // Auto-refresh eliminado para reducir tráfico innecesario al servidor
+        // Las estadísticas se cargan solo al acceder a la página
     });
-    
-    function startAutoRefresh() {
-        autoRefreshInterval = setInterval(function() {
-            // Actualizar solo las estadísticas para no perder el estado de la página
-            fetch('{% url "tarjeta_plata:api_estadisticas" %}')
-                .then(response => response.json())
-                .then(data => {
-                    // Actualizar badges en el menú lateral
-                    const badgeNuevas = document.getElementById('badge-nuevas');
-                    if (badgeNuevas) {
-                        badgeNuevas.textContent = data.ventas_nuevas;
-                        badgeNuevas.style.display = data.ventas_nuevas > 0 ? 'inline' : 'none';
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        }, 30000); // 30 segundos
-    }
-    
-    function stopAutoRefresh() {
-        if (autoRefreshInterval) {
-            clearInterval(autoRefreshInterval);
-            autoRefreshInterval = null;
-        }
-    }
     
     function rechazarRapido(ventaId) {
         ventaIdParaRechazar = ventaId;

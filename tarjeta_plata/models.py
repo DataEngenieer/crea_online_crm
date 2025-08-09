@@ -231,12 +231,12 @@ class VentaTarjetaPlata(models.Model):
     
     def generar_id_preap(self):
         """Genera un ID PreAp único consecutivo alfanumérico de 5 dígitos"""
-        # Obtener el último ID PreAp creado
+        # Obtener el último ID PreAp creado ordenado por el campo id_preap para garantizar secuencia
         ultimo_id = VentaTarjetaPlata.objects.filter(
             id_preap__isnull=False
         ).exclude(
             id_preap=''
-        ).order_by('-id').first()
+        ).order_by('-id_preap').first()
         
         if ultimo_id and ultimo_id.id_preap:
             # Extraer la parte numérica del último ID
@@ -256,7 +256,22 @@ class VentaTarjetaPlata(models.Model):
                     letra = chr(siguiente_letra_ord)
                     numero = 1
                 
-                return f"{letra}{numero:04d}"
+                nuevo_id = f"{letra}{numero:04d}"
+                
+                # Verificar que el ID no exista ya (medida de seguridad adicional)
+                contador_intentos = 0
+                while VentaTarjetaPlata.objects.filter(id_preap=nuevo_id).exists() and contador_intentos < 100:
+                    numero += 1
+                    if numero > 9999:
+                        siguiente_letra_ord = ord(letra) + 1
+                        if siguiente_letra_ord > ord('Z'):
+                            siguiente_letra_ord = ord('A')
+                        letra = chr(siguiente_letra_ord)
+                        numero = 1
+                    nuevo_id = f"{letra}{numero:04d}"
+                    contador_intentos += 1
+                
+                return nuevo_id
             except (ValueError, IndexError):
                 # Si hay error en el formato, empezar desde A0001
                 return "A0001"
@@ -269,16 +284,19 @@ class VentaTarjetaPlata(models.Model):
         # Generar ID PreAp automáticamente si no existe
         if not self.id_preap:
             self.id_preap = self.generar_id_preap()
-            # Verificar que el ID generado sea único
-            while VentaTarjetaPlata.objects.filter(id_preap=self.id_preap).exists():
-                self.id_preap = self.generar_id_preap()
+            # El método generar_id_preap() ya maneja la verificación de unicidad internamente
+            # No necesitamos un bucle adicional aquí
         
         # Lógica existente para fecha_revision
         if self.pk:
             # Si ya existe, verificar si cambió el estado
-            original = VentaTarjetaPlata.objects.get(pk=self.pk)
-            if original.estado_venta != self.estado_venta and self.estado_venta in ['aceptada', 'rechazada']:
-                self.fecha_revision = timezone.now()
+            try:
+                original = VentaTarjetaPlata.objects.get(pk=self.pk)
+                if original.estado_venta != self.estado_venta and self.estado_venta in ['aceptada', 'rechazada']:
+                    self.fecha_revision = timezone.now()
+            except VentaTarjetaPlata.DoesNotExist:
+                # Si por alguna razón no existe el objeto original, continuar sin error
+                pass
         
         super().save(*args, **kwargs)
 

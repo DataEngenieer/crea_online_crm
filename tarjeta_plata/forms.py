@@ -23,44 +23,52 @@ class VentaTarjetaPlataForm(forms.ModelForm):
             'item': forms.TextInput(attrs={
                 'class': 'form-control', 
                 'placeholder': 'Ingrese el item del cliente',
-                'autocomplete': 'off'
+                'autocomplete': 'off',
+                'required': True
             }),
             'nombre': forms.TextInput(attrs={
                 'class': 'form-control', 
                 'placeholder': 'Nombre completo del cliente',
-                'autocomplete': 'off'
+                'autocomplete': 'off',
+                'required': True
             }),
             'ine': forms.TextInput(attrs={
                 'class': 'form-control', 
                 'placeholder': 'Número de INE',
-                'autocomplete': 'off'
+                'autocomplete': 'off',
+                'required': True
             }),
             'rfc': forms.TextInput(attrs={
                 'class': 'form-control', 
                 'placeholder': 'RFC del cliente',
                 'autocomplete': 'off',
-                'maxlength': '13'
+                'maxlength': '13',
+                'required': True
             }),
             'telefono': forms.TextInput(attrs={
                 'class': 'form-control', 
                 'placeholder': 'Teléfono de contacto',
-                'autocomplete': 'off'
+                'autocomplete': 'off',
+                'required': True
             }),
             'correo': forms.EmailInput(attrs={
                 'class': 'form-control', 
                 'placeholder': 'correo@ejemplo.com',
-                'autocomplete': 'off'
+                'autocomplete': 'off',
+                'required': True
             }),
             'direccion': forms.Textarea(attrs={
                 'class': 'form-control', 
                 'placeholder': 'Dirección completa del cliente',
                 'rows': 3,
-                'autocomplete': 'off'
+                'autocomplete': 'off',
+                'required': True
             }),
             'codigo_postal': forms.TextInput(attrs={
                 'class': 'form-control', 
                 'placeholder': 'Código postal',
-                'autocomplete': 'off'
+                'autocomplete': 'off',
+                'required': True
             }),
             'usuario_c8': forms.TextInput(attrs={
                 'class': 'form-control', 

@@ -196,13 +196,15 @@ def reportes(request):
     total_registros = 0
     
     try:
-        # Convertir fechas de string a objetos date
+        # Convertir fechas de string a objetos datetime con zona horaria
         if fecha_inicio:
-            fecha_inicio_obj = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+            fecha_inicio_naive = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+            fecha_inicio_obj = timezone.make_aware(fecha_inicio_naive)
         if fecha_fin:
-            fecha_fin_obj = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
-            # Agregar un día para incluir todo el día
-            fecha_fin_obj = fecha_fin_obj + timedelta(days=1)
+            fecha_fin_naive = datetime.strptime(fecha_fin, '%Y-%m-%d')
+            # Agregar un día para incluir todo el día y establecer hora al final del día
+            fecha_fin_naive = fecha_fin_naive.replace(hour=23, minute=59, second=59)
+            fecha_fin_obj = timezone.make_aware(fecha_fin_naive)
         
         print(f"Filtrando reportes telefónica desde {fecha_inicio_obj} hasta {fecha_fin_obj}")
         
@@ -344,13 +346,15 @@ def exportar_excel(request):
     
     # Obtener datos según el tipo de reporte
     try:
-        # Convertir fechas de string a objetos date
+        # Convertir fechas de string a objetos datetime con zona horaria
         if fecha_inicio:
-            fecha_inicio_obj = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+            fecha_inicio_naive = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+            fecha_inicio_obj = timezone.make_aware(fecha_inicio_naive)
         if fecha_fin:
-            fecha_fin_obj = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
-            # Agregar un día para incluir todo el día
-            fecha_fin_obj = fecha_fin_obj + timedelta(days=1)
+            fecha_fin_naive = datetime.strptime(fecha_fin, '%Y-%m-%d')
+            # Agregar un día para incluir todo el día y establecer hora al final del día
+            fecha_fin_naive = fecha_fin_naive.replace(hour=23, minute=59, second=59)
+            fecha_fin_obj = timezone.make_aware(fecha_fin_naive)
         
         if tipo_reporte == 'ventas_portabilidad':
             queryset = VentaPortabilidad.objects.filter(

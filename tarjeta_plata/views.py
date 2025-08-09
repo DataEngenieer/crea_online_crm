@@ -5,6 +5,7 @@ from django.http import JsonResponse, HttpResponse
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.utils import timezone
+from django.core.cache import cache
 from datetime import datetime, timedelta
 import json
 import csv
@@ -131,15 +132,60 @@ def lista_ventas(request):
 def crear_venta(request):
     """Crear nueva venta de tarjeta de crédito"""
     
+    # DEBUG: Log del usuario actual
+    print(f"[DEBUG] Usuario actual: {request.user} (ID: {request.user.id})")
+    print(f"[DEBUG] Grupos del usuario: {[g.name for g in request.user.groups.all()]}")
+    
     if request.method == 'POST':
+        # DEBUG: Log cuando se recibe POST
+        print(f"[DEBUG] Método POST recibido en crear_venta")
+        print(f"[DEBUG] Datos POST recibidos: {dict(request.POST)}")
+        
         form = VentaTarjetaPlataForm(request.POST)
-        if form.is_valid():
-            venta = form.save(commit=False)
-            venta.agente = request.user
-            venta.save()
-            messages.success(request, f'Venta {venta.id_preap} creada exitosamente.')
-            return redirect('tarjeta_plata:detalle_venta', venta_id=venta.id)
+        
+        # DEBUG: Log de validación del formulario
+        print(f"[DEBUG] Validando formulario...")
+        is_valid = form.is_valid()
+        print(f"[DEBUG] Formulario válido: {is_valid}")
+        
+        if is_valid:
+            print(f"[DEBUG] Formulario es válido, procediendo a guardar...")
+            print(f"[DEBUG] Datos limpios del formulario: {form.cleaned_data}")
+            
+            try:
+                print(f"[DEBUG] Creando instancia de venta...")
+                venta = form.save(commit=False)
+                print(f"[DEBUG] Venta creada (sin guardar): {venta}")
+                
+                print(f"[DEBUG] Asignando agente: {request.user}")
+                venta.agente = request.user
+                
+                print(f"[DEBUG] Guardando venta en base de datos...")
+                venta.save()
+                print(f"[DEBUG] Venta guardada exitosamente con ID: {venta.id}")
+                print(f"[DEBUG] ID PREAP de la venta: {venta.id_preap}")
+                
+                messages.success(request, f'Venta {venta.id_preap} creada exitosamente.')
+                print(f"[DEBUG] Redirigiendo a detalle_venta con ID: {venta.id}")
+                return redirect('tarjeta_plata:detalle_venta', venta_id=venta.id)
+                
+            except Exception as e:
+                print(f"[ERROR] Excepción al guardar la venta: {str(e)}")
+                print(f"[ERROR] Tipo de excepción: {type(e).__name__}")
+                import traceback
+                print(f"[ERROR] Traceback completo: {traceback.format_exc()}")
+                messages.error(request, f'Error al guardar la venta: {str(e)}')
+        else:
+            # DEBUG: Log de errores del formulario
+            print(f"[DEBUG] Formulario NO es válido")
+            print(f"[DEBUG] Errores del formulario: {form.errors}")
+            print(f"[DEBUG] Errores no de campo: {form.non_field_errors()}")
+            
+            # Agregar mensaje de error cuando el formulario no es válido
+            messages.error(request, 'Por favor, corrija los errores en el formulario.')
     else:
+        # DEBUG: Log cuando es GET
+        print(f"[DEBUG] Método GET recibido en crear_venta")
         form = VentaTarjetaPlataForm()
     
     context = {
@@ -147,6 +193,7 @@ def crear_venta(request):
         'titulo': 'Nueva Venta de Tarjeta de Crédito',
     }
     
+    print(f"[DEBUG] Renderizando template con contexto")
     return render(request, 'tarjeta_plata/crear_venta.html', context)
 
 
@@ -892,19 +939,6 @@ def exportar_clientes(request):
 
 
 # API endpoints para AJAX
-@login_required
-def api_estadisticas(request):
-    """API para obtener estadísticas en tiempo real"""
-    
-    data = {
-        'total_ventas': VentaTarjetaPlata.objects.count(),
-        'ventas_nuevas': VentaTarjetaPlata.objects.filter(estado_venta='nueva').count(),
-        'ventas_aceptadas': VentaTarjetaPlata.objects.filter(estado_venta='aceptada').count(),
-        'ventas_rechazadas': VentaTarjetaPlata.objects.filter(estado_venta='rechazada').count(),
-        'total_clientes': ClienteTarjetaPlata.objects.count(),
-    }
-    
-    return JsonResponse(data)
 
 
 @login_required
@@ -956,7 +990,7 @@ def rechazar_venta(request, venta_id):
     """Rechazar una venta específica"""
     
     # Solo backoffice y administradores pueden rechazar ventas
-    if not request.user.groups.filter(name__in=['Backoffice Tarjeta Plata', 'Supervisores Tarjeta Plata']).exists():
+    if not request.user.groups.filter(name__in=['backoffice', 'administrador']).exists():
         messages.error(request, 'No tienes permisos para rechazar ventas.')
         return redirect('tarjeta_plata:dashboard')
 

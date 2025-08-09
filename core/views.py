@@ -1811,14 +1811,26 @@ def detalle_cliente(request, documento_cliente):
                             tipo_acuerdo=AcuerdoPago.PAGO_TOTAL  # Asegurar que el tipo de acuerdo esté definido
                         )
                         print(f"Acuerdo de pago creado con referencia: {acuerdo.referencia_producto}")
+                        
+                        # Crear cuotas de forma optimizada usando bulk_create para evitar múltiples actualizaciones
+                        cuotas_a_crear = []
                         for i, cuota_info in enumerate(cuotas_data):
-                            CuotaAcuerdo.objects.create(
+                            cuotas_a_crear.append(CuotaAcuerdo(
                                 acuerdo=acuerdo,
                                 numero_cuota=i + 1,
                                 fecha_vencimiento=datetime.strptime(cuota_info['fecha'], '%Y-%m-%d').date(),
                                 monto=Decimal(cuota_info['monto']),
                                 estado='PENDIENTE'
-                            )
+                            ))
+                        
+                        # Crear todas las cuotas de una vez sin triggers individuales
+                        if cuotas_a_crear:
+                            CuotaAcuerdo.objects.bulk_create(cuotas_a_crear)
+                            # Actualizar el número de cuotas en el acuerdo
+                            acuerdo.numero_cuotas = len(cuotas_a_crear)
+                            # Actualizar el estado del acuerdo una sola vez al final
+                            acuerdo.actualizar_estado()
+                        
                         messages.success(request, f'Acuerdo con {len(cuotas_data)} cuota(s) creado.')
 
             except (ValueError, Exception) as e:

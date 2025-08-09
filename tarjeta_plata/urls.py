@@ -38,6 +38,5 @@ urlpatterns = [
     path('exportar/clientes/', views.exportar_clientes, name='exportar_clientes'),
     
     # API endpoints para AJAX
-    path('api/estadisticas/', views.api_estadisticas, name='api_estadisticas'),
     path('api/ventas-por-dia/', views.api_ventas_por_dia, name='api_ventas_por_dia'),
 ]
