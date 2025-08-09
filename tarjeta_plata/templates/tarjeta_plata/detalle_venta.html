@@ -336,7 +336,7 @@
                                 <h6 class="mb-1">{{ gestion.get_accion_display }}</h6>
                                 <p class="text-muted mb-1">{{ gestion.observaciones|default:"Sin observaciones" }}</p>
                                 <small class="text-muted">
-                                    <i class="fas fa-user me-1"></i>{{ gestion.usuario.get_full_name|default:gestion.usuario.username }}
+                                    <i class="fas fa-user me-1"></i>{{ gestion.backoffice.get_full_name|default:gestion.backoffice.username }}
                                 </small>
                             </div>
                             <small class="text-muted">{{ gestion.fecha_gestion|date:"d/m/Y H:i" }}</small>

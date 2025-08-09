@@ -46,6 +46,7 @@ def dashboard(request):
     from django.db.models import Count
     from django.db.models.functions import TruncDate
     from collections import defaultdict
+    from datetime import datetime
     
     # Obtener las ventas de los últimos 30 días
     fecha_limite = timezone.now() - timezone.timedelta(days=30)
@@ -99,6 +100,121 @@ def dashboard(request):
     prepago_totales = [datos_por_fecha[fecha]['prepago'] for fecha in fechas_ordenadas]
     upgrade_totales = [datos_por_fecha[fecha]['upgrade'] for fecha in fechas_ordenadas]
     
+    # Obtener datos de ventas por asesor del mes actual
+    from django.db.models import Q
+    
+    # Obtener el primer día del mes actual
+    hoy = timezone.now().date()
+    primer_dia_mes = hoy.replace(day=1)
+    
+    # Obtener ventas por asesor (cambiar a todos los tiempos para mostrar datos)
+    # Nota: Se puede cambiar de vuelta a filtro por mes cuando haya más ventas
+    ventas_asesor_data = []
+    
+    # Obtener todos los asesores que tienen ventas
+    asesores_con_ventas = set()
+    
+    # Portabilidad - mostrar todas las ventas por ahora
+    portabilidad_asesor = VentaPortabilidad.objects.values(
+        'agente__first_name', 'agente__last_name', 'agente__username'
+    ).annotate(
+        total=Count('id')
+    ).order_by('-total')
+    
+    # Prepago - mostrar todas las ventas por ahora
+    prepago_asesor = VentaPrePos.objects.values(
+        'agente__first_name', 'agente__last_name', 'agente__username'
+    ).annotate(
+        total=Count('id')
+    ).order_by('-total')
+    
+    # Upgrade - mostrar todas las ventas por ahora
+    upgrade_asesor = VentaUpgrade.objects.values(
+        'agente__first_name', 'agente__last_name', 'agente__username'
+    ).annotate(
+        total=Count('id')
+    ).order_by('-total')
+    
+    # Crear diccionario para organizar datos por asesor
+    asesores_dict = {}
+    
+    # Procesar portabilidad
+    for venta in portabilidad_asesor:
+        username = venta['agente__username']
+        nombre_completo = f"{venta['agente__first_name'] or ''} {venta['agente__last_name'] or ''}".strip() or username
+        if username not in asesores_dict:
+            asesores_dict[username] = {
+                'nombre': nombre_completo,
+                'portabilidad': 0,
+                'prepago': 0,
+                'upgrade': 0
+            }
+        asesores_dict[username]['portabilidad'] = venta['total']
+    
+    # Procesar prepago
+    for venta in prepago_asesor:
+        username = venta['agente__username']
+        nombre_completo = f"{venta['agente__first_name'] or ''} {venta['agente__last_name'] or ''}".strip() or username
+        if username not in asesores_dict:
+            asesores_dict[username] = {
+                'nombre': nombre_completo,
+                'portabilidad': 0,
+                'prepago': 0,
+                'upgrade': 0
+            }
+        asesores_dict[username]['prepago'] = venta['total']
+    
+    # Procesar upgrade
+    for venta in upgrade_asesor:
+        username = venta['agente__username']
+        nombre_completo = f"{venta['agente__first_name'] or ''} {venta['agente__last_name'] or ''}".strip() or username
+        if username not in asesores_dict:
+            asesores_dict[username] = {
+                'nombre': nombre_completo,
+                'portabilidad': 0,
+                'prepago': 0,
+                'upgrade': 0
+            }
+        asesores_dict[username]['upgrade'] = venta['total']
+    
+    # Convertir a lista y ordenar por total de ventas (top 10)
+    asesores_lista = []
+    for username, datos in asesores_dict.items():
+        total_ventas = datos['portabilidad'] + datos['prepago'] + datos['upgrade']
+        if total_ventas > 0:  # Solo incluir asesores con ventas
+            asesores_lista.append({
+                'nombre': datos['nombre'],
+                'portabilidad': datos['portabilidad'],
+                'prepago': datos['prepago'],
+                'upgrade': datos['upgrade'],
+                'total': total_ventas
+            })
+    
+    # Ordenar por total de ventas y tomar top 10
+    asesores_lista = sorted(asesores_lista, key=lambda x: x['total'], reverse=True)[:10]
+    
+    # Debug: Verificar datos de asesores en el backend
+    print(f"=== DEBUG BACKEND ASESORES ===")
+    print(f"Primer día del mes: {primer_dia_mes}")
+    print(f"Portabilidad asesor query count: {portabilidad_asesor.count()}")
+    print(f"Prepago asesor query count: {prepago_asesor.count()}")
+    print(f"Upgrade asesor query count: {upgrade_asesor.count()}")
+    print(f"Asesores dict: {asesores_dict}")
+    print(f"Asesores lista: {asesores_lista}")
+    
+    # Preparar datos para el gráfico de asesores
+    asesores_nombres = [asesor['nombre'] for asesor in asesores_lista]
+    asesores_portabilidad = [asesor['portabilidad'] for asesor in asesores_lista]
+    asesores_prepago = [asesor['prepago'] for asesor in asesores_lista]
+    asesores_upgrade = [asesor['upgrade'] for asesor in asesores_lista]
+    
+    print(f"Datos finales para gráfico:")
+    print(f"  - asesores_nombres: {asesores_nombres}")
+    print(f"  - asesores_portabilidad: {asesores_portabilidad}")
+    print(f"  - asesores_prepago: {asesores_prepago}")
+    print(f"  - asesores_upgrade: {asesores_upgrade}")
+    print(f"=== FIN DEBUG BACKEND ASESORES ===")
+    
     context = {
         'es_asesor': es_asesor,
         'es_backoffice': es_backoffice,
@@ -107,7 +223,12 @@ def dashboard(request):
         'totales_ventas': json.dumps(totales),
         'portabilidad_ventas': json.dumps(portabilidad_totales),
         'prepago_ventas': json.dumps(prepago_totales),
-        'upgrade_ventas': json.dumps(upgrade_totales)
+        'upgrade_ventas': json.dumps(upgrade_totales),
+        # Datos para gráfico de ventas por asesor
+        'asesores_nombres': json.dumps(asesores_nombres),
+        'asesores_portabilidad': json.dumps(asesores_portabilidad),
+        'asesores_prepago': json.dumps(asesores_prepago),
+        'asesores_upgrade': json.dumps(asesores_upgrade)
     }
 
     # --- Lógica para Asesores ---

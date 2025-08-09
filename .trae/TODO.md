@@ -1,5 +1,6 @@
 # TODO:
 
-- [x] 16: Corregir el método save() en VentaTarjetaPlata para evitar bucle infinito en generación de ID PreAp (priority: High)
-- [x] 17: Modificar el método generar_id_preap() para garantizar IDs únicos sin bucles infinitos (priority: High)
-- [ ] 18: Probar que la venta se guarde correctamente después de la corrección (**IN PROGRESS**) (priority: Medium)
+- [x] 28: Modificar telefonica/views.py para obtener datos de ventas agrupadas por asesor del mes actual (portabilidad, prepago, upgrade) (priority: High)
+- [x] 29: Añadir nueva sección en telefonica/dashboard.html para la gráfica de ventas por asesor (priority: High)
+- [x] 30: Implementar gráfico de barras apiladas (stacked bar chart) con Chart.js usando colores corporativos (priority: High)
+- [x] 31: Asegurar que la gráfica se vea profesional y bonita con tooltips informativos (priority: Medium)

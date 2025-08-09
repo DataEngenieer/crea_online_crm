@@ -333,6 +333,24 @@
         </div>
     </div>
     
+    <!-- Gráfica de Ventas por Asesor -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4 tarjeta-plata-card">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="bi bi-person-badge me-2"></i>Ventas por Asesor (Top 10)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area chart-container" style="position: relative; height:400px; width:100%">
+                        <canvas id="ventasPorAsesorChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Accesos rápidos -->
     <div class="row">
         <div class="col-12">
@@ -398,6 +416,8 @@
     // Datos del backend
     const fechas = {{ fechas_json|safe }};
     const totales = {{ totales_json|safe }};
+    const asesoresNombres = {{ asesores_nombres_json|safe }};
+    const asesoresVentas = {{ asesores_ventas_json|safe }};
     
     // Variables para los gráficos
     let ventasConsolidadoChart;
@@ -405,6 +425,7 @@
     let ventasAceptadasChart;
     let ventasRechazadasChart;
     let distribucionChart;
+    let ventasPorAsesorChart;
     
     // Función para alternar entre vistas
     function toggleChart(tipo) {
@@ -586,6 +607,60 @@
                 plugins: {
                     legend: {
                         display: false
+                    }
+                }
+            }
+        });
+        
+        // Inicializar gráfico de ventas por asesor
+        const ctxAsesor = document.getElementById('ventasPorAsesorChart').getContext('2d');
+        ventasPorAsesorChart = new Chart(ctxAsesor, {
+            type: 'bar',
+            data: {
+                labels: asesoresNombres,
+                datasets: [{
+                    label: 'Ventas',
+                    data: asesoresVentas,
+                    backgroundColor: [
+                        '#1f77b4', '#2ca02c', '#17a2b8', '#6c757d', '#28a745',
+                        '#007bff', '#20c997', '#6f42c1', '#fd7e14', '#495057'
+                    ],
+                    borderColor: [
+                        '#1f77b4', '#2ca02c', '#17a2b8', '#6c757d', '#28a745',
+                        '#007bff', '#20c997', '#6f42c1', '#fd7e14', '#495057'
+                    ],
+                    borderWidth: 2,
+                    maxBarThickness: 40  // Limita el grosor máximo de las barras
+                }]
+            },
+            options: {
+                indexAxis: 'y', // Esto hace que sea horizontal
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            maxRotation: 0,
+                            minRotation: 0
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.x + ' venta' + (context.parsed.x !== 1 ? 's' : '');
+                            }
+                        }
                     }
                 }
             }

@@ -306,6 +306,55 @@
             </div>
         </div>
     </div>
+    
+    <!-- Gráfico de Ventas por Asesor -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow telefonica-card" style="border-left: 4px solid rgb(197, 74, 176);">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold" style="color: rgb(197, 74, 176);">
+                        <i class="bi bi-people-fill me-2"></i>Ventas por Asesor (Top 10 - Todas las Ventas)
+                    </h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="bi bi-three-dots-vertical text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                            <div class="dropdown-header">Opciones:</div>
+                            <a class="dropdown-item" href="#" onclick="exportarGraficoAsesor()"><i class="bi bi-download me-2"></i>Exportar</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area chart-container" style="position: relative; height:400px; width:100%">
+                        <canvas id="ventasPorAsesorChart"></canvas>
+                    </div>
+                    <div class="mt-3">
+                        <div class="row text-center">
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <div class="legend-color" style="width: 12px; height: 12px; background-color: rgb(197, 74, 176); margin-right: 8px; border-radius: 2px;"></div>
+                                    <small class="text-muted">Portabilidad</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <div class="legend-color" style="width: 12px; height: 12px; background-color: rgb(20, 24, 92); margin-right: 8px; border-radius: 2px;"></div>
+                                    <small class="text-muted">Pre a Pos</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <div class="legend-color" style="width: 12px; height: 12px; background-color: rgb(52, 56, 124); margin-right: 8px; border-radius: 2px;"></div>
+                                    <small class="text-muted">Upgrade</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -320,6 +369,7 @@
     let portabilidadChart;
     let prepagoChart;
     let upgradeChart;
+    let ventasPorAsesorChart;
     
     document.addEventListener('DOMContentLoaded', function() {
         // Obtener datos del contexto
@@ -328,6 +378,12 @@
         const portabilidadData = {{ portabilidad_ventas|safe }};
         const prepagoData = {{ prepago_ventas|safe }};
         const upgradeData = {{ upgrade_ventas|safe }};
+        
+        // Datos para gráfico de ventas por asesor
+        const asesoresNombres = {{ asesores_nombres|safe }};
+        const asesoresPortabilidad = {{ asesores_portabilidad|safe }};
+        const asesoresPrepago = {{ asesores_prepago|safe }};
+        const asesoresUpgrade = {{ asesores_upgrade|safe }};
         
         // Configuración común para todos los gráficos
         const commonOptions = {
@@ -512,6 +568,149 @@
                 options: commonOptions
             });
         }
+        
+        // Gráfico de Ventas por Asesor (Barras Apiladas)
+        // Debug: Verificar datos de asesores
+        console.log('=== DEBUG GRÁFICA DE ASESORES ===');
+        console.log('asesoresNombres:', asesoresNombres);
+        console.log('asesoresPortabilidad:', asesoresPortabilidad);
+        console.log('asesoresPrepago:', asesoresPrepago);
+        console.log('asesoresUpgrade:', asesoresUpgrade);
+        console.log('Longitud asesoresNombres:', asesoresNombres ? asesoresNombres.length : 'undefined');
+        console.log('Longitud asesoresPortabilidad:', asesoresPortabilidad ? asesoresPortabilidad.length : 'undefined');
+        console.log('Longitud asesoresPrepago:', asesoresPrepago ? asesoresPrepago.length : 'undefined');
+        console.log('Longitud asesoresUpgrade:', asesoresUpgrade ? asesoresUpgrade.length : 'undefined');
+        
+        if (asesoresNombres && asesoresNombres.length > 0) {
+            console.log('✅ Creando gráfica de asesores - hay datos disponibles');
+            const ctxAsesor = document.getElementById('ventasPorAsesorChart').getContext('2d');
+            ventasPorAsesorChart = new Chart(ctxAsesor, {
+                type: 'bar',
+                data: {
+                    labels: asesoresNombres,
+                    datasets: [
+                        {
+                            label: 'Portabilidad',
+                            data: asesoresPortabilidad,
+                            backgroundColor: 'rgba(197, 74, 176, 0.8)',
+                            borderColor: 'rgb(197, 74, 176)',
+                            borderWidth: 1,
+                            borderRadius: {
+                                topLeft: 4,
+                                topRight: 4,
+                                bottomLeft: 0,
+                                bottomRight: 0
+                            },
+                            borderSkipped: false
+                        },
+                        {
+                            label: 'Pre a Pos',
+                            data: asesoresPrepago,
+                            backgroundColor: 'rgba(20, 24, 92, 0.8)',
+                            borderColor: 'rgb(20, 24, 92)',
+                            borderWidth: 1,
+                            borderRadius: 0,
+                            borderSkipped: false
+                        },
+                        {
+                            label: 'Upgrade',
+                            data: asesoresUpgrade,
+                            backgroundColor: 'rgba(52, 56, 124, 0.8)',
+                            borderColor: 'rgb(52, 56, 124)',
+                            borderWidth: 1,
+                            borderRadius: {
+                                topLeft: 0,
+                                topRight: 0,
+                                bottomLeft: 4,
+                                bottomRight: 4
+                            },
+                            borderSkipped: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y', // Barras horizontales
+                    scales: {
+                        x: {
+                            stacked: true,
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0,
+                                font: {
+                                    size: 12
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            ticks: {
+                                font: {
+                                    size: 11
+                                },
+                                maxRotation: 0,
+                                callback: function(value, index, values) {
+                                    const label = this.getLabelForValue(value);
+                                    // Truncar nombres largos
+                                    return label.length > 15 ? label.substring(0, 15) + '...' : label;
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false // Usamos la leyenda personalizada en HTML
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.9)',
+                            titleColor: 'white',
+                            bodyColor: 'white',
+                            borderColor: 'rgba(255,255,255,0.2)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: true,
+                            callbacks: {
+                                title: function(context) {
+                                    return context[0].label;
+                                },
+                                afterBody: function(context) {
+                                    const index = context[0].dataIndex;
+                                    const portabilidad = asesoresPortabilidad[index] || 0;
+                                    const prepago = asesoresPrepago[index] || 0;
+                                    const upgrade = asesoresUpgrade[index] || 0;
+                                    const total = portabilidad + prepago + upgrade;
+                                    return [
+                                        '',
+                                        `Total de ventas: ${total}`,
+                                        `Portabilidad: ${portabilidad}`,
+                                        `Pre a Pos: ${prepago}`,
+                                        `Upgrade: ${upgrade}`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1200,
+                        easing: 'easeInOutQuart'
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        } else {
+            console.log('❌ NO se creará la gráfica de asesores - no hay datos o arrays vacíos');
+            console.log('Condición: asesoresNombres && asesoresNombres.length > 0 =', asesoresNombres && asesoresNombres.length > 0);
+        }
     });
     
     // Función para alternar entre vista consolidada y separada
@@ -556,6 +755,16 @@
                 if (prepagoChart) prepagoChart.resize();
                 if (upgradeChart) upgradeChart.resize();
             }, 100);
+        }
+    }
+    
+    // Función para exportar gráfico de asesor
+    function exportarGraficoAsesor() {
+        if (ventasPorAsesorChart) {
+            const link = document.createElement('a');
+            link.download = 'ventas_por_asesor.png';
+            link.href = ventasPorAsesorChart.toBase64Image();
+            link.click();
         }
     }
 </script>

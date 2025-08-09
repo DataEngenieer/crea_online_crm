@@ -244,10 +244,15 @@
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-6">
+                            <!-- Primera columna -->
+                            <div class="col-md-4">
                                 <div class="detail-item">
                                     <span class="detail-label">ID PreAp:</span>
                                     <span class="detail-value">#{{ venta.id_preap }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Item:</span>
+                                    <span class="detail-value">{{ venta.item|default:"No especificado" }}</span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">Cliente:</span>
@@ -258,6 +263,10 @@
                                     <span class="detail-value">{{ venta.rfc }}</span>
                                 </div>
                                 <div class="detail-item">
+                                    <span class="detail-label">INE:</span>
+                                    <span class="detail-value">{{ venta.ine|default:"No especificado" }}</span>
+                                </div>
+                                <div class="detail-item">
                                     <span class="detail-label">Teléfono:</span>
                                     <span class="detail-value">{{ venta.telefono }}</span>
                                 </div>
@@ -266,7 +275,9 @@
                                     <span class="detail-value">{{ venta.correo|default:"No especificado" }}</span>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            
+                            <!-- Segunda columna -->
+                            <div class="col-md-4">
                                 <div class="detail-item">
                                     <span class="detail-label">Estado Actual:</span>
                                     <span class="estado-badge estado-{{ venta.estado_venta }}">{{ venta.get_estado_venta_display }}</span>
@@ -280,13 +291,59 @@
                                     <span class="detail-value">{{ venta.fecha_creacion|date:"d/m/Y H:i" }}</span>
                                 </div>
                                 <div class="detail-item">
-                                    <span class="detail-label">INE:</span>
-                                    <span class="detail-value">{{ venta.ine|default:"No especificado" }}</span>
-                                </div>
-                                <div class="detail-item">
                                     <span class="detail-label">Dirección:</span>
                                     <span class="detail-value">{{ venta.direccion|default:"No especificada" }}</span>
                                 </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Código Postal:</span>
+                                    <span class="detail-value">{{ venta.codigo_postal|default:"No especificado" }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Usuario C8:</span>
+                                    <span class="detail-value">{{ venta.usuario_c8|default:"No especificado" }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Tipo de Entrega:</span>
+                                    <span class="detail-value">{{ venta.get_entrega_display|default:"No especificado" }}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Tercera columna -->
+                            <div class="col-md-4">
+                                <div class="detail-item">
+                                    <span class="detail-label">DN:</span>
+                                    <span class="detail-value">{{ venta.dn|default:"No especificado" }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Estado República:</span>
+                                    <span class="detail-value">{{ venta.estado_republica|default:"No especificado" }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Ingreso Mensual:</span>
+                                    <span class="detail-value">
+                                        {% if venta.ingreso_mensual_cliente %}
+                                            ${{ venta.ingreso_mensual_cliente|floatformat:2 }}
+                                        {% else %}
+                                            No especificado
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Resultado:</span>
+                                    <span class="detail-value">{{ venta.get_resultado_display|default:"No especificado" }}</span>
+                                </div>
+                                {% if venta.fecha_revision %}
+                                <div class="detail-item">
+                                    <span class="detail-label">Fecha Revisión:</span>
+                                    <span class="detail-value">{{ venta.fecha_revision|date:"d/m/Y H:i" }}</span>
+                                </div>
+                                {% endif %}
+                                {% if venta.backoffice %}
+                                <div class="detail-item">
+                                    <span class="detail-label">Backoffice:</span>
+                                    <span class="detail-value">{{ venta.backoffice.get_full_name|default:venta.backoffice.username }}</span>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
                         

@@ -68,6 +68,38 @@ def dashboard(request):
         fechas.append(venta['fecha'].strftime('%Y-%m-%d'))
         totales.append(venta['total'])
     
+    # Ventas por asesor del mes actual - datos para gráfica de barras horizontales
+    from django.contrib.auth.models import User
+    # Obtener el primer y último día del mes actual
+    hoy = timezone.now().date()
+    primer_dia_mes = hoy.replace(day=1)
+    if hoy.month == 12:
+        ultimo_dia_mes = hoy.replace(year=hoy.year + 1, month=1, day=1) - timedelta(days=1)
+    else:
+        ultimo_dia_mes = hoy.replace(month=hoy.month + 1, day=1) - timedelta(days=1)
+    
+    ventas_por_asesor = VentaTarjetaPlata.objects.filter(
+        fecha_creacion__date__gte=primer_dia_mes,
+        fecha_creacion__date__lte=ultimo_dia_mes
+    ).values(
+        'agente__first_name', 'agente__last_name', 'agente__username'
+    ).annotate(
+        total_ventas=Count('id')
+    ).order_by('-total_ventas')[:10]  # Top 10 asesores del mes actual
+    
+    # Preparar datos para la gráfica de asesores
+    asesores_nombres = []
+    asesores_ventas = []
+    for asesor in ventas_por_asesor:
+        # Crear nombre completo del asesor
+        if asesor['agente__first_name'] and asesor['agente__last_name']:
+            nombre_completo = f"{asesor['agente__first_name']} {asesor['agente__last_name']}"
+        else:
+            nombre_completo = asesor['agente__username'] or 'Usuario sin nombre'
+        
+        asesores_nombres.append(nombre_completo)
+        asesores_ventas.append(asesor['total_ventas'])
+    
     context = {
         'total_ventas': total_ventas,
         'ventas_nuevas': ventas_nuevas,
@@ -77,6 +109,8 @@ def dashboard(request):
         'mis_ventas_hoy': mis_ventas_hoy,
         'fechas_json': json.dumps(fechas),
         'totales_json': json.dumps(totales),
+        'asesores_nombres_json': json.dumps(asesores_nombres),
+        'asesores_ventas_json': json.dumps(asesores_ventas),
         'es_asesor': request.user.groups.filter(name='asesor').exists(),
         'es_backoffice': request.user.groups.filter(name='backoffice').exists(),
     }
