@@ -229,8 +229,20 @@
                                         <div class="form-group">
                                             <label for="id_confronta">Confronta (documento de validación):</label>
                                             {{ form.confronta }}
-                                            <div class="invalid-feedback" id="confronta-error"></div>
+                                            {% if form.instance.tiene_confronta %}
+                                            <small class="form-text text-muted">
+                                                Archivo actual: 
+                                                <a href="{% url 'telefonica:descargar_confronta_temporal' form.instance.id %}" target="_blank" class="text-success">
+                                                    <i class="fas fa-cloud-download-alt"></i> {{ form.instance.get_confronta_nombre_display }} (MinIO)
+                                                </a>
+                                                {% if form.instance.confronta_fecha_subida_minio %}
+                                                    <br><small class="text-muted">Subido: {{ form.instance.confronta_fecha_subida_minio|date:"d/m/Y H:i" }}</small>
+                                                {% endif %}
+                                            </small>
+                                            {% else %}
                                             <small class="form-text text-muted">Seleccione el archivo de confronta si está disponible</small>
+                                            {% endif %}
+                                            <div class="invalid-feedback" id="confronta-error"></div>
                                         </div>
                                     </div>
                                 </div>

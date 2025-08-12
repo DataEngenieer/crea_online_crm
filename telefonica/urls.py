@@ -82,4 +82,7 @@ urlpatterns = [
     # APIs
     path('api/clientes/upgrade/buscar/', views_clientes.buscar_cliente_upgrade_por_documento, name='buscar_cliente_upgrade'),
     path('api/clientes/prepos/buscar/', views_clientes.buscar_cliente_prepos_por_telefono, name='buscar_cliente_prepos'),
+    
+    # URLs para MinIO - Gestión de archivos confronta
+    path('ventas/<int:pk>/confronta/descargar-temporal/', views.descargar_confronta_temporal, name='descargar_confronta_temporal'),
 ]

@@ -3,6 +3,10 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+import logging
+
+# Configurar logger
+logger = logging.getLogger(__name__)
 
 
 # Opciones para estados de ventas
@@ -103,7 +107,14 @@ class VentaPortabilidad(models.Model):
     numero_orden = models.CharField(max_length=50, verbose_name=_("Número de Orden"), null=False)
     base_origen = models.CharField(max_length=100, verbose_name=_("Base Origen"), null=True, blank=True)
     usuario_greta = models.CharField(max_length=100, verbose_name=_("Usuario Greta"), null=True, blank=True)
-    confronta = models.FileField(upload_to='confrontas/', verbose_name=_("Confronta"), null=True, blank=True)
+    # Campos para MinIO - almacenamiento exclusivo en MinIO
+    confronta_minio_url = models.URLField(verbose_name=_("URL MinIO del Confronta"), null=True, blank=True)
+    confronta_minio_object_name = models.CharField(max_length=500, verbose_name=_("Nombre del Objeto en MinIO"), null=True, blank=True)
+    confronta_subido_a_minio = models.BooleanField(default=False, verbose_name=_("Subido a MinIO"))
+    confronta_fecha_subida_minio = models.DateTimeField(verbose_name=_("Fecha de Subida a MinIO"), null=True, blank=True)
+    confronta_nombre_original = models.CharField(max_length=255, verbose_name=_("Nombre Original del Archivo"), null=True, blank=True)
+    confronta_tipo_archivo = models.CharField(max_length=50, verbose_name=_("Tipo de Archivo"), null=True, blank=True)
+    
     observacion = models.TextField(verbose_name=_("Observación"), null=True, blank=True)
     agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_portabilidad_realizadas", verbose_name=_("Agente"))
     backoffice = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_portabilidad_revisadas", verbose_name=_("Backoffice"))
@@ -142,12 +153,190 @@ class VentaPortabilidad(models.Model):
             self.plan_caracteristicas = self.plan_adquiere.caracteristicas
             self.plan_cfm = self.plan_adquiere.CFM
             self.plan_cfm_sin_iva = self.plan_adquiere.CFM_sin_iva
-            
+        
+        # Guardar el modelo
         super().save(*args, **kwargs)
     
     @property
     def nombre_completo_portabilidad(self):
         return self.nombre_completo
+    
+    def subir_confronta_a_minio(self, archivo_confronta):
+        """
+        Método para subir el archivo confronta directamente a MinIO.
+        
+        Args:
+            archivo_confronta: Archivo subido desde el formulario
+        
+        Returns:
+            dict: Resultado de la operación
+        """
+        try:
+            from calidad.utils.minio_utils import subir_a_minio
+            
+            logger.info(f"[TELEFONICA-MINIO] Iniciando subida de confronta para venta {self.id}")
+            
+            # Generar nombre personalizado basado en la venta
+            nombre_personalizado = f"venta_portabilidad_{self.id}_confronta"
+            logger.info(f"[TELEFONICA-MINIO] Nombre personalizado: {nombre_personalizado}")
+            
+            # Subir archivo a MinIO
+            resultado = subir_a_minio(
+                archivo=archivo_confronta,
+                nombre_personalizado=nombre_personalizado,
+                carpeta="confrontas",
+                bucket_type="MINIO_BUCKET_NAME_TELEFONICA"
+            )
+            
+            if resultado['success']:
+                logger.info(f"[TELEFONICA-MINIO] ✅ Confronta subido exitosamente: {resultado['url']}")
+                
+                # Actualizar campos MinIO
+                self.confronta_minio_url = resultado['url']
+                self.confronta_minio_object_name = resultado['object_name']
+                self.confronta_subido_a_minio = True
+                self.confronta_fecha_subida_minio = timezone.now()
+                self.confronta_nombre_original = archivo_confronta.name
+                self.confronta_tipo_archivo = archivo_confronta.content_type
+                
+                # Guardar cambios
+                self.save(update_fields=[
+                    'confronta_minio_url', 
+                    'confronta_minio_object_name', 
+                    'confronta_subido_a_minio', 
+                    'confronta_fecha_subida_minio',
+                    'confronta_nombre_original',
+                    'confronta_tipo_archivo'
+                ])
+                
+                return resultado
+            else:
+                logger.error(f"[TELEFONICA-MINIO] ❌ Error al subir confronta: {resultado.get('error', 'Error desconocido')}")
+                return resultado
+                
+        except Exception as e:
+            logger.error(f"[TELEFONICA-MINIO] ❌ Excepción al subir confronta: {str(e)}")
+            import traceback
+            logger.error(f"[TELEFONICA-MINIO] Traceback: {traceback.format_exc()}")
+            return {
+                'success': False,
+                'error': f'Error al subir archivo: {str(e)}'
+            }
+    
+    def get_confronta_url(self):
+        """
+        Retorna la URL del archivo confronta desde MinIO.
+        
+        Returns:
+            str: URL del archivo confronta o None si no existe
+        """
+        if self.confronta_subido_a_minio and self.confronta_minio_url:
+            return self.confronta_minio_url
+        
+        return None
+    
+    def eliminar_confronta_de_minio(self):
+        """
+        Elimina el archivo confronta de MinIO.
+        
+        Returns:
+            dict: Resultado de la operación
+        """
+        if not self.confronta_subido_a_minio or not self.confronta_minio_object_name:
+            return {'success': False, 'error': 'El archivo no está en MinIO'}
+        
+        try:
+            from calidad.utils.minio_utils import eliminar_de_minio
+            
+            resultado = eliminar_de_minio(
+                self.confronta_minio_object_name, 
+                bucket_type="MINIO_BUCKET_NAME_TELEFONICA"
+            )
+            
+            if resultado['success']:
+                # Limpiar campos MinIO
+                self.confronta_minio_url = None
+                self.confronta_minio_object_name = None
+                self.confronta_subido_a_minio = False
+                self.confronta_fecha_subida_minio = None
+                self.confronta_nombre_original = None
+                self.confronta_tipo_archivo = None
+                
+                # Guardar cambios
+                self.save(update_fields=[
+                    'confronta_minio_url', 
+                    'confronta_minio_object_name', 
+                    'confronta_subido_a_minio', 
+                    'confronta_fecha_subida_minio',
+                    'confronta_nombre_original',
+                    'confronta_tipo_archivo'
+                ])
+                
+                logger.info(f"[TELEFONICA-MINIO] ✅ Confronta eliminado de MinIO para venta {self.id}")
+            
+            return resultado
+            
+        except Exception as e:
+            logger.error(f"[TELEFONICA-MINIO] ❌ Error al eliminar confronta de MinIO: {str(e)}")
+            return {
+                'success': False,
+                'error': f'Error al eliminar archivo: {str(e)}'
+            }
+    
+    def obtener_url_descarga_temporal(self, expiry_days=7):
+        """
+        Genera una URL de descarga temporal para el confronta desde MinIO.
+        
+        Args:
+            expiry_days (int): Días de validez de la URL
+        
+        Returns:
+            str: URL de descarga temporal o None si hay error
+        """
+        if not self.confronta_subido_a_minio or not self.confronta_minio_object_name:
+            return None
+        
+        try:
+            from calidad.utils.minio_utils import obtener_url_descarga
+            
+            url = obtener_url_descarga(
+                self.confronta_minio_object_name,
+                expiry_days=expiry_days,
+                bucket_type="MINIO_BUCKET_NAME_TELEFONICA"
+            )
+            
+            logger.info(f"[TELEFONICA-MINIO] URL temporal generada para venta {self.id}")
+            return url
+            
+        except Exception as e:
+            logger.error(f"[TELEFONICA-MINIO] ❌ Error al generar URL temporal: {str(e)}")
+            return None
+    
+    def tiene_confronta(self):
+        """
+        Verifica si la venta tiene un archivo confronta en MinIO.
+        
+        Returns:
+            bool: True si tiene confronta, False en caso contrario
+        """
+        return self.confronta_subido_a_minio and bool(self.confronta_minio_url)
+    
+    def get_confronta_nombre_display(self):
+        """
+        Retorna el nombre del archivo para mostrar en la interfaz.
+        
+        Returns:
+            str: Nombre del archivo o mensaje por defecto
+        """
+        if self.confronta_nombre_original:
+            return self.confronta_nombre_original
+        elif self.confronta_minio_object_name:
+            return self.confronta_minio_object_name.split('/')[-1]
+        else:
+            return "Archivo confronta"
+        
+        # Subir nuevamente
+        return self._subir_confronta_a_minio()
 
 
 class ClientesPrePos(models.Model):

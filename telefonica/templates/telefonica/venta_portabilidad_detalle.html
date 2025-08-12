@@ -224,17 +224,27 @@
                 <div class="col-12">
                     <h6 class="border-bottom pb-2 mb-3 text-secondary"><i class="fas fa-file-alt me-2"></i>Documentación</h6>
                     <div class="row">
-                        {% if venta.confronta %}
+                        {% if venta.tiene_confronta %}
                         <div class="col-md-4">
                             <div class="card mb-3 shadow-sm">
                                 <div class="card-header bg-light d-flex align-items-center">
-                                    <i class="fas fa-file-signature me-2 text-secondary"></i>
+                                    <i class="fas fa-cloud me-2 text-success"></i>
                                     <h6 class="mb-0">Confronta</h6>
+                                    <span class="badge bg-success ms-auto">MinIO</span>
                                 </div>
                                 <div class="card-body text-center">
-                                    <a href="{{ venta.confronta.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                        <i class="fas fa-file-download me-1"></i> Descargar
+                                    <div class="mb-2">
+                                        <i class="fas fa-file-alt fa-2x text-muted"></i>
+                                    </div>
+                                    {% if venta.confronta_nombre_original %}
+                                        <small class="d-block text-muted mb-2">{{ venta.get_confronta_nombre_display }}</small>
+                                    {% endif %}
+                                    <a href="{% url 'telefonica:descargar_confronta_temporal' venta.id %}" target="_blank" class="btn btn-sm btn-outline-success">
+                                        <i class="fas fa-cloud-download-alt me-1"></i> Descargar
                                     </a>
+                                    {% if venta.confronta_fecha_subida_minio %}
+                                        <small class="d-block text-muted mt-2">Subido: {{ venta.confronta_fecha_subida_minio|date:"d/m/Y H:i" }}</small>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

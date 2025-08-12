@@ -289,9 +289,21 @@ def venta_crear_portabilidad(request, documento=None):
                 venta.base_origen = 'Web'
             if not venta.usuario_greta:
                 venta.usuario_greta = request.user.username
-                
+            
+            # Guardar la venta primero
             venta.save()
-            messages.success(request, 'Venta de portabilidad registrada exitosamente.')
+            
+            # Manejar la subida del archivo confronta a MinIO
+            archivo_confronta = form.cleaned_data.get('confronta')
+            if archivo_confronta:
+                try:
+                    venta.subir_confronta_a_minio(archivo_confronta)
+                    messages.success(request, 'Venta de portabilidad registrada exitosamente y archivo subido a MinIO.')
+                except Exception as e:
+                    messages.warning(request, f'Venta registrada, pero hubo un error al subir el archivo: {str(e)}')
+            else:
+                messages.success(request, 'Venta de portabilidad registrada exitosamente.')
+            
             return redirect('telefonica:detalle_venta_portabilidad', pk=venta.id)
     else:
         initial_data = {'documento': documento} if documento else {}
@@ -770,6 +782,17 @@ def venta_corregir(request, venta_id):
             venta.estado_venta = 'pendiente_revision'  # Vuelve a pendiente de revisión
             venta.save()
             
+            # Manejar la subida del archivo confronta a MinIO si se proporciona uno nuevo
+            archivo_confronta = form.cleaned_data.get('confronta')
+            if archivo_confronta:
+                try:
+                    venta.subir_confronta_a_minio(archivo_confronta)
+                    messages.success(request, 'Venta corregida, archivo actualizado en MinIO y reenviada a revisión')
+                except Exception as e:
+                    messages.warning(request, f'Venta corregida y reenviada, pero hubo un error al subir el archivo: {str(e)}')
+            else:
+                messages.success(request, 'Venta corregida y reenviada a revisión')
+            
             # Registrar gestión del asesor
             gestion = GestionAsesor(
                 venta=venta,
@@ -778,7 +801,6 @@ def venta_corregir(request, venta_id):
             )
             gestion.save()
             
-            messages.success(request, 'Venta corregida y reenviada a revisión')
             return redirect('telefonica:detalle_venta_portabilidad', pk=venta.id)
     else:
         form = CorreccionVentaForm(instance=venta)
@@ -2040,3 +2062,50 @@ def detalle_venta_upgrade(request, pk):
     }
     
     return render(request, 'telefonica/venta_detalle_upgrade.html', context)
+
+
+# ===== VISTAS PARA MINIO =====
+
+@login_required
+@user_passes_test(es_asesor_o_backoffice)
+def descargar_confronta_temporal(request, pk):
+    """
+    Vista para generar una URL temporal de descarga de confronta desde MinIO.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Obtener la venta
+        venta = get_object_or_404(VentaPortabilidad, pk=pk)
+        
+        # Verificar permisos: el usuario debe ser el agente de la venta, un backoffice o un superusuario
+        user = request.user
+        es_backoffice_user = user.groups.filter(name='backoffice').exists()
+        es_propietario = (venta.agente == user)
+        
+        if not (es_propietario or es_backoffice_user or user.is_superuser):
+            return HttpResponseForbidden("No tienes permisos para descargar este archivo.")
+        
+        # Verificar que el archivo esté en MinIO
+        if not venta.confronta_subido_a_minio or not venta.confronta_minio_object_name:
+            messages.error(request, 'El archivo no está disponible en MinIO.')
+            return redirect('telefonica:detalle_venta_portabilidad', pk=pk)
+        
+        # Obtener URL temporal de descarga
+        url_temporal = venta.obtener_url_descarga_temporal()
+        
+        if url_temporal:
+            # Redirigir a la URL temporal
+            return HttpResponseRedirect(url_temporal)
+        else:
+            messages.error(request, 'No se pudo generar la URL de descarga temporal.')
+            return redirect('telefonica:detalle_venta_portabilidad', pk=pk)
+            
+    except Exception as e:
+        logger.error(f"Error al generar URL temporal para venta {pk}: {str(e)}")
+        messages.error(request, 'Error al acceder al archivo. Intente nuevamente.')
+        return redirect('telefonica:detalle_venta_portabilidad', pk=pk)
+
+
+# Vista resubir_confronta eliminada - ya no es necesaria porque solo trabajamos con MinIO directamente

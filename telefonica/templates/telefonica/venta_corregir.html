@@ -134,10 +134,19 @@
                                         <div class="form-group">
                                             <label for="id_confronta">Confronta (documento de validación):</label>
                                             {{ form.confronta }}
-                                            {% if venta.confronta %}
+                                            {% if venta.tiene_confronta %}
                                             <small class="form-text text-muted">
-                                                Ya existe un archivo cargado. Sólo seleccione uno nuevo si desea reemplazarlo.
-                                                <a href="{{ venta.confronta.url }}" target="_blank">Ver confronta actual</a>
+                                                Archivo actual: 
+                                                <a href="{% url 'telefonica:descargar_confronta_temporal' venta.id %}" target="_blank" class="text-success">
+                                                    <i class="fas fa-cloud-download-alt"></i> {{ venta.get_confronta_nombre_display }} (MinIO)
+                                                </a>
+                                                {% if venta.confronta_fecha_subida_minio %}
+                                                    <br><small class="text-muted">Subido: {{ venta.confronta_fecha_subida_minio|date:"d/m/Y H:i" }}</small>
+                                                {% endif %}
+                                            </small>
+                                            {% else %}
+                                            <small class="form-text text-muted">
+                                                No hay archivo actual. Puede subir uno nuevo.
                                             </small>
                                             {% endif %}
                                         </div>

@@ -310,12 +310,14 @@
                             <small>{{ venta.fecha_actualizacion|date:"d/m/Y H:i" }}</small>
                         </td>
                         <td>
-                            {% if venta.auditoria_backoffice %}
-                                {% if venta.auditoria_backoffice.call_review %}
-                                    <span class="badge bg-success">Auditada</span>
-                                {% else %}
-                                    <span class="badge bg-warning">Pendiente</span>
-                                {% endif %}
+                            {% if venta.auditorias_backoffice.exists %}
+                                {% with venta.auditorias_backoffice.first as auditoria %}
+                                    {% if auditoria.call_review == 'si' %}
+                                        <span class="badge bg-success">Auditada</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Pendiente</span>
+                                    {% endif %}
+                                {% endwith %}
                             {% else %}
                                 <span class="badge bg-secondary">Sin Auditoría</span>
                             {% endif %}

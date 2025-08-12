@@ -125,6 +125,7 @@ def lista_ventas(request):
     ventas = VentaTarjetaPlata.objects.all().select_related('agente', 'backoffice')
     
     # Si es asesor, solo mostrar sus ventas
+    # Los administradores y backoffice pueden ver todas las ventas
     if request.user.groups.filter(name='asesor').exists():
         ventas = ventas.filter(agente=request.user)
     
@@ -315,12 +316,50 @@ def bandeja_nuevas(request):
 @login_required
 def bandeja_aceptadas(request):
     """Bandeja de ventas aceptadas"""
+    from django.contrib.auth.models import User
     
     ventas = VentaTarjetaPlata.objects.filter(estado_venta='aceptada').select_related('agente', 'backoffice')
     
     # Si es asesor, solo mostrar sus ventas
     if request.user.groups.filter(name='asesor').exists():
         ventas = ventas.filter(agente=request.user)
+    
+    # Aplicar filtros si existen
+    fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+    agente_id = request.GET.get('agente')
+    buscar = request.GET.get('buscar')
+    
+    if fecha_desde:
+        ventas = ventas.filter(fecha_creacion__date__gte=fecha_desde)
+    if fecha_hasta:
+        ventas = ventas.filter(fecha_creacion__date__lte=fecha_hasta)
+    if agente_id:
+        ventas = ventas.filter(agente_id=agente_id)
+    if buscar:
+        ventas = ventas.filter(
+            Q(nombre__icontains=buscar) |
+            Q(rfc__icontains=buscar) |
+            Q(telefono__icontains=buscar) |
+            Q(id_preap__icontains=buscar)
+        )
+    
+    # Calcular estadísticas
+    total_aceptadas = ventas.count()
+    hoy = timezone.now().date()
+    inicio_semana = hoy - timedelta(days=hoy.weekday())
+    
+    stats = {
+        'total_aceptadas': total_aceptadas,
+        'hoy': ventas.filter(fecha_actualizacion__date=hoy).count(),
+        'semana': ventas.filter(fecha_actualizacion__date__gte=inicio_semana).count(),
+        'pendientes_auditoria': ventas.filter(auditorias_backoffice__isnull=True).count(),
+    }
+    
+    # Obtener lista de agentes para el filtro (todos los usuarios que tienen ventas)
+    agentes = User.objects.filter(
+        ventas_tarjeta_plata_realizadas__isnull=False
+    ).distinct().order_by('first_name', 'last_name')
     
     # Paginación
     paginator = Paginator(ventas, 25)
@@ -329,8 +368,12 @@ def bandeja_aceptadas(request):
     
     context = {
         'page_obj': page_obj,
+        'ventas': page_obj,  # Para compatibilidad con el template
+        'stats': stats,
+        'agentes': agentes,
         'titulo': 'Ventas Aceptadas',
-        'total_ventas': ventas.count(),
+        'total_ventas': total_aceptadas,
+        'is_paginated': page_obj.has_other_pages(),
     }
     
     return render(request, 'tarjeta_plata/bandeja_aceptadas.html', context)

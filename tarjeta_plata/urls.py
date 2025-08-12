@@ -22,6 +22,7 @@ urlpatterns = [
     path('backoffice/validar/<int:venta_id>/', views.validar_venta, name='validar_venta'),
     path('backoffice/rechazar/<int:venta_id>/', views.rechazar_venta, name='rechazar_venta'),
     path('backoffice/auditoria/<int:venta_id>/', views.crear_auditoria, name='crear_auditoria'),
+    path('auditar/<int:venta_id>/', views.crear_auditoria, name='auditar_venta'),
     
     # Gestión de clientes
     path('clientes/', views.lista_clientes, name='lista_clientes'),

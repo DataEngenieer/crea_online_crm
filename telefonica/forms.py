@@ -4,12 +4,19 @@ from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, ClientesUpgrad
 
 
 class VentaPortabilidadForm(forms.ModelForm):
+    # Campo personalizado para subida directa a MinIO
+    confronta = forms.FileField(
+        required=False,
+        widget=forms.FileInput(attrs={'class': 'form-control-file'}),
+        help_text='Archivo que se subirá directamente a MinIO'
+    )
+    
     class Meta:
         model = VentaPortabilidad
         fields = [
             'tipo_documento', 'documento', 'fecha_expedicion', 'nombre_completo',
             'telefono_legalizacion', 'plan_adquiere', 'numero_a_portar', 'nip', 'fecha_entrega',
-            'fecha_ventana_cambio', 'numero_orden', 'confronta', 'observacion'
+            'fecha_ventana_cambio', 'numero_orden', 'observacion'
         ]
         widgets = {
             'tipo_documento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
@@ -23,7 +30,6 @@ class VentaPortabilidadForm(forms.ModelForm):
             'fecha_entrega': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
             'fecha_ventana_cambio': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
             'numero_orden': forms.NumberInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
-            'confronta': forms.FileInput(attrs={'class': 'form-control-file'}),
             'observacion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'autocomplete': 'off'})
         }
     
@@ -210,12 +216,19 @@ class PlanesPortabilidadForm(forms.ModelForm):
 
 class CorreccionVentaForm(forms.ModelForm):
     """Formulario para corregir ventas devueltas por backoffice"""
+    # Campo personalizado para subida directa a MinIO
+    confronta = forms.FileField(
+        required=False,
+        widget=forms.FileInput(attrs={'class': 'form-control-file'}),
+        help_text='Archivo que se subirá directamente a MinIO (opcional - solo si desea reemplazar el actual)'
+    )
+    
     class Meta:
         model = VentaPortabilidad
         fields = [
             'tipo_documento', 'documento', 'fecha_expedicion', 'nombre_completo',
             'telefono_legalizacion', 'plan_adquiere', 'numero_a_portar', 'nip', 'fecha_entrega',
-            'fecha_ventana_cambio', 'numero_orden', 'base_origen', 'usuario_greta', 'confronta', 'observacion'
+            'fecha_ventana_cambio', 'numero_orden', 'base_origen', 'usuario_greta', 'observacion'
         ]
         widgets = {
             'tipo_documento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
@@ -231,7 +244,6 @@ class CorreccionVentaForm(forms.ModelForm):
             'numero_orden': forms.NumberInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'base_origen': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
             'usuario_greta': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
-            'confronta': forms.FileInput(attrs={'class': 'form-control-file'}),
             'observacion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'autocomplete': 'off'})
         }
     
