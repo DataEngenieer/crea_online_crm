@@ -1,0 +1,578 @@
+{% extends 'calidad/base_calidad.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Crear Auditoría Prepago{% endblock %}
+
+{% block extra_buttons %}
+<a href="{% url 'calidad:lista_auditorias_prepago' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Volver a la lista
+</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        padding: 20px;
+    }
+    
+    .section-title {
+        color: #2c3e50;
+        font-size: 1.2em;
+        font-weight: 600;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #3498db;
+    }
+    
+    .form-row {
+        margin-bottom: 15px;
+    }
+    
+    .form-control {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 8px 12px;
+    }
+    
+    .form-control:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    }
+    
+    .btn-primary {
+        background-color: #3498db;
+        border-color: #3498db;
+    }
+    
+    .btn-primary:hover {
+        background-color: #2980b9;
+        border-color: #2980b9;
+    }
+    
+    .accordion-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .accordion-button {
+        background-color: #f8f9fa;
+        color: #495057;
+        font-weight: 500;
+    }
+    
+    .accordion-button:not(.collapsed) {
+        background-color: #e7f3ff;
+        color: #0056b3;
+    }
+    
+    .table th {
+        background-color: #f8f9fa;
+        border-top: none;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .indicador-row {
+        transition: background-color 0.2s;
+    }
+    
+    .indicador-row:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .estado-indicador {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .estado-btn {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        border: 2px solid #ddd;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .estado-btn.cumple {
+        background-color: #28a745;
+        border-color: #28a745;
+        color: white;
+    }
+    
+    .estado-btn.no-cumple {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: white;
+    }
+    
+    .estado-btn.sin-seleccionar {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: white;
+    }
+    
+    .observaciones-field {
+        display: none;
+    }
+    
+    .observaciones-field.show {
+        display: block;
+        margin-top: 10px;
+    }
+    
+    .puntaje-total {
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #2c3e50;
+        text-align: center;
+        padding: 15px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 8px;
+        margin: 20px 0;
+    }
+    
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    
+    .loading-content {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+    
+    .audio-upload-section {
+        border: 2px dashed #ddd;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    
+    .audio-upload-section:hover {
+        border-color: #3498db;
+        background-color: #e7f3ff;
+    }
+    
+    .audio-upload-section.dragover {
+        border-color: #28a745;
+        background-color: #d4edda;
+    }
+    
+    .file-info {
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #e9ecef;
+        border-radius: 4px;
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content_calidad %}
+<div class="container-fluid">
+    <form method="post" enctype="multipart/form-data" id="auditoriaForm">
+        {% csrf_token %}
+        
+        <!-- Sección de datos básicos -->
+        <div class="form-section">
+            <h3 class="section-title">
+                <i class="fas fa-mobile-alt"></i> Información de la Auditoría Prepago
+            </h3>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-row">
+                        <label for="{{ form.agente.id_for_label }}" class="form-label">
+                            <strong>{{ form.agente.label }}</strong>
+                        </label>
+                        {{ form.agente|add_class:"form-control" }}
+                        {% if form.agente.errors %}
+                            <div class="text-danger mt-1">
+                                {{ form.agente.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="form-row">
+                        <label for="{{ form.numero_telefono.id_for_label }}" class="form-label">
+                            <strong>{{ form.numero_telefono.label }}</strong>
+                        </label>
+                        {{ form.numero_telefono|add_class:"form-control" }}
+                        {% if form.numero_telefono.errors %}
+                            <div class="text-danger mt-1">
+                                {{ form.numero_telefono.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-row">
+                        <label for="{{ form.fecha_llamada.id_for_label }}" class="form-label">
+                            <strong>{{ form.fecha_llamada.label }}</strong>
+                        </label>
+                        {{ form.fecha_llamada|add_class:"form-control" }}
+                        {% if form.fecha_llamada.errors %}
+                            <div class="text-danger mt-1">
+                                {{ form.fecha_llamada.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="form-row">
+                        <label for="{{ form.tipo_monitoreo.id_for_label }}" class="form-label">
+                            <strong>{{ form.tipo_monitoreo.label }}</strong>
+                        </label>
+                        {{ form.tipo_monitoreo|add_class:"form-control" }}
+                        {% if form.tipo_monitoreo.errors %}
+                            <div class="text-danger mt-1">
+                                {{ form.tipo_monitoreo.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <div class="form-row">
+                        <label for="{{ form.observaciones.id_for_label }}" class="form-label">
+                            <strong>{{ form.observaciones.label }}</strong>
+                        </label>
+                        {{ form.observaciones|add_class:"form-control" }}
+                        {% if form.observaciones.errors %}
+                            <div class="text-danger mt-1">
+                                {{ form.observaciones.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sección de carga de audio -->
+        <div class="form-section">
+            <h3 class="section-title">
+                <i class="fas fa-microphone"></i> Archivo de Audio para Speech Analytics
+            </h3>
+            
+            <div class="audio-upload-section" id="audioUploadSection">
+                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                <h5>Arrastra y suelta tu archivo de audio aquí</h5>
+                <p class="text-muted">o haz clic para seleccionar un archivo</p>
+                <input type="file" id="audioFile" name="audio_file" accept=".mp3,.wav,.m4a,.ogg" style="display: none;">
+                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('audioFile').click()">
+                    <i class="fas fa-folder-open"></i> Seleccionar Archivo
+                </button>
+                
+                <div class="file-info" id="fileInfo">
+                    <i class="fas fa-file-audio"></i>
+                    <span id="fileName"></span>
+                    <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removeFile()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sección de evaluación de indicadores -->
+        {% if indicadores_por_tipologia %}
+        <div class="form-section">
+            <h3 class="section-title">
+                <i class="fas fa-clipboard-check"></i> Evaluación de Indicadores Prepago
+            </h3>
+            
+            <div class="accordion" id="indicadoresAccordion">
+                {% for tipologia, indicadores in indicadores_por_tipologia.items %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                                data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="true" 
+                                aria-controls="collapse{{ forloop.counter }}">
+                            <strong>{{ tipologia }}</strong>
+                            <span class="badge bg-primary ms-2">{{ indicadores|length }} indicador{{ indicadores|length|pluralize:"es" }}</span>
+                        </button>
+                    </h2>
+                    <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse show" 
+                         aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#indicadoresAccordion">
+                        <div class="accordion-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 50%;">Indicador</th>
+                                            <th style="width: 20%;">Peso</th>
+                                            <th style="width: 20%;">Estado</th>
+                                            <th style="width: 10%;">Puntos</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for indicador in indicadores %}
+                                        <tr class="indicador-row" data-indicador-id="{{ indicador.id }}" data-peso="{{ indicador.peso }}">
+                                            <td>
+                                                <strong>{{ indicador.indicador }}</strong>
+                                                {% if indicador.descripcion %}
+                                                    <br><small class="text-muted">{{ indicador.descripcion }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">{{ indicador.peso }}%</span>
+                                            </td>
+                                            <td>
+                                                <div class="estado-indicador">
+                                                    <div class="estado-btn" data-estado="cumple" title="Cumple">
+                                                        <i class="fas fa-check"></i>
+                                                    </div>
+                                                    <div class="estado-btn sin-seleccionar" data-estado="sin-seleccionar" title="Sin seleccionar">
+                                                        <i class="fas fa-minus"></i>
+                                                    </div>
+                                                    <div class="estado-btn" data-estado="no-cumple" title="No cumple">
+                                                        <i class="fas fa-times"></i>
+                                                    </div>
+                                                </div>
+                                                <input type="hidden" name="indicador_{{ indicador.id }}" value="sin-seleccionar">
+                                            </td>
+                                            <td>
+                                                <span class="puntos-indicador">0</span>
+                                            </td>
+                                        </tr>
+                                        <tr class="observaciones-field" id="observaciones_{{ indicador.id }}">
+                                            <td colspan="4">
+                                                <label class="form-label">Observaciones:</label>
+                                                <textarea name="observaciones_{{ indicador.id }}" class="form-control" rows="2" 
+                                                         placeholder="Ingrese observaciones para este indicador..."></textarea>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Puntaje total -->
+            <div class="puntaje-total">
+                <i class="fas fa-calculator"></i> Puntaje Total: <span id="puntuacion-total">0</span> (<span id="porcentaje-total">0%</span>)
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Botones de acción -->
+        <div class="form-section">
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'calidad:lista_auditorias_prepago' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save"></i> Guardar Auditoría
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modal de carga -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <h5 class="mt-3">Guardando auditoría...</h5>
+        <p class="text-muted">Por favor espere mientras se procesa la información.</p>
+    </div>
+</div>
+{% endblock content_calidad %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+// Función para actualizar el estado del indicador prepago (ámbito global)
+function actualizarEstadoIndicadorPrepago(radio) {
+    const indicadorId = radio.dataset.indicadorId;
+    const valor = radio.value;
+    const estadoTexto = document.getElementById(`estado-texto-prepago-${indicadorId}`);
+    const inputOculto = document.getElementById(`indicador_valor_prepago_${indicadorId}`);
+    const observacionesContainer = document.getElementById(`observaciones-container-prepago-${indicadorId}`);
+
+    inputOculto.value = valor === 'sin_seleccionar' ? '' : valor;
+
+    if (valor === 'cumple') {
+        estadoTexto.innerHTML = '<i class="fas fa-check-circle me-1 text-success"></i> Cumple';
+        estadoTexto.className = 'badge bg-success bg-opacity-10 text-success d-inline-flex align-items-center py-1 px-2 rounded-pill';
+        if (observacionesContainer) observacionesContainer.style.display = 'none';
+    } else if (valor === 'no_cumple') {
+        estadoTexto.innerHTML = '<i class="fas fa-times-circle me-1 text-danger"></i> No Cumple';
+        estadoTexto.className = 'badge bg-danger bg-opacity-10 text-danger d-inline-flex align-items-center py-1 px-2 rounded-pill';
+        if (observacionesContainer) observacionesContainer.style.display = 'block';
+    } else {
+        estadoTexto.innerHTML = '<i class="fas fa-minus-circle me-1 text-secondary"></i> Sin seleccionar';
+        estadoTexto.className = 'badge bg-secondary bg-opacity-10 text-secondary d-inline-flex align-items-center py-1 px-2 rounded-pill';
+        if (observacionesContainer) observacionesContainer.style.display = 'none';
+    }
+
+    calcularPuntuacionTotalPrepago();
+}
+
+// Función para calcular la puntuación total ponderada de prepago
+function calcularPuntuacionTotalPrepago() {
+    let totalPuntos = 0;
+    let totalPonderacion = 0;
+    let totalIndicadores = 0;
+    let indicadoresEvaluados = 0;
+    
+    // Recorrer todos los inputs ocultos de los indicadores prepago
+    document.querySelectorAll('input[id^="indicador_valor_prepago_"]').forEach(input => {
+        const ponderacion = parseFloat(input.dataset.ponderacion) || 0;
+        const valor = input.value;
+        
+        // Solo sumar a la ponderación total si el indicador tiene un valor asignado
+        if (valor !== '') {
+            totalPonderacion += ponderacion;
+            totalIndicadores++;
+            
+            // Sumar puntos solo si cumple
+            if (valor === 'cumple') {
+                totalPuntos += ponderacion;
+                indicadoresEvaluados++;
+            } else if (valor === 'no_cumple') {
+                indicadoresEvaluados++;
+            }
+        }
+    });
+    
+    // Calcular porcentaje (solo si hay indicadores evaluados)
+    let porcentaje = 0;
+    if (totalPonderacion > 0 && indicadoresEvaluados > 0) {
+        porcentaje = (totalPuntos / totalPonderacion) * 100;
+    }
+    
+    // Actualizar la interfaz
+    const puntuacionElement = document.getElementById('puntuacion-total');
+    const porcentajeElement = document.getElementById('porcentaje-total');
+    
+    if (puntuacionElement) {
+        puntuacionElement.textContent = totalPuntos.toFixed(2);
+        // Cambiar el color según el porcentaje
+        if (porcentaje >= 90) {
+            puntuacionElement.className = 'badge bg-success fs-6';
+        } else if (porcentaje >= 70) {
+            puntuacionElement.className = 'badge bg-warning text-dark fs-6';
+        } else {
+            puntuacionElement.className = 'badge bg-danger fs-6';
+        }
+    }
+    
+    if (porcentajeElement) {
+        porcentajeElement.textContent = porcentaje.toFixed(2) + '%';
+        // Sincronizar el color con el de la puntuación
+        if (porcentaje >= 90) {
+            porcentajeElement.className = 'badge bg-success fs-6';
+        } else if (porcentaje >= 70) {
+            porcentajeElement.className = 'badge bg-warning text-dark fs-6';
+        } else {
+            porcentajeElement.className = 'badge bg-danger fs-6';
+        }
+    }
+}
+
+// Inicializar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar todos los estados como "sin seleccionar"
+    document.querySelectorAll('[id^="sin_seleccionar_prepago_"]').forEach(radio => {
+        if (radio.checked) {
+            actualizarEstadoIndicadorPrepago(radio);
+        }
+    });
+    
+    // Calcular la puntuación total inicial
+    calcularPuntuacionTotalPrepago();
+});
+
+// Inicializar Select2 para el campo de agente
+$(document).ready(function() {
+    $('#{{ form.agente.id_for_label }}').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        dropdownParent: $('#formAuditoriaPrepago'),
+        placeholder: 'Buscar agente por nombre, apellido o usuario...',
+        allowClear: true,
+        language: {
+            noResults: function() {
+                return 'No se encontraron resultados';
+            },
+            searching: function() {
+                return 'Buscando...';
+            },
+            inputTooShort: function(args) {
+                return 'Ingrese al menos ' + args.minimum + ' caracteres';
+            },
+            errorLoading: function() {
+                return 'No se pudieron cargar los resultados';
+            }
+        }
+    });
+    
+    // Manejar envío del formulario
+    $('#formAuditoriaPrepago').on('submit', function(e) {
+        console.log('Formulario de auditoría prepago enviado. Validando...');
+        
+        // Validar que el formulario es válido antes de mostrar el modal
+        if (!this.checkValidity()) {
+            console.log('Formulario no válido. Mostrando errores...');
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).addClass('was-validated');
+            return false;
+        }
+
+        console.log('Mostrando modal de carga...');
+        // Mostrar el overlay de carga
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        
+        // Deshabilitar el botón de envío para evitar múltiples envíos
+        const submitBtn = $(this).find('button[type="submit"]');
+        submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...');
+        
+        console.log('Enviando formulario de auditoría prepago...');
+    });
+});
+</script>
+{% endblock extra_js %}

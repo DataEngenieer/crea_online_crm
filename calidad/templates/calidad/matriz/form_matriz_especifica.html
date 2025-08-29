@@ -1,0 +1,331 @@
+{% extends 'calidad/base_calidad.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/calidad.css' %}">
+<style>
+    .form-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .form-content {
+        padding: 30px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 8px;
+    }
+    
+    .form-control, .form-select {
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+    }
+    
+    .btn-success {
+        background: #28a745;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+    }
+    
+    .alert {
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
+    
+    .help-text {
+        font-size: 0.875em;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+    
+    .required-field::after {
+        content: ' *';
+        color: #dc3545;
+    }
+    
+    .form-actions {
+        border-top: 1px solid #e9ecef;
+        padding-top: 20px;
+        margin-top: 30px;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+    
+    .ponderacion-info {
+        background: #e3f2fd;
+        border: 1px solid #bbdefb;
+        border-radius: 6px;
+        padding: 15px;
+        margin-top: 10px;
+    }
+    
+    .ponderacion-info i {
+        color: #1976d2;
+        margin-right: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content_calidad %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'calidad:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'calidad:lista_matriz' %}">Matriz de Calidad</a></li>
+            {% if tipo_campana == 'prepago' %}
+                <li class="breadcrumb-item"><a href="{% url 'calidad:lista_matriz_prepago' %}">Prepago</a></li>
+            {% elif tipo_campana == 'upgrade' %}
+                <li class="breadcrumb-item"><a href="{% url 'calidad:lista_matriz_upgrade' %}">Upgrade</a></li>
+            {% endif %}
+            <li class="breadcrumb-item active" aria-current="page">{{ titulo }}</li>
+        </ol>
+    </nav>
+
+    <div class="form-container">
+        <div class="form-header">
+            <h2 class="mb-1">{{ titulo }}</h2>
+            <p class="mb-0 opacity-75">{{ subtitulo }}</p>
+        </div>
+
+        <div class="form-content">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.tipologia.id_for_label }}" class="form-label required-field">
+                                {{ form.tipologia.label }}
+                            </label>
+                            {{ form.tipologia|add_class:"form-select" }}
+                            {% if form.tipologia.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.tipologia.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.tipologia.help_text %}
+                                <div class="help-text">{{ form.tipologia.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.categoria.id_for_label }}" class="form-label required-field">
+                                {{ form.categoria.label }}
+                            </label>
+                            {{ form.categoria|add_class:"form-control" }}
+                            {% if form.categoria.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.categoria.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.categoria.help_text %}
+                                <div class="help-text">{{ form.categoria.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.indicador.id_for_label }}" class="form-label required-field">
+                        {{ form.indicador.label }}
+                    </label>
+                    {{ form.indicador|add_class:"form-control" }}
+                    {% if form.indicador.errors %}
+                        <div class="text-danger mt-1">
+                            {% for error in form.indicador.errors %}
+                                <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% if form.indicador.help_text %}
+                        <div class="help-text">{{ form.indicador.help_text }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.ponderacion.id_for_label }}" class="form-label required-field">
+                                {{ form.ponderacion.label }}
+                            </label>
+                            {{ form.ponderacion|add_class:"form-control" }}
+                            {% if form.ponderacion.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.ponderacion.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.ponderacion.help_text %}
+                                <div class="help-text">{{ form.ponderacion.help_text }}</div>
+                            {% endif %}
+                            
+                            <div class="ponderacion-info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Información sobre ponderación:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>La ponderación debe ser un número entre 0 y 100</li>
+                                    <li>Representa el peso porcentual de este indicador en la evaluación</li>
+                                    <li>La suma de todas las ponderaciones debería ser 100%</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Estado</label>
+                            <div class="form-check form-switch">
+                                {{ form.activo|add_class:"form-check-input" }}
+                                <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                                    {{ form.activo.label }}
+                                </label>
+                            </div>
+                            {% if form.activo.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.activo.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.activo.help_text %}
+                                <div class="help-text">{{ form.activo.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    {% if tipo_campana == 'prepago' %}
+                        <a href="{% url 'calidad:lista_matriz_prepago' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        {% if not es_edicion %}
+                            <button type="submit" name="guardar_y_agregar_otro" class="btn btn-success">
+                                <i class="fas fa-plus"></i> Guardar y Agregar Otro
+                            </button>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 
+                            {% if es_edicion %}Actualizar{% else %}Guardar{% endif %}
+                        </button>
+                    {% elif tipo_campana == 'upgrade' %}
+                        <a href="{% url 'calidad:lista_matriz_upgrade' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        {% if not es_edicion %}
+                            <button type="submit" name="guardar_y_agregar_otro" class="btn btn-success">
+                                <i class="fas fa-plus"></i> Guardar y Agregar Otro
+                            </button>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 
+                            {% if es_edicion %}Actualizar{% else %}Guardar{% endif %}
+                        </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validación del formulario
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const ponderacionInput = document.querySelector('#id_ponderacion');
+    
+    // Validar ponderación en tiempo real
+    if (ponderacionInput) {
+        ponderacionInput.addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            if (value < 0 || value > 100) {
+                this.setCustomValidity('La ponderación debe estar entre 0 y 100');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    }
+    
+    // Validación antes del envío
+    form.addEventListener('submit', function(e) {
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Por favor, complete todos los campos requeridos.');
+        }
+    });
+});
+</script>
+{% endblock %}

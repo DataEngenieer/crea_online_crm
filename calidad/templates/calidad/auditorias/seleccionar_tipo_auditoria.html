@@ -1,0 +1,355 @@
+{% extends 'calidad/base_calidad.html' %}
+{% load static %}
+
+{% block title %}Seleccionar Tipo de Auditoría - Calidad{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'calidad/css/auditorias.css' %}" rel="stylesheet">
+<style>
+    .campaign-card {
+        border: none;
+        border-radius: 12px;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        cursor: pointer;
+        height: 100%;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .campaign-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    .campaign-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--campaign-color-start), var(--campaign-color-end));
+    }
+    
+    .campaign-card.portabilidad {
+        --campaign-color-start: #667eea;
+        --campaign-color-end: #764ba2;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+    }
+    
+    .campaign-card.prepago {
+        --campaign-color-start: #f093fb;
+        --campaign-color-end: #f5576c;
+        box-shadow: 0 8px 25px rgba(240, 147, 251, 0.15);
+    }
+    
+    .campaign-card.upgrade {
+        --campaign-color-start: #4facfe;
+        --campaign-color-end: #00f2fe;
+        box-shadow: 0 8px 25px rgba(79, 172, 254, 0.15);
+    }
+    
+    .campaign-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        background: linear-gradient(135deg, var(--campaign-color-start), var(--campaign-color-end));
+        color: white;
+        font-size: 1.5rem;
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .campaign-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.4rem;
+        background: linear-gradient(135deg, var(--campaign-color-start), var(--campaign-color-end));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .campaign-description {
+        color: #6c757d;
+        font-size: 0.85rem;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+    }
+    
+    .campaign-stats {
+        background: rgba(0, 0, 0, 0.02);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-top: 0.75rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #2c3e50;
+        display: block;
+    }
+    
+    .stat-label {
+        font-size: 0.7rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .btn-campaign {
+        background: linear-gradient(135deg, var(--campaign-color-start), var(--campaign-color-end));
+        border: none;
+        color: white;
+        font-weight: 600;
+        padding: 0.5rem 1.5rem;
+        border-radius: 20px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 0.9rem;
+    }
+    
+    .btn-campaign:hover {
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 200%;
+        background: rgba(255, 255, 255, 0.1);
+        transform: rotate(30deg);
+        z-index: 1;
+    }
+    
+    .page-header-content {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .breadcrumb-item + .breadcrumb-item::before {
+        color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .breadcrumb-item.active {
+        color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .breadcrumb-item a {
+        color: white;
+        text-decoration: none;
+    }
+    
+    .breadcrumb-item a:hover {
+        color: rgba(255, 255, 255, 0.8);
+    }
+</style>
+{% endblock %}
+
+{% block content_calidad %}
+<div class="container-fluid">
+    <!-- Header de la página -->
+    <div class="page-header">
+        <div class="page-header-content">
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'calidad:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'calidad:lista_auditorias' %}">Auditorías</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Nueva Auditoría</li>
+                </ol>
+            </nav>
+            <h1 class="h2 mb-2">
+                <i class="fas fa-plus-circle me-3"></i>Nueva Auditoría de Calidad
+            </h1>
+            <p class="mb-0 opacity-75">
+                Selecciona el tipo de campaña para crear una nueva auditoría con la matriz de calidad correspondiente
+            </p>
+        </div>
+    </div>
+
+    <!-- Tarjetas de selección de campaña -->
+    <div class="row g-3">
+        <!-- Portabilidad -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card campaign-card portabilidad h-100" onclick="window.location.href='{% url 'calidad:crear_auditoria' %}'">
+                <div class="card-body p-3 text-center">
+                    <div class="campaign-icon">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <h3 class="campaign-title">Portabilidad</h3>
+                    <p class="campaign-description">
+                        Auditorías para procesos de portabilidad numérica. Incluye validación de documentos, 
+                        verificación de datos y seguimiento del proceso completo.
+                    </p>
+                    <div class="campaign-stats">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ stats_portabilidad.total|default:0 }}</span>
+                                    <span class="stat-label">Auditorías</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ stats_portabilidad.promedio|default:0|floatformat:1 }}%</span>
+                                    <span class="stat-label">Promedio</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'calidad:crear_auditoria' %}" class="btn btn-campaign">
+                            <i class="fas fa-plus me-2"></i>Crear Auditoría
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prepago -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card campaign-card prepago h-100" onclick="window.location.href='{% url 'calidad:crear_auditoria_prepago' %}'">
+                <div class="card-body p-4 text-center">
+                    <div class="campaign-icon">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <h3 class="campaign-title">Prepago</h3>
+                    <p class="campaign-description">
+                        Auditorías especializadas para servicios prepago. Evaluación de procesos de recarga, 
+                        activación de servicios y atención al cliente prepago.
+                    </p>
+                    <div class="campaign-stats">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ stats_prepago.total|default:0 }}</span>
+                                    <span class="stat-label">Auditorías</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ stats_prepago.promedio|default:0|floatformat:1 }}%</span>
+                                    <span class="stat-label">Promedio</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'calidad:crear_auditoria_prepago' %}" class="btn btn-campaign">
+                            <i class="fas fa-plus me-2"></i>Crear Auditoría
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upgrade -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card campaign-card upgrade h-100" onclick="window.location.href='{% url 'calidad:crear_auditoria_upgrade' %}'">
+                <div class="card-body p-4 text-center">
+                    <div class="campaign-icon">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                    <h3 class="campaign-title">Upgrade</h3>
+                    <p class="campaign-description">
+                        Auditorías para procesos de upgrade de servicios. Evaluación de ofertas comerciales, 
+                        migración de planes y satisfacción del cliente.
+                    </p>
+                    <div class="campaign-stats">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ stats_upgrade.total|default:0 }}</span>
+                                    <span class="stat-label">Auditorías</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ stats_upgrade.promedio|default:0|floatformat:1 }}%</span>
+                                    <span class="stat-label">Promedio</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'calidad:crear_auditoria_upgrade' %}" class="btn btn-campaign">
+                            <i class="fas fa-plus me-2"></i>Crear Auditoría
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información adicional -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 bg-light">
+                <div class="card-body p-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6 class="mb-2">
+                                <i class="fas fa-info-circle text-primary me-2"></i>
+                                ¿Necesitas ayuda para seleccionar el tipo correcto?
+                            </h6>
+                            <p class="text-muted mb-0 small">
+                                Cada tipo de auditoría utiliza una matriz de calidad específica diseñada para evaluar 
+                                los criterios más relevantes de cada campaña. Si tienes dudas sobre cuál seleccionar, 
+                                consulta con tu supervisor o revisa la documentación del proceso.
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="{% url 'calidad:lista_auditorias' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver al Listado
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Agregar efectos de hover adicionales
+    document.addEventListener('DOMContentLoaded', function() {
+        const campaignCards = document.querySelectorAll('.campaign-card');
+        
+        campaignCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-8px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    });
+</script>
+{% endblock %}

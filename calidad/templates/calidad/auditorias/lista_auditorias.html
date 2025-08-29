@@ -246,7 +246,7 @@
 
 {% block botones_adicionales %}
     {% if perms.calidad.add_auditoria %}
-    <a href="{% url 'calidad:crear_auditoria' %}" class="btn btn-primary">
+    <a href="{% url 'calidad:seleccionar_tipo_auditoria' %}" class="btn btn-primary">
         <i class="fas fa-plus me-1"></i> Nueva Auditoría
     </a>
     {% endif %}
@@ -296,6 +296,23 @@
                         {% for evaluador in evaluadores %}
                         <option value="{{ evaluador.id }}" {% if request.GET.evaluador == evaluador.id|stringformat:'s' %}selected{% endif %}>
                             {{ evaluador.get_short_name|default:evaluador.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Fila 2: Tipo de Llamada y otros filtros -->
+            <div class="row g-3 mb-3">
+                <div class="col-md-3">
+                    <label for="id_tipo_campana" class="form-label fw-semibold text-muted mb-2">
+                        <i class="fas fa-phone me-1"></i>Tipo de Llamada
+                    </label>
+                    <select name="tipo_campana" id="id_tipo_campana" class="form-select">
+                        <option value="">Todos los tipos</option>
+                        {% for valor, etiqueta in tipos_campana %}
+                        <option value="{{ valor }}" {% if request.GET.tipo_campana == valor %}selected{% endif %}>
+                            {{ etiqueta|capfirst }}
                         </option>
                         {% endfor %}
                     </select>
@@ -382,6 +399,7 @@
                             <th width="200">Puntuación</th>
                             <th>Evaluador</th>
                             <th width="100">Tipo</th>
+                            <th width="120">Tipo Llamada</th>
                             <th width="120" class="text-center">Acciones</th>
                         </tr>
                     </thead>
@@ -434,6 +452,15 @@
                                       title="{% if auditoria.speech %}Speech Analytics{% else %}{{ auditoria.get_tipo_monitoreo_display }}{% endif %}">
                                     <i class="fas {% if auditoria.speech %}fa-brain{% elif auditoria.get_tipo_monitoreo_display|lower == 'grabación' %}fa-microphone{% else %}fa-headset{% endif %}"></i>
                                 </span>
+                            </td>
+                            <td class="text-center">
+                                {% if auditoria.speech %}
+                                    <span class="badge bg-{% if auditoria.speech.tipo_campana == 'portabilidad' %}primary{% elif auditoria.speech.tipo_campana == 'prepago' %}success{% elif auditoria.speech.tipo_campana == 'upgrade' %}warning{% else %}secondary{% endif %}">
+                                        {{ auditoria.speech.get_tipo_campana_display|capfirst }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">

@@ -1,9 +1,10 @@
 {% extends 'calidad/base_calidad.html' %}
-{% load static humanize %}
+{% load static %}
 
-{% block title %}Matriz de Calidad{% endblock %}
+{% block title %}{{ titulo }}{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/calidad.css' %}">
 <style>
     .matriz-container {
         background: white;
@@ -112,54 +113,37 @@
         margin-bottom: 15px;
         color: #ccc;
     }
-    
-    /* Alertas */
-    .alert {
-        border: none;
-        border-radius: 10px;
-        padding: 1rem 1.5rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    }
-    .alert-info {
-        background-color: #f0f9ff;
-        color: #0369a1;
-        border-left: 4px solid #0ea5e9;
-    }
 </style>
 {% endblock %}
 
 {% block content_calidad %}
 <div class="container-fluid">
-    <!-- Matrices por Tipo de Campaña -->
-    <div class="alert alert-info mb-4">
-        <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Matrices por Tipo de Campaña</h5>
-        <p class="mb-3">Gestione las matrices de calidad específicas para cada tipo de campaña:</p>
-        <div class="d-flex gap-3 flex-wrap">
-            <a href="{% url 'calidad:lista_matriz_prepago' %}" class="btn btn-outline-primary btn-sm">
-                <i class="fas fa-mobile-alt me-2"></i>Matriz Prepago
-            </a>
-            <a href="{% url 'calidad:lista_matriz_upgrade' %}" class="btn btn-outline-primary btn-sm">
-                <i class="fas fa-arrow-up me-2"></i>Matriz Upgrade
-            </a>
-        </div>
-        <hr class="my-3">
-        <small class="text-muted">
-            <i class="fas fa-lightbulb me-1"></i>
-            Las matrices específicas por campaña permiten configurar indicadores únicos para cada tipo de auditoría.
-        </small>
-    </div>
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'calidad:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'calidad:lista_matriz' %}">Matriz de Calidad</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ titulo }}</li>
+        </ol>
+    </nav>
 
     <div class="matriz-container">
         <div class="matriz-header">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2 class="mb-1">Matriz de Calidad</h2>
-                    <p class="mb-0 opacity-75">Gestión de indicadores de calidad general</p>
+                    <h2 class="mb-1">{{ titulo }}</h2>
+                    <p class="mb-0 opacity-75">Gestión de indicadores de calidad para {{ tipo_campana|title }}</p>
                 </div>
                 <div>
-                    <a href="{% url 'calidad:crear_editar_matriz' %}" class="btn btn-light">
-                        <i class="fas fa-plus"></i> Nuevo Indicador
-                    </a>
+                    {% if tipo_campana == 'prepago' %}
+                        <a href="{% url 'calidad:crear_matriz_prepago' %}" class="btn btn-light">
+                            <i class="fas fa-plus"></i> Nuevo Indicador
+                        </a>
+                    {% elif tipo_campana == 'upgrade' %}
+                        <a href="{% url 'calidad:crear_matriz_upgrade' %}" class="btn btn-light">
+                            <i class="fas fa-plus"></i> Nuevo Indicador
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -167,14 +151,14 @@
         <div class="matriz-content">
             <!-- Filtros -->
             <div class="filtros-container">
-                <form method="get" class="row g-3" id="filtroForm">
+                <form method="get" class="row g-3">
                     <div class="col-md-4">
                         <label for="tipologia" class="form-label">Filtrar por Tipología:</label>
-                        <select name="tipologia" id="tipologia" class="form-select" onchange="this.form.submit()">
+                        <select name="tipologia" id="tipologia" class="form-select">
                             <option value="">Todas las tipologías</option>
-                            {% for valor, nombre in TIPOLOGIA_CHOICES %}
-                                <option value="{{ valor }}" {% if tipologia_actual == valor %}selected{% endif %}>
-                                    {{ nombre }}
+                            {% for key, value in TIPOLOGIA_CHOICES %}
+                                <option value="{{ key }}" {% if tipologia_actual == key %}selected{% endif %}>
+                                    {{ value }}
                                 </option>
                             {% endfor %}
                         </select>
@@ -183,8 +167,8 @@
                         <label class="form-label">&nbsp;</label>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="mostrar_inactivos" 
-                                   id="mostrarInactivos" value="true" {% if mostrar_inactivos %}checked{% endif %} onchange="this.form.submit()">
-                            <label class="form-check-label" for="mostrarInactivos">
+                                   id="mostrar_inactivos" value="true" {% if mostrar_inactivos %}checked{% endif %}>
+                            <label class="form-check-label" for="mostrar_inactivos">
                                 Mostrar indicadores inactivos
                             </label>
                         </div>
@@ -200,22 +184,20 @@
                             </a>
                         </div>
                     </div>
-                    <!-- Campo oculto para mantener el estado del checkbox cuando está desmarcado -->
-                    <input type="hidden" name="mostrar_inactivos" value="false" id="hiddenMostrarInactivos">
                 </form>
             </div>
 
             <!-- Lista de indicadores por tipología -->
-            {% for tipologia, data in indicadores_por_tipologia.items %}
-                {% if data.indicadores %}
+            {% for tipologia_key, tipologia_data in indicadores_por_tipologia.items %}
+                {% if tipologia_data.indicadores %}
                     <div class="tipologia-section">
                         <div class="tipologia-header">
                             <i class="fas fa-folder-open me-2"></i>
-                            {{ data.nombre }}
-                            <span class="badge bg-primary ms-2">{{ data.indicadores|length }}</span>
+                            {{ tipologia_data.nombre }}
+                            <span class="badge bg-primary ms-2">{{ tipologia_data.indicadores|length }}</span>
                         </div>
                         
-                        {% for indicador in data.indicadores %}
+                        {% for indicador in tipologia_data.indicadores %}
                             <div class="indicador-item {% if not indicador.activo %}opacity-50{% endif %}">
                                 <div class="indicador-info">
                                     <div class="indicador-nombre">{{ indicador.indicador }}</div>
@@ -233,15 +215,27 @@
                                         {% if indicador.activo %}Activo{% else %}Inactivo{% endif %}
                                     </span>
                                     
-                                    <a href="{% url 'calidad:editar_matriz' id=indicador.id %}" 
-                                       class="btn btn-sm btn-outline-primary" title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <button onclick="toggleMatrizActivo({{ indicador.id }}, this)" 
-                                            class="btn btn-sm btn-toggle {% if indicador.activo %}btn-outline-warning{% else %}btn-outline-success{% endif %}" 
-                                            title="{% if indicador.activo %}Desactivar{% else %}Activar{% endif %}">
-                                        <i class="fas {% if indicador.activo %}fa-eye-slash{% else %}fa-eye{% endif %}"></i>
-                                    </button>
+                                    {% if tipo_campana == 'prepago' %}
+                                        <a href="{% url 'calidad:editar_matriz_prepago' indicador.id %}" 
+                                           class="btn btn-sm btn-outline-primary" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button onclick="toggleActivo({{ indicador.id }}, '{% url 'calidad:toggle_matriz_prepago_activo' indicador.id %}')" 
+                                                class="btn btn-sm btn-toggle {% if indicador.activo %}btn-outline-warning{% else %}btn-outline-success{% endif %}" 
+                                                title="{% if indicador.activo %}Desactivar{% else %}Activar{% endif %}">
+                                            <i class="fas {% if indicador.activo %}fa-eye-slash{% else %}fa-eye{% endif %}"></i>
+                                        </button>
+                                    {% elif tipo_campana == 'upgrade' %}
+                                        <a href="{% url 'calidad:editar_matriz_upgrade' indicador.id %}" 
+                                           class="btn btn-sm btn-outline-primary" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button onclick="toggleActivo({{ indicador.id }}, '{% url 'calidad:toggle_matriz_upgrade_activo' indicador.id %}')" 
+                                                class="btn btn-sm btn-toggle {% if indicador.activo %}btn-outline-warning{% else %}btn-outline-success{% endif %}" 
+                                                title="{% if indicador.activo %}Desactivar{% else %}Activar{% endif %}">
+                                            <i class="fas {% if indicador.activo %}fa-eye-slash{% else %}fa-eye{% endif %}"></i>
+                                        </button>
+                                    {% endif %}
                                 </div>
                             </div>
                         {% endfor %}
@@ -252,9 +246,15 @@
                     <i class="fas fa-clipboard-list"></i>
                     <h4>No hay indicadores disponibles</h4>
                     <p>No se encontraron indicadores para los filtros seleccionados.</p>
-                    <a href="{% url 'calidad:crear_editar_matriz' %}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Crear primer indicador
-                    </a>
+                    {% if tipo_campana == 'prepago' %}
+                        <a href="{% url 'calidad:crear_matriz_prepago' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Crear primer indicador
+                        </a>
+                    {% elif tipo_campana == 'upgrade' %}
+                        <a href="{% url 'calidad:crear_matriz_upgrade' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Crear primer indicador
+                        </a>
+                    {% endif %}
                 </div>
             {% endfor %}
         </div>
@@ -264,48 +264,28 @@
 
 {% block extra_js %}
 <script>
-// Función para manejar el toggle de activo/inactivo
-function toggleMatrizActivo(matrizId, button) {
+function toggleActivo(id, url) {
     if (confirm('¿Está seguro de cambiar el estado de este indicador?')) {
-        fetch(`/calidad/matriz/toggle-activo/${matrizId}/`, {
+        fetch(url, {
             method: 'POST',
             headers: {
-                'X-CSRFTOKEN': '{{ csrf_token }}',
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({})
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         })
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                // Recargar la página para mostrar los cambios
                 location.reload();
             } else {
-                throw new Error(data.message || 'Error al actualizar el estado');
+                alert('Error al cambiar el estado del indicador');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al actualizar el estado: ' + error.message);
+            alert('Error al cambiar el estado del indicador');
         });
     }
 }
-
-// Manejar el checkbox de mostrar inactivos
-document.addEventListener('DOMContentLoaded', function() {
-    const checkbox = document.getElementById('mostrarInactivos');
-    const hiddenField = document.getElementById('hiddenMostrarInactivos');
-    
-    // Deshabilitar el campo oculto si el checkbox está marcado
-    if (checkbox) {
-        checkbox.addEventListener('change', function() {
-            hiddenField.disabled = this.checked;
-        });
-        
-        // Inicializar el estado del campo oculto
-        hiddenField.disabled = checkbox.checked;
-    }
-});
 </script>
 {% endblock %}

@@ -20,8 +20,12 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.decorators.http import require_http_methods
 
 from .models import MatrizCalidad, Auditoria, DetalleAuditoria, Speech, RespuestaAuditoria
+from .models_prepago import AuditoriaPrepago, MatrizCalidadPrepago
+from .models_upgrade import AuditoriaUpgrade, MatrizCalidadUpgrade
 from .forms_speech import MatrizCalidadForm, SpeechForm
 from .forms_auditoria import AuditoriaForm, RespuestaAuditoriaForm
+from .forms_prepago import MatrizCalidadPrepagoForm
+from .forms_upgrade import MatrizCalidadUpgradeForm
 from .decorators import grupo_requerido, ip_permitida
 from .utils.whixperx import transcribir_audio
 from .utils.texto_de_speech import format_transcript_as_script
@@ -380,7 +384,7 @@ class AuditoriaListView(CalidadBaseView, ListView):
     paginate_by = ITEMS_POR_PAGINA
     
     def get_queryset(self):
-        queryset = Auditoria.objects.select_related('agente', 'evaluador').all()
+        queryset = Auditoria.objects.select_related('agente', 'evaluador', 'speech').all()
         
         # Obtener parámetros de filtrado
         params = self.request.GET.copy()
@@ -404,6 +408,10 @@ class AuditoriaListView(CalidadBaseView, ListView):
         # Filtro por evaluador
         if 'evaluador' in params and params['evaluador']:
             queryset = queryset.filter(evaluador_id=params['evaluador'])
+            
+        # Filtro por tipo de llamada/campaña
+        if 'tipo_campana' in params and params['tipo_campana']:
+            queryset = queryset.filter(speech__tipo_campana=params['tipo_campana'])
             
         # Filtros por área y sede eliminados
             
@@ -458,9 +466,13 @@ class AuditoriaListView(CalidadBaseView, ListView):
         
         # Opciones de filtro eliminadas - los campos area y sede fueron removidos del modelo
         
+        # Obtener tipos de campaña disponibles desde el modelo Speech
+        from .models import Speech
+        context['tipos_campana'] = Speech.TIPO_CAMPANA_CHOICES
+        
         # Mantener los parámetros de filtro en el contexto
         context['filtros'] = {}
-        for param in ['agente', 'evaluador', 'fecha_inicio', 'fecha_fin', 'orden']:
+        for param in ['agente', 'evaluador', 'tipo_campana', 'fecha_inicio', 'fecha_fin', 'orden']:
             if param in self.request.GET:
                 context['filtros'][param] = self.request.GET[param]
         
@@ -1791,3 +1803,255 @@ def dashboard_asesor(request):
     }
     
     return render(request, 'calidad/asesores/dashboard_asesor.html', context)
+
+
+@login_required
+@ip_permitida
+@grupo_requerido('Administrador', 'Calidad')
+def seleccionar_tipo_auditoria(request):
+    """
+    Vista para seleccionar el tipo de auditoría a crear
+    """
+    # Obtener estadísticas básicas para cada tipo de campaña
+    stats_portabilidad = {
+        'total': Auditoria.objects.filter(speech__tipo_campana='portabilidad').count(),
+        'promedio': Auditoria.objects.filter(
+            speech__tipo_campana='portabilidad'
+        ).aggregate(avg=Avg('puntaje_total'))['avg'] or 0
+    }
+    
+    stats_prepago = {
+        'total': AuditoriaPrepago.objects.count(),
+        'promedio': AuditoriaPrepago.objects.aggregate(avg=Avg('puntaje_total'))['avg'] or 0
+    }
+    
+    stats_upgrade = {
+        'total': AuditoriaUpgrade.objects.count(),
+        'promedio': AuditoriaUpgrade.objects.aggregate(avg=Avg('puntaje_total'))['avg'] or 0
+    }
+    
+    context = {
+        'stats_portabilidad': stats_portabilidad,
+        'stats_prepago': stats_prepago,
+        'stats_upgrade': stats_upgrade,
+    }
+    
+    return render(request, 'calidad/auditorias/seleccionar_tipo_auditoria.html', context)
+
+
+# ============================================
+# Vistas para Matrices de Calidad Específicas
+# ============================================
+
+@login_required
+@ip_permitida
+@grupo_requerido('Administrador', 'Calidad')
+def lista_matriz_prepago(request):
+    """
+    Vista para listar matrices de calidad específicas de Prepago
+    """
+    # Obtener el filtro de tipología si existe
+    tipologia_filtro = request.GET.get('tipologia', '')
+    
+    # Obtener el filtro de mostrar inactivos
+    mostrar_inactivos = request.GET.get('mostrar_inactivos', '') == 'true'
+    
+    # Obtener todos los indicadores ordenados por tipología, categoría e indicador
+    matriz_list = MatrizCalidadPrepago.objects.all().order_by('tipologia', 'categoria', 'indicador')
+    
+    # Aplicar filtro de tipología si se especificó
+    if tipologia_filtro in dict(MatrizCalidadPrepago.TIPOLOGIA_CHOICES).keys():
+        matriz_list = matriz_list.filter(tipologia=tipologia_filtro)
+    
+    # Aplicar filtro de activos/inactivos
+    if not mostrar_inactivos:
+        matriz_list = matriz_list.filter(activo=True)
+    
+    # Agrupar indicadores por tipología
+    indicadores_por_tipologia = {}
+    for tipologia in dict(MatrizCalidadPrepago.TIPOLOGIA_CHOICES).keys():
+        indicadores_por_tipologia[tipologia] = {
+            'nombre': dict(MatrizCalidadPrepago.TIPOLOGIA_CHOICES)[tipologia],
+            'indicadores': matriz_list.filter(tipologia=tipologia)
+        }
+    
+    # Pasar el contexto a la plantilla
+    context = {
+        'indicadores_por_tipologia': indicadores_por_tipologia,
+        'tipologia_actual': tipologia_filtro,
+        'TIPOLOGIA_CHOICES': MatrizCalidadPrepago.TIPOLOGIA_CHOICES,
+        'mostrar_inactivos': mostrar_inactivos,
+        'tipo_campana': 'prepago',
+        'titulo': 'Matriz de Calidad - Prepago',
+    }
+    return render(request, 'calidad/matriz/lista_matriz_especifica.html', context)
+
+
+@login_required
+@ip_permitida
+@grupo_requerido('Administrador', 'Calidad')
+def crear_editar_matriz_prepago(request, id=None):
+    """
+    Vista para crear o editar matrices de calidad de Prepago
+    """
+    if id:
+        matriz = get_object_or_404(MatrizCalidadPrepago, id=id)
+        titulo = 'Editar Indicador Prepago'
+        mensaje_exito = 'Indicador de prepago actualizado correctamente'
+        es_edicion = True
+    else:
+        matriz = None
+        titulo = 'Nuevo Indicador Prepago'
+        mensaje_exito = 'Indicador de prepago creado correctamente'
+        es_edicion = False
+
+    if request.method == 'POST':
+        form = MatrizCalidadPrepagoForm(request.POST, instance=matriz)
+        if form.is_valid():
+            indicador = form.save(commit=False)
+            if not es_edicion:
+                indicador.usuario_creacion = request.user
+            indicador.save()
+            messages.success(request, mensaje_exito)
+            if 'guardar_y_agregar_otro' in request.POST:
+                return redirect('calidad:crear_matriz_prepago')
+            return redirect('calidad:lista_matriz_prepago')
+    else:
+        form = MatrizCalidadPrepagoForm(instance=matriz)
+
+    context = {
+        'form': form,
+        'es_edicion': es_edicion,
+        'titulo': titulo,
+        'subtitulo': 'Complete los datos del indicador para prepago',
+        'tipo_campana': 'prepago',
+    }
+    return render(request, 'calidad/matriz/form_matriz_especifica.html', context)
+
+
+@login_required
+@ip_permitida
+@grupo_requerido('Administrador', 'Calidad')
+def toggle_matriz_prepago_activo(request, id):
+    """
+    Vista para activar/desactivar matrices de calidad de Prepago
+    """
+    matriz = get_object_or_404(MatrizCalidadPrepago, id=id)
+    matriz.activo = not matriz.activo
+    matriz.save()
+    
+    # Si es una petición AJAX, devolver respuesta JSON
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'status': 'success',
+            'activo': matriz.activo
+        })
+    
+    return redirect('calidad:lista_matriz_prepago')
+
+
+@login_required
+@ip_permitida
+@grupo_requerido('Administrador', 'Calidad')
+def lista_matriz_upgrade(request):
+    """
+    Vista para listar matrices de calidad específicas de Upgrade
+    """
+    # Obtener el filtro de tipología si existe
+    tipologia_filtro = request.GET.get('tipologia', '')
+    
+    # Obtener el filtro de mostrar inactivos
+    mostrar_inactivos = request.GET.get('mostrar_inactivos', '') == 'true'
+    
+    # Obtener todos los indicadores ordenados por tipología, categoría e indicador
+    matriz_list = MatrizCalidadUpgrade.objects.all().order_by('tipologia', 'categoria', 'indicador')
+    
+    # Aplicar filtro de tipología si se especificó
+    if tipologia_filtro in dict(MatrizCalidadUpgrade.TIPOLOGIA_CHOICES).keys():
+        matriz_list = matriz_list.filter(tipologia=tipologia_filtro)
+    
+    # Aplicar filtro de activos/inactivos
+    if not mostrar_inactivos:
+        matriz_list = matriz_list.filter(activo=True)
+    
+    # Agrupar indicadores por tipología
+    indicadores_por_tipologia = {}
+    for tipologia in dict(MatrizCalidadUpgrade.TIPOLOGIA_CHOICES).keys():
+        indicadores_por_tipologia[tipologia] = {
+            'nombre': dict(MatrizCalidadUpgrade.TIPOLOGIA_CHOICES)[tipologia],
+            'indicadores': matriz_list.filter(tipologia=tipologia)
+        }
+    
+    # Pasar el contexto a la plantilla
+    context = {
+        'indicadores_por_tipologia': indicadores_por_tipologia,
+        'tipologia_actual': tipologia_filtro,
+        'TIPOLOGIA_CHOICES': MatrizCalidadUpgrade.TIPOLOGIA_CHOICES,
+        'mostrar_inactivos': mostrar_inactivos,
+        'tipo_campana': 'upgrade',
+        'titulo': 'Matriz de Calidad - Upgrade',
+    }
+    return render(request, 'calidad/matriz/lista_matriz_especifica.html', context)
+
+
+@login_required
+@ip_permitida
+@grupo_requerido('Administrador', 'Calidad')
+def crear_editar_matriz_upgrade(request, id=None):
+    """
+    Vista para crear o editar matrices de calidad de Upgrade
+    """
+    if id:
+        matriz = get_object_or_404(MatrizCalidadUpgrade, id=id)
+        titulo = 'Editar Indicador Upgrade'
+        mensaje_exito = 'Indicador de upgrade actualizado correctamente'
+        es_edicion = True
+    else:
+        matriz = None
+        titulo = 'Nuevo Indicador Upgrade'
+        mensaje_exito = 'Indicador de upgrade creado correctamente'
+        es_edicion = False
+
+    if request.method == 'POST':
+        form = MatrizCalidadUpgradeForm(request.POST, instance=matriz)
+        if form.is_valid():
+            indicador = form.save(commit=False)
+            if not es_edicion:
+                indicador.usuario_creacion = request.user
+            indicador.save()
+            messages.success(request, mensaje_exito)
+            if 'guardar_y_agregar_otro' in request.POST:
+                return redirect('calidad:crear_matriz_upgrade')
+            return redirect('calidad:lista_matriz_upgrade')
+    else:
+        form = MatrizCalidadUpgradeForm(instance=matriz)
+
+    context = {
+        'form': form,
+        'es_edicion': es_edicion,
+        'titulo': titulo,
+        'subtitulo': 'Complete los datos del indicador para upgrade',
+        'tipo_campana': 'upgrade',
+    }
+    return render(request, 'calidad/matriz/form_matriz_especifica.html', context)
+
+
+@login_required
+@ip_permitida
+@grupo_requerido('Administrador', 'Calidad')
+def toggle_matriz_upgrade_activo(request, id):
+    """
+    Vista para activar/desactivar matrices de calidad de Upgrade
+    """
+    matriz = get_object_or_404(MatrizCalidadUpgrade, id=id)
+    matriz.activo = not matriz.activo
+    matriz.save()
+    
+    # Si es una petición AJAX, devolver respuesta JSON
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'status': 'success',
+            'activo': matriz.activo
+        })
+    
+    return redirect('calidad:lista_matriz_upgrade')

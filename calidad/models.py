@@ -28,11 +28,27 @@ def validate_audio_file_extension(value):
         raise ValidationError(f'Formato de archivo no soportado. Sube un archivo de audio válido (MP3, WAV, OGG, M4A, MPEG). Extensión detectada: {ext}')
 
 class Speech(models.Model):
+    # Opciones para el tipo de campaña
+    TIPO_CAMPANA_CHOICES = [
+        ('portabilidad', 'Portabilidad'),
+        ('prepago', 'Prepago'),
+        ('upgrade', 'Upgrade'),
+    ]
+    
     auditoria = models.OneToOneField('Auditoria', on_delete=models.CASCADE, related_name='speech', null=False, blank=False)
     audio = models.FileField(upload_to='auditorias/audio/', validators=[validate_audio_file_extension])
     resultado_json = models.JSONField(blank=True, null=True, help_text="Resultado de la transcripción de Speech-to-Text")
     analisis_json = models.JSONField(blank=True, null=True, help_text="Resultado del análisis de calidad de la IA")
     transcripcion = models.CharField(max_length=255, blank=True, null=True, help_text="Ruta del archivo de transcripción JSON")
+    
+    # Campo para diferenciar el tipo de campaña
+    tipo_campana = models.CharField(
+        max_length=20,
+        choices=TIPO_CAMPANA_CHOICES,
+        default='portabilidad',
+        verbose_name='Tipo de Campaña',
+        help_text='Tipo de campaña para determinar la matriz de calidad a utilizar'
+    )
     
     # Campos para MinIO
     minio_url = models.URLField('URL de MinIO', max_length=500, blank=True, null=True, help_text="URL pública del archivo en MinIO")

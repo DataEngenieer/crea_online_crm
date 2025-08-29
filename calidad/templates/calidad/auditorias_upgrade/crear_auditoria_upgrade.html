@@ -1,0 +1,748 @@
+{% extends 'calidad/base_calidad.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Crear Auditoría Upgrade{% endblock %}
+
+{% block extra_buttons %}
+<a href="{% url 'calidad:lista_auditorias_upgrade' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Volver a la lista
+</a>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<style>
+    .container-fluid {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 15px;
+    }
+    
+    .main-card {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e3e6f0;
+        overflow: hidden;
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem 2rem;
+        border-bottom: none;
+    }
+    
+    .card-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .card-body {
+        padding: 2rem;
+    }
+    
+    .form-section {
+        background: #f8f9fc;
+        border: 1px solid #e3e6f0;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .section-title {
+        color: #5a5c69;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .form-control {
+        border: 1px solid #d1d3e2;
+        border-radius: 6px;
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        transition: all 0.15s ease-in-out;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #5a5c69;
+        margin-bottom: 0.5rem;
+    }
+    
+    .btn {
+        border-radius: 6px;
+        font-weight: 500;
+        padding: 0.75rem 1.5rem;
+        transition: all 0.15s ease-in-out;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #5a6268;
+        border-color: #545b62;
+        transform: translateY(-1px);
+    }
+    
+    .accordion {
+        border: none;
+    }
+    
+    .accordion-item {
+        border: 1px solid #e3e6f0;
+        border-radius: 8px !important;
+        margin-bottom: 1rem;
+        overflow: hidden;
+    }
+    
+    .accordion-header {
+        border-bottom: none;
+    }
+    
+    .accordion-button {
+        background-color: #f8f9fc;
+        color: #5a5c69;
+        font-weight: 600;
+        border: none;
+        padding: 1rem 1.5rem;
+    }
+    
+    .accordion-button:not(.collapsed) {
+        background-color: #e3e6f0;
+        color: #3a3b45;
+        box-shadow: none;
+    }
+    
+    .accordion-button:focus {
+        box-shadow: none;
+        border-color: transparent;
+    }
+    
+    .accordion-body {
+        padding: 1.5rem;
+        background-color: #ffffff;
+    }
+    
+    .table {
+        margin-bottom: 0;
+    }
+    
+    .table th {
+        background-color: #f8f9fc;
+        border-top: none;
+        border-bottom: 2px solid #e3e6f0;
+        font-weight: 600;
+        color: #5a5c69;
+        padding: 1rem 0.75rem;
+    }
+    
+    .table td {
+        padding: 1rem 0.75rem;
+        vertical-align: middle;
+        border-top: 1px solid #e3e6f0;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fc;
+    }
+    
+    .btn-group .btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    .btn-outline-success:hover {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+    
+    .btn-outline-danger:hover {
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+    
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .fade-in {
+        animation: fadeIn 0.3s ease-in;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    
+    .loading-content {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .audio-upload-section {
+        border: 2px dashed #d1d3e2;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        background-color: #f8f9fc;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .audio-upload-section:hover {
+        border-color: #667eea;
+        background-color: #f0f2ff;
+    }
+    
+    .audio-upload-section.dragover {
+        border-color: #28a745;
+        background-color: #d4edda;
+    }
+    
+    .upload-icon {
+        font-size: 3rem;
+        color: #667eea;
+        margin-bottom: 1rem;
+    }
+    
+    .file-info {
+        margin-top: 1rem;
+        padding: 1rem;
+        background-color: #e3e6f0;
+        border-radius: 6px;
+        display: none;
+    }
+    
+    .select2-container--bootstrap-5 .select2-selection {
+        border: 1px solid #d1d3e2;
+        border-radius: 6px;
+        min-height: calc(2.25rem + 2px);
+    }
+    
+    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+        padding: 0.75rem 1rem;
+        color: #5a5c69;
+    }
+</style>
+{% endblock %}
+
+{% block content_calidad %}
+<div class="container-fluid">
+    <div class="main-card">
+        <div class="card-header">
+            <h1 class="card-title">
+                <i class="fas fa-level-up-alt"></i>
+                Crear Nueva Auditoría Upgrade
+            </h1>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" id="formAuditoriaUpgrade" novalidate>
+                {% csrf_token %}
+                
+                <!-- Información básica -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-info-circle text-primary"></i>
+                        Información Básica de la Auditoría
+                    </h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.agente.id_for_label }}" class="form-label">Agente *</label>
+                                {{ form.agente|add_class:"form-control" }}
+                                {% if form.agente.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.agente.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.telefono.id_for_label }}" class="form-label">Teléfono *</label>
+                                {{ form.telefono|add_class:"form-control" }}
+                                {% if form.telefono.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.telefono.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.fecha_llamada.id_for_label }}" class="form-label">Fecha de Llamada *</label>
+                                {{ form.fecha_llamada|add_class:"form-control" }}
+                                {% if form.fecha_llamada.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.fecha_llamada.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.tipo_monitoreo.id_for_label }}" class="form-label">Tipo de Monitoreo *</label>
+                                {{ form.tipo_monitoreo|add_class:"form-control" }}
+                                {% if form.tipo_monitoreo.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.tipo_monitoreo.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label for="{{ form.observaciones_generales.id_for_label }}" class="form-label">Observaciones Generales</label>
+                                {{ form.observaciones_generales|add_class:"form-control" }}
+                                {% if form.observaciones_generales.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.observaciones_generales.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Carga de Audio -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-microphone text-info"></i>
+                        Archivo de Audio para Speech Analytics
+                    </h3>
+                    <div class="audio-upload-section" id="audioUploadSection">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <h5>Arrastra y suelta tu archivo de audio aquí</h5>
+                        <p class="text-muted mb-3">o haz clic para seleccionar un archivo</p>
+                        {{ form.archivo_audio|add_class:"form-control d-none" }}
+                        <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('{{ form.archivo_audio.id_for_label }}').click()">
+                            <i class="fas fa-folder-open me-2"></i>Seleccionar Archivo
+                        </button>
+                        <div class="file-info" id="fileInfo">
+                            <i class="fas fa-file-audio text-success me-2"></i>
+                            <span id="fileName"></span>
+                            <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="clearFile()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% if form.archivo_audio.errors %}
+                        <div class="invalid-feedback d-block mt-2">
+                            {{ form.archivo_audio.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Evaluación de Indicadores -->
+                {% if indicadores_por_tipologia %}
+                <div class="form-section">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="section-title mb-0">
+                            <i class="fas fa-level-up-alt text-success"></i>
+                            Evaluación de Indicadores Upgrade
+                        </h3>
+                        <div class="d-flex align-items-center">
+                            <span class="me-3">Puntuación Total: <span id="puntuacion-total" class="badge bg-secondary fs-6">0.00</span></span>
+                            <span class="me-2">Porcentaje: <span id="porcentaje-total" class="badge bg-primary fs-6">0%</span></span>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion" id="acordeonIndicadoresUpgrade">
+                        {% for tipologia, datos in indicadores_por_tipologia.items %}
+                        <div class="accordion-item border-{{ datos.color }} mb-3">
+                            <h2 class="accordion-header" id="headingUpgrade{{ forloop.counter }}">
+                                <button class="accordion-button bg-{{ datos.color }} bg-opacity-10 text-{{ datos.color }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUpgrade{{ forloop.counter }}" aria-expanded="true" aria-controls="collapseUpgrade{{ forloop.counter }}">
+                                    <i class="fas fa-level-up-alt me-2"></i>
+                                    <strong>{{ datos.nombre }}</strong>
+                                    <span class="ms-2 badge bg-{{ datos.color }}">{{ datos.indicadores|length }} indicadores</span>
+                                </button>
+                            </h2>
+                            <div id="collapseUpgrade{{ forloop.counter }}" class="accordion-collapse collapse show" aria-labelledby="headingUpgrade{{ forloop.counter }}" data-bs-parent="#acordeonIndicadoresUpgrade">
+                                <div class="accordion-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Indicador Upgrade</th>
+                                                    <th class="text-center">Ponderación</th>
+                                                    <th class="text-center">Cumple</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for indicador in datos.indicadores %}
+                                                <tr>
+                                                    <td>
+                                                        <div class="text-muted">{{ indicador.categoria }}</div>
+                                                        <div class="fw-bold">{{ indicador.indicador }}</div>
+                                                        <input type="hidden" name="indicador_id" id="indicador_id_{{ indicador.id }}" value="{{ indicador.id }}">
+                                                    </td>
+                                                    <td class="text-center align-middle" style="width:140px;">
+                                                        <span class="badge bg-{{ datos.color }}">{{ indicador.ponderacion }}%</span>
+                                                    </td>
+                                                    <td class="text-center align-middle" style="width:140px;">
+                                                        <div class="d-flex flex-column align-items-center">
+                                                            <!-- Botones de estado con tres opciones -->
+                                                            <div class="btn-group btn-group-sm w-100 justify-content-center" role="group" aria-label="Opciones de cumplimiento">
+                                                                <input type="radio" class="btn-check" name="indicador_{{ indicador.id }}_estado" 
+                                                                       id="cumple_upgrade_{{ indicador.id }}" value="cumple" 
+                                                                       data-indicador-id="{{ indicador.id }}"
+                                                                       onchange="actualizarEstadoIndicadorUpgrade(this)">
+                                                                <label class="btn btn-outline-success" for="cumple_upgrade_{{ indicador.id }}" 
+                                                                       style="border-top-right-radius: 0; border-bottom-right-radius: 0;">
+                                                                    <i class="fas fa-check"></i>
+                                                                </label>
+
+                                                                <input type="radio" class="btn-check" name="indicador_{{ indicador.id }}_estado" 
+                                                                       id="sin_seleccionar_upgrade_{{ indicador.id }}" value="sin_seleccionar" 
+                                                                       data-indicador-id="{{ indicador.id }}" checked
+                                                                       onchange="actualizarEstadoIndicadorUpgrade(this)">
+                                                                <label class="btn btn-outline-secondary" for="sin_seleccionar_upgrade_{{ indicador.id }}"
+                                                                       style="border-radius: 0;">
+                                                                    <i class="fas fa-minus"></i>
+                                                                </label>
+
+                                                                <input type="radio" class="btn-check" name="indicador_{{ indicador.id }}_estado" 
+                                                                       id="no_cumple_upgrade_{{ indicador.id }}" value="no_cumple" 
+                                                                       data-indicador-id="{{ indicador.id }}"
+                                                                       onchange="actualizarEstadoIndicadorUpgrade(this)">
+                                                                <label class="btn btn-outline-danger" for="no_cumple_upgrade_{{ indicador.id }}"
+                                                                       style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                                                                    <i class="fas fa-times"></i>
+                                                                </label>
+                                                            </div>
+                                                            
+                                                            <!-- Texto descriptivo del estado -->
+                                                            <div class="mt-2 text-center">
+                                                                <span class="badge bg-secondary bg-opacity-10 text-secondary d-inline-flex align-items-center py-1 px-2 rounded-pill" 
+                                                                      id="estado-texto-upgrade-{{ indicador.id }}">
+                                                                    <i class="fas fa-minus-circle me-1"></i> Sin seleccionar
+                                                                </span>
+                                                            </div>
+                                                            
+                                                            <!-- Input oculto para el valor real del indicador -->
+                                                            <input type="hidden" name="indicador_{{ indicador.id }}" id="indicador_valor_upgrade_{{ indicador.id }}" value="" data-ponderacion="{{ indicador.ponderacion }}">
+                                                            
+                                                            <!-- Campo de observaciones con animación -->
+                                                            <div class="mt-3 observaciones-container fade-in w-100" id="observaciones-container-upgrade-{{ indicador.id }}" style="display: none;">
+                                                                <div class="card border-0 shadow-sm">
+                                                                    <div class="card-body p-2">
+                                                                        <label for="observaciones_upgrade_{{ indicador.id }}" class="form-label small text-muted mb-1 d-flex align-items-center">
+                                                                            <i class="fas fa-comment-dots me-2 text-primary"></i> Explica por qué no cumple:
+                                                                        </label>
+                                                                        <textarea class="form-control form-control-sm" 
+                                                                                name="observaciones_{{ indicador.id }}" 
+                                                                                id="observaciones_upgrade_{{ indicador.id }}"
+                                                                                placeholder="Detalla el motivo por el cual no se cumple este indicador de upgrade" 
+                                                                                rows="2"
+                                                                                style="font-size: 0.9rem; resize: vertical;"></textarea>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> No hay indicadores de upgrade disponibles para mostrar.
+                    </div>
+                {% endif %}
+
+                <!-- Botones de acción -->
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'calidad:lista_auditorias_upgrade' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save"></i> Guardar Auditoría
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de carga -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <h5 class="mt-3">Guardando auditoría...</h5>
+        <p class="text-muted">Por favor espere mientras se procesa la información.</p>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+// Función para actualizar el estado del indicador upgrade (ámbito global)
+function actualizarEstadoIndicadorUpgrade(radio) {
+    const indicadorId = radio.dataset.indicadorId;
+    const valor = radio.value;
+    const estadoTexto = document.getElementById(`estado-texto-upgrade-${indicadorId}`);
+    const inputOculto = document.getElementById(`indicador_valor_upgrade_${indicadorId}`);
+    const observacionesContainer = document.getElementById(`observaciones-container-upgrade-${indicadorId}`);
+
+    inputOculto.value = valor === 'sin_seleccionar' ? '' : valor;
+
+    if (valor === 'cumple') {
+        estadoTexto.innerHTML = '<i class="fas fa-check-circle me-1 text-success"></i> Cumple';
+        estadoTexto.className = 'badge bg-success bg-opacity-10 text-success d-inline-flex align-items-center py-1 px-2 rounded-pill';
+        if (observacionesContainer) observacionesContainer.style.display = 'none';
+    } else if (valor === 'no_cumple') {
+        estadoTexto.innerHTML = '<i class="fas fa-times-circle me-1 text-danger"></i> No Cumple';
+        estadoTexto.className = 'badge bg-danger bg-opacity-10 text-danger d-inline-flex align-items-center py-1 px-2 rounded-pill';
+        if (observacionesContainer) observacionesContainer.style.display = 'block';
+    } else {
+        estadoTexto.innerHTML = '<i class="fas fa-minus-circle me-1 text-secondary"></i> Sin seleccionar';
+        estadoTexto.className = 'badge bg-secondary bg-opacity-10 text-secondary d-inline-flex align-items-center py-1 px-2 rounded-pill';
+        if (observacionesContainer) observacionesContainer.style.display = 'none';
+    }
+
+    calcularPuntuacionTotalUpgrade();
+}
+
+// Función para calcular la puntuación total ponderada de upgrade
+function calcularPuntuacionTotalUpgrade() {
+    let totalPuntos = 0;
+    let totalPonderacion = 0;
+    let totalIndicadores = 0;
+    let indicadoresEvaluados = 0;
+    
+    // Recorrer todos los inputs ocultos de los indicadores upgrade
+    document.querySelectorAll('input[id^="indicador_valor_upgrade_"]').forEach(input => {
+        const ponderacion = parseFloat(input.dataset.ponderacion) || 0;
+        const valor = input.value;
+        
+        // Solo sumar a la ponderación total si el indicador tiene un valor asignado
+        if (valor !== '') {
+            totalPonderacion += ponderacion;
+            totalIndicadores++;
+            
+            // Sumar puntos solo si cumple
+            if (valor === 'cumple') {
+                totalPuntos += ponderacion;
+                indicadoresEvaluados++;
+            } else if (valor === 'no_cumple') {
+                indicadoresEvaluados++;
+            }
+        }
+    });
+    
+    // Calcular porcentaje (solo si hay indicadores evaluados)
+    let porcentaje = 0;
+    if (totalPonderacion > 0 && indicadoresEvaluados > 0) {
+        porcentaje = (totalPuntos / totalPonderacion) * 100;
+    }
+    
+    // Actualizar la interfaz
+    const puntuacionElement = document.getElementById('puntuacion-total');
+    const porcentajeElement = document.getElementById('porcentaje-total');
+    
+    if (puntuacionElement) {
+        puntuacionElement.textContent = totalPuntos.toFixed(2);
+        // Cambiar el color según el porcentaje
+        if (porcentaje >= 90) {
+            puntuacionElement.className = 'badge bg-success fs-6';
+        } else if (porcentaje >= 70) {
+            puntuacionElement.className = 'badge bg-warning text-dark fs-6';
+        } else {
+            puntuacionElement.className = 'badge bg-danger fs-6';
+        }
+    }
+    
+    if (porcentajeElement) {
+        porcentajeElement.textContent = porcentaje.toFixed(2) + '%';
+        // Sincronizar el color con el de la puntuación
+        if (porcentaje >= 90) {
+            porcentajeElement.className = 'badge bg-success fs-6';
+        } else if (porcentaje >= 70) {
+            porcentajeElement.className = 'badge bg-warning text-dark fs-6';
+        } else {
+            porcentajeElement.className = 'badge bg-danger fs-6';
+        }
+    }
+}
+
+// Función para limpiar el archivo seleccionado
+function clearFile() {
+    const fileInput = document.getElementById('{{ form.archivo_audio.id_for_label }}');
+    const fileInfo = document.getElementById('fileInfo');
+    
+    fileInput.value = '';
+    fileInfo.style.display = 'none';
+}
+
+// Inicializar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar todos los estados como "sin seleccionar"
+    document.querySelectorAll('[id^="sin_seleccionar_upgrade_"]').forEach(radio => {
+        if (radio.checked) {
+            actualizarEstadoIndicadorUpgrade(radio);
+        }
+    });
+    
+    // Calcular la puntuación total inicial
+    calcularPuntuacionTotalUpgrade();
+    
+    // Configurar drag and drop para archivos de audio
+    const uploadSection = document.getElementById('audioUploadSection');
+    const fileInput = document.getElementById('{{ form.archivo_audio.id_for_label }}');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    
+    // Eventos de drag and drop
+    uploadSection.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadSection.classList.add('dragover');
+    });
+    
+    uploadSection.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadSection.classList.remove('dragover');
+    });
+    
+    uploadSection.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadSection.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            showFileInfo(files[0]);
+        }
+    });
+    
+    // Evento de cambio en el input de archivo
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            showFileInfo(e.target.files[0]);
+        }
+    });
+    
+    // Función para mostrar información del archivo
+    function showFileInfo(file) {
+        fileName.textContent = file.name;
+        fileInfo.style.display = 'block';
+    }
+});
+
+// Inicializar Select2 para el campo de agente
+$(document).ready(function() {
+    $('#{{ form.agente.id_for_label }}').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        dropdownParent: $('#formAuditoriaUpgrade'),
+        placeholder: 'Buscar agente por nombre, apellido o usuario...',
+        allowClear: true,
+        language: {
+            noResults: function() {
+                return 'No se encontraron resultados';
+            },
+            searching: function() {
+                return 'Buscando...';
+            },
+            inputTooShort: function(args) {
+                return 'Ingrese al menos ' + args.minimum + ' caracteres';
+            },
+            errorLoading: function() {
+                return 'No se pudieron cargar los resultados';
+            }
+        }
+    });
+    
+    // Manejar envío del formulario
+    $('#formAuditoriaUpgrade').on('submit', function(e) {
+        console.log('Formulario de auditoría upgrade enviado. Validando...');
+        
+        // Validar que el formulario es válido antes de mostrar el modal
+        if (!this.checkValidity()) {
+            console.log('Formulario no válido. Mostrando errores...');
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).addClass('was-validated');
+            return false;
+        }
+
+        console.log('Mostrando modal de carga...');
+        // Mostrar el modal de carga
+        $('#loadingOverlay').show();
+        
+        // Deshabilitar el botón de envío para evitar múltiples envíos
+        $('button[type="submit"]').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...');
+        
+        console.log('Enviando formulario de auditoría upgrade...');
+    });
+});
+</script>
+{% endblock extra_js %}

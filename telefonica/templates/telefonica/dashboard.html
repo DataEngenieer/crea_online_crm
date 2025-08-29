@@ -676,23 +676,44 @@
                             borderWidth: 1,
                             cornerRadius: 8,
                             displayColors: true,
+                            // Configuración para posicionamiento preciso del tooltip
+                            position: 'nearest',
+                            filter: function(tooltipItem) {
+                                // Solo mostrar tooltip si hay datos válidos
+                                return tooltipItem.parsed.x > 0;
+                            },
                             callbacks: {
                                 title: function(context) {
-                                    return context[0].label;
+                                    // Asegurar que obtenemos el nombre correcto del asesor
+                                    const dataIndex = context[0].dataIndex;
+                                    return asesoresNombres[dataIndex] || 'Asesor desconocido';
+                                },
+                                label: function(context) {
+                                    // Mostrar el valor específico del dataset actual
+                                    const datasetLabel = context.dataset.label;
+                                    const value = context.parsed.x;
+                                    return `${datasetLabel}: ${value}`;
                                 },
                                 afterBody: function(context) {
-                                    const index = context[0].dataIndex;
-                                    const portabilidad = asesoresPortabilidad[index] || 0;
-                                    const prepago = asesoresPrepago[index] || 0;
-                                    const upgrade = asesoresUpgrade[index] || 0;
+                                    // Obtener el índice correcto del asesor
+                                    const dataIndex = context[0].dataIndex;
+                                    const portabilidad = asesoresPortabilidad[dataIndex] || 0;
+                                    const prepago = asesoresPrepago[dataIndex] || 0;
+                                    const upgrade = asesoresUpgrade[dataIndex] || 0;
                                     const total = portabilidad + prepago + upgrade;
-                                    return [
-                                        '',
-                                        `Total de ventas: ${total}`,
-                                        `Portabilidad: ${portabilidad}`,
-                                        `Pre a Pos: ${prepago}`,
-                                        `Upgrade: ${upgrade}`
-                                    ];
+                                    
+                                    // Verificar que los datos son válidos
+                                    if (dataIndex >= 0 && dataIndex < asesoresNombres.length) {
+                                        return [
+                                            '',
+                                            `📊 Resumen completo:`,
+                                            `Total de ventas: ${total}`,
+                                            `🔄 Portabilidad: ${portabilidad}`,
+                                            `📱 Pre a Pos: ${prepago}`,
+                                            `⬆️ Upgrade: ${upgrade}`
+                                        ];
+                                    }
+                                    return ['Error: Datos no disponibles'];
                                 }
                             }
                         }
@@ -702,8 +723,8 @@
                         easing: 'easeInOutQuart'
                     },
                     interaction: {
-                        intersect: false,
-                        mode: 'index'
+                        intersect: true,
+                        mode: 'nearest'
                     }
                 }
             });
