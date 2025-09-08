@@ -76,7 +76,7 @@ CAMPOS_DISPONIBLES = {
         ('fecha_expedicion', 'Fecha Expedición'),
         ('nombre_completo', 'Nombre Completo'),
         ('telefono_legalizacion', 'Teléfono Legalización'),
-        ('codigo_verificacion', 'Código Verificación'),
+        ('valor_plan_anterior', 'Valor Plan Anterior'),
         ('tipo_cliente', 'Tipo Cliente'),
         ('cliente_base__nombre_cliente', 'Cliente Base Nombre'),
         ('cliente_base__documento', 'Cliente Base Documento'),
