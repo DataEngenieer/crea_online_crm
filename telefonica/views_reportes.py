@@ -223,9 +223,10 @@ def reportes(request):
             datos = list(queryset[:100])
             
         elif tipo_reporte == 'ventas_upgrade':
+            # Usar defer temporalmente para compatibilidad con producción
             queryset = VentaUpgrade.objects.filter(
                 fecha_creacion__range=[fecha_inicio_obj, fecha_fin_obj]
-            ).select_related('agente', 'cliente_base', 'plan_adquiere')
+            ).select_related('agente', 'cliente_base', 'plan_adquiere').defer('valor_plan_anterior')
             total_registros = queryset.count()
             datos = list(queryset[:100])
             
@@ -367,9 +368,10 @@ def exportar_excel(request):
             ).select_related('agente', 'cliente_base', 'plan_adquiere')
             
         elif tipo_reporte == 'ventas_upgrade':
+            # Usar defer temporalmente para compatibilidad con producción
             queryset = VentaUpgrade.objects.filter(
                 fecha_creacion__range=[fecha_inicio_obj, fecha_fin_obj]
-            ).select_related('agente', 'cliente_base', 'plan_adquiere')
+            ).select_related('agente', 'cliente_base', 'plan_adquiere').defer('valor_plan_anterior')
             
         elif tipo_reporte == 'agendamientos':
             queryset = Agendamiento.objects.filter(

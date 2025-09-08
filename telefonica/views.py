@@ -551,12 +551,14 @@ def ventas_lista(request):
     if is_backoffice_user or is_admin or is_superuser:
         # Backoffice, administradores y superusuarios pueden ver todas las ventas
         ventas_portabilidad = VentaPortabilidad.objects.all().order_by('-fecha_creacion')
-        ventas_upgrade = VentaUpgrade.objects.all().order_by('-fecha_creacion')
+        # Excluir valor_plan_anterior temporalmente para compatibilidad con producción
+        ventas_upgrade = VentaUpgrade.objects.defer('valor_plan_anterior').all().order_by('-fecha_creacion')
         ventas_prepos = VentaPrePos.objects.all().order_by('-fecha_creacion')
     else:
         # Asesores solo ven sus propias ventas
         ventas_portabilidad = VentaPortabilidad.objects.filter(agente=request.user).order_by('-fecha_creacion')
-        ventas_upgrade = VentaUpgrade.objects.filter(agente=request.user).order_by('-fecha_creacion')
+        # Excluir valor_plan_anterior temporalmente para compatibilidad con producción
+        ventas_upgrade = VentaUpgrade.objects.defer('valor_plan_anterior').filter(agente=request.user).order_by('-fecha_creacion')
         ventas_prepos = VentaPrePos.objects.filter(agente=request.user).order_by('-fecha_creacion')
     
     # Filtrar por estado si se especifica (solo para portabilidad que tiene estado_venta)
@@ -584,7 +586,7 @@ def ventas_lista(request):
             Q(plan_adquiere__codigo__icontains=q) | 
             Q(plan_nombre__icontains=q) | 
             Q(plan_codigo__icontains=q)
-        )
+        ).defer('valor_plan_anterior')
         ventas_prepos = ventas_prepos.filter(
             Q(documento__icontains=q) | 
             Q(nombre_completo__icontains=q) | 
@@ -748,7 +750,8 @@ def venta_detalle(request, pk):
     
     # Intentar obtener la venta como VentaUpgrade
     try:
-        venta = VentaUpgrade.objects.get(id=pk)
+        # Usar defer temporalmente para compatibilidad con producción
+        venta = VentaUpgrade.objects.defer('valor_plan_anterior').get(id=pk)
         return redirect('telefonica:detalle_venta_upgrade', pk=pk)
     except VentaUpgrade.DoesNotExist:
         pass

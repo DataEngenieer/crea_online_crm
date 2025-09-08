@@ -503,7 +503,7 @@ class VentaUpgrade(models.Model):
     fecha_expedicion = models.DateField(verbose_name=_("Fecha de Expedición"), null=False)
     nombre_completo = models.CharField(max_length=100, verbose_name=_('Nombre Completo'), null=False)
     telefono_legalizacion = models.CharField(max_length=10, verbose_name=_("Teléfono Legalización"), null=False)
-    valor_plan_anterior = models.DecimalField(max_digits=6, decimal_places=2, verbose_name=_("Valor Plan Anterior"), null=False)
+    valor_plan_anterior = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_("Valor Plan Anterior"), null=False, default=0.00)
     plan_adquiere = models.ForeignKey(Planes_portabilidad, on_delete=models.PROTECT, related_name='ventas_upgrade', verbose_name=_("Plan Adquirido"), null=False)
     numero_orden = models.CharField(max_length=50, verbose_name=_("Número de Orden"), null=False)
     base_origen = models.CharField(max_length=100, verbose_name=_("Base Origen"), null=True, blank=True)
