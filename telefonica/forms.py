@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, ClientesUpgrade, ClientesPrePos, GestionAsesor, GestionBackoffice, Planes_portabilidad, Agendamiento, GestionAgendamiento
 
 
@@ -40,6 +41,19 @@ class VentaPortabilidadForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Obtener solo los planes activos de tipo portabilidad para el selector
         self.fields['plan_adquiere'].queryset = Planes_portabilidad.objects.filter(estado='activo', tipo_plan='portabilidad')
+    
+    def clean_numero_orden(self):
+        """Validar que el número de orden no esté duplicado en VentaPortabilidad"""
+        numero_orden = self.cleaned_data.get('numero_orden')
+        if numero_orden:
+            # Excluir la instancia actual si estamos editando
+            queryset = VentaPortabilidad.objects.filter(numero_orden=numero_orden)
+            if self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            
+            if queryset.exists():
+                raise ValidationError('Ya existe una venta de portabilidad con este número de orden. Por favor, ingrese un número diferente.')
+        return numero_orden
 
 
 class GestionAsesorForm(forms.ModelForm):
@@ -136,6 +150,19 @@ class VentaPrePosForm(forms.ModelForm):
         # Excluir explícitamente el campo tipo_cliente del formulario
         if 'tipo_cliente' in self.fields:
             del self.fields['tipo_cliente']
+    
+    def clean_numero_orden(self):
+        """Validar que el número de orden no esté duplicado en VentaPrePos"""
+        numero_orden = self.cleaned_data.get('numero_orden')
+        if numero_orden:
+            # Excluir la instancia actual si estamos editando
+            queryset = VentaPrePos.objects.filter(numero_orden=numero_orden)
+            if self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            
+            if queryset.exists():
+                raise ValidationError('Ya existe una venta PrePos con este número de orden. Por favor, ingrese un número diferente.')
+        return numero_orden
 
 
 class ClientesUpgradeForm(forms.ModelForm):
@@ -196,6 +223,19 @@ class VentaUpgradeForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Filtrar solo planes activos de tipo upgrade
         self.fields['plan_adquiere'].queryset = Planes_portabilidad.objects.filter(estado='activo', tipo_plan='upgrade')
+    
+    def clean_numero_orden(self):
+        """Validar que el número de orden no esté duplicado en VentaUpgrade"""
+        numero_orden = self.cleaned_data.get('numero_orden')
+        if numero_orden:
+            # Excluir la instancia actual si estamos editando
+            queryset = VentaUpgrade.objects.filter(numero_orden=numero_orden)
+            if self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            
+            if queryset.exists():
+                raise ValidationError('Ya existe una venta de upgrade con este número de orden. Por favor, ingrese un número diferente.')
+        return numero_orden
 
 
 class PlanesPortabilidadForm(forms.ModelForm):

@@ -362,7 +362,13 @@
                                     <span class="input-group-text"><i class="fas fa-hashtag"></i></span>
                                     {{ form.numero_orden|attr:"class:form-control custom-input,placeholder:Ingrese número de orden" }}
                                 </div>
-                                <div class="invalid-feedback" id="numero-orden-error"></div>
+                                {% if form.numero_orden.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.numero_orden.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
                         
