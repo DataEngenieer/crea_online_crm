@@ -3,6 +3,7 @@ from .models import (
     VentaPortabilidad,
     VentaPrePos,
     VentaUpgrade,
+    VentaHogar,
     ClientesUpgrade,
     ClientesPrePos,
     GestionAsesor, 
@@ -57,6 +58,13 @@ class VentaUpgradeAdmin(admin.ModelAdmin):
     list_display = ('id', 'nombre_completo_upgrade', 'plan_adquiere', 'cliente_base', 'agente', 'fecha_creacion')
     search_fields = ('documento', 'nombres', 'apellidos', 'numero')
     list_filter = ('agente', 'tipo_cliente', 'cliente_base')
+    date_hierarchy = 'fecha_creacion'
+
+@admin.register(VentaHogar)
+class VentaHogarAdmin(admin.ModelAdmin):
+    list_display = ('id', 'nombre_completo', 'plan_adquiere', 'fecha_instalacion', 'agente', 'fecha_creacion')
+    search_fields = ('documento', 'nombre_completo', 'numero', 'numero_orden')
+    list_filter = ('agente', 'tipo_cliente', 'tipo_documento', 'estado_venta')
     date_hierarchy = 'fecha_creacion'
 
 @admin.register(GestionAsesor)

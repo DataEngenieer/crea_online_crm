@@ -156,6 +156,16 @@
                                                         <th>Estado</th>
                                                         <th>Agente</th>
                                                         <th>Fecha</th>
+                                                    {% elif tipo_reporte == 'ventas_hogar' %}
+                                                        <th>Número</th>
+                                                        <th>Documento</th>
+                                                        <th>Nombre</th>
+                                                        <th>Teléfono</th>
+                                                        <th>Plan</th>
+                                                        <th>Fecha Instalación</th>
+                                                        <th>Estado</th>
+                                                        <th>Agente</th>
+                                                        <th>Fecha</th>
                                                     {% elif tipo_reporte == 'agendamientos' %}
                                                         <th>Cliente</th>
                                                         <th>Teléfono</th>
@@ -218,6 +228,16 @@
                                                         <td>{{ item.telefono_legalizacion }}</td>
                                                         <td>{{ item.plan_nombre|default:'-' }}</td>
                                                         <td><span class="badge bg-secondary">{{ item.get_estado_venta_display }}</span></td>
+                                                        <td>{{ item.agente.username|default:'-' }}</td>
+                                                        <td>{{ item.fecha_creacion|date:'d/m/Y H:i' }}</td>
+                                                    {% elif tipo_reporte == 'ventas_hogar' %}
+                                                        <td>{{ item.numero }}</td>
+                                                        <td>{{ item.documento }}</td>
+                                                        <td>{{ item.nombre_completo }}</td>
+                                                        <td>{{ item.telefono_legalizacion }}</td>
+                                                        <td>{{ item.plan_nombre|default:'-' }}</td>
+                                                        <td>{{ item.fecha_instalacion|date:'d/m/Y'|default:'-' }}</td>
+                                                        <td><span class="badge bg-warning"><i class="bi bi-house-door me-1"></i>{{ item.get_estado_venta_display }}</span></td>
                                                         <td>{{ item.agente.username|default:'-' }}</td>
                                                         <td>{{ item.fecha_creacion|date:'d/m/Y H:i' }}</td>
                                                     {% elif tipo_reporte == 'agendamientos' %}

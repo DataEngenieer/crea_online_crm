@@ -67,7 +67,7 @@ class Planes_portabilidad(models.Model):
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='activo', verbose_name=_("Estado"))
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Creación"))
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name=_("Fecha de Actualización"))
-    tipo_plan = models.CharField(max_length=20, choices=[('portabilidad', 'Portabilidad'), ('prepos', 'PrePos'),('upgrade', 'Upgrade')], default='portabilidad', verbose_name=_("Tipo de Plan"))
+    tipo_plan = models.CharField(max_length=20, choices=[('portabilidad', 'Portabilidad'), ('prepos', 'PrePos'),('upgrade', 'Upgrade'),('Hogar', 'Hogar')], default='portabilidad', verbose_name=_("Tipo de Plan"))
     
     class Meta:
         verbose_name = _("Plan")
@@ -353,6 +353,83 @@ class ClientesPrePos(models.Model):
     def __str__(self):
         return self.telefono
 
+class VentaHogar(models.Model):
+    """Modelo para gestionar la venta de planes Hogar"""
+    
+    TIPO_DOCUMENTO_CHOICES = [
+        ('CC', 'CC'),
+        ('CE', 'CE'),
+        ('NIT', 'NIT'),
+        ('PP', 'Pasaporte'),
+    ]
+    
+    ESTADO_VENTA_HOGAR_CHOICES = [
+        ('enviada', 'Enviada'),
+    ]
+
+    numero = models.CharField(verbose_name=_("Número"), null=False, blank=False)
+    cliente_base = models.ForeignKey(ClientesPrePos, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Cliente Base"))
+    tipo_cliente = models.CharField(max_length=20, choices=TIPO_CLIENTE_BASE_CHOICES, default='fuera_base', verbose_name=_("Tipo de Cliente"))
+
+    tipo_documento = models.CharField(
+        max_length=10, 
+        choices=TIPO_DOCUMENTO_CHOICES,
+        default='CC',
+        verbose_name=_("Tipo de Documento")
+    )
+
+    documento = models.CharField(max_length=15, verbose_name=_("Documento"), null=False)
+    
+    nombre_completo = models.CharField(max_length=100, verbose_name=_('Nombre Completo'), null=False)
+    telefono_legalizacion = models.CharField(max_length=10, verbose_name=_("Teléfono Legalización"), null=False)
+    plan_adquiere = models.ForeignKey(Planes_portabilidad, on_delete=models.PROTECT, related_name='ventas_hogar', verbose_name=_("Plan Adquirido"), null=False)
+    fecha_instalacion = models.DateField(verbose_name=_("Fecha de Instalación"), null=False)
+
+    numero_orden = models.CharField(max_length=50, verbose_name=_("Número de Orden"), null=False, unique=True)
+    base_origen = models.CharField(max_length=100, verbose_name=_("Base Origen"), null=True, blank=True)
+    usuario_greta = models.CharField(max_length=100, verbose_name=_("Usuario Greta"), null=True, blank=True)
+    observacion = models.TextField(verbose_name=_("Observación"), null=True, blank=True)
+    agente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="ventas_hogar_realizadas", verbose_name=_("Agente"))
+    
+    # Información permanente del plan (para mantener histórico)
+    plan_nombre = models.CharField(max_length=150, verbose_name=_("Nombre del Plan"), null=True, blank=True)
+    plan_codigo = models.CharField(max_length=50, verbose_name=_("Código del Plan"), null=True, blank=True)
+    plan_caracteristicas = models.TextField(verbose_name=_("Características del Plan"), null=True, blank=True)
+    plan_cfm = models.DecimalField(max_digits=12, decimal_places=2, verbose_name=_("CFM del Plan"), null=True, blank=True)
+    plan_cfm_sin_iva = models.DecimalField(max_digits=12, decimal_places=2, verbose_name=_("CFM sin IVA del Plan"), null=True, blank=True)
+    
+    estado_venta = models.CharField(max_length=30, choices=ESTADO_VENTA_HOGAR_CHOICES, default='enviada', verbose_name=_("Estado Venta"))
+
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha de Creación"))
+    fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name=_("Fecha de Actualización"))
+    
+    class Meta:
+        verbose_name = _("Venta Hogar")
+        verbose_name_plural = _("Ventas Hogar") 
+        ordering = ['-fecha_creacion']
+    
+    def __str__(self):
+        return f"Venta {self.id} - {self.nombre_completo} - {self.plan_adquiere}"
+    
+    def save(self, *args, **kwargs):
+        # Si es una nueva venta, generar un número único
+        if not self.numero:
+            now = timezone.now()
+            self.numero = f"HOGAR-{now.strftime('%Y%m%d%H%M%S')}"
+        
+        # Guardar información del plan de forma permanente
+        if self.plan_adquiere and not self.plan_nombre:
+            self.plan_nombre = self.plan_adquiere.nombre_plan
+            self.plan_codigo = self.plan_adquiere.codigo
+            self.plan_caracteristicas = self.plan_adquiere.caracteristicas
+            self.plan_cfm = self.plan_adquiere.CFM
+            self.plan_cfm_sin_iva = self.plan_adquiere.CFM_sin_iva
+            
+        super().save(*args, **kwargs)
+    
+    @property
+    def nombre_completo_prepos(self):
+        return self.nombre_completo
 
 class VentaPrePos(models.Model):
 

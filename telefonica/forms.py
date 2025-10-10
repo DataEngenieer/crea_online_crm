@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, ClientesUpgrade, ClientesPrePos, GestionAsesor, GestionBackoffice, Planes_portabilidad, Agendamiento, GestionAgendamiento
+from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, VentaHogar, ClientesUpgrade, ClientesPrePos, GestionAsesor, GestionBackoffice, Planes_portabilidad, Agendamiento, GestionAgendamiento
 
 
 class VentaPortabilidadForm(forms.ModelForm):
@@ -235,6 +235,46 @@ class VentaUpgradeForm(forms.ModelForm):
             
             if queryset.exists():
                 raise ValidationError('Ya existe una venta de upgrade con este número de orden. Por favor, ingrese un número diferente.')
+        return numero_orden
+
+
+class VentaHogarForm(forms.ModelForm):
+    class Meta:
+        model = VentaHogar
+        fields = [
+            'cliente_base', 'tipo_documento', 'documento', 'nombre_completo',
+            'telefono_legalizacion', 'plan_adquiere', 'fecha_instalacion', 'numero_orden', 'observacion'
+        ]
+        widgets = {
+            'cliente_base': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
+            'tipo_documento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
+            'documento': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            
+            'nombre_completo': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'telefono_legalizacion': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'plan_adquiere': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
+            'fecha_instalacion': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'date', 'autocomplete': 'off'}),
+            'numero_orden': forms.NumberInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
+            'observacion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'autocomplete': 'off'})
+        }
+    
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        # Filtrar solo planes activos de tipo Hogar
+        self.fields['plan_adquiere'].queryset = Planes_portabilidad.objects.filter(estado='activo', tipo_plan='Hogar')
+    
+    def clean_numero_orden(self):
+        """Validar que el número de orden no esté duplicado en VentaHogar"""
+        numero_orden = self.cleaned_data.get('numero_orden')
+        if numero_orden:
+            # Excluir la instancia actual si estamos editando
+            queryset = VentaHogar.objects.filter(numero_orden=numero_orden)
+            if self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            
+            if queryset.exists():
+                raise ValidationError('Ya existe una venta de hogar con este número de orden. Por favor, ingrese un número diferente.')
         return numero_orden
 
 

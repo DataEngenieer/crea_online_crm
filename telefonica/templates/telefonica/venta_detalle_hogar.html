@@ -1,0 +1,241 @@
+{% extends 'telefonica/base_telefonica.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'telefonica/css/venta_detalle.css' %}">
+<style>
+    .venta-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px 15px 0 0;
+    }
+    .info-card {
+        border-radius: 10px;
+        transition: transform 0.2s ease-in-out;
+    }
+    .info-card:hover {
+        transform: translateY(-2px);
+    }
+    .characteristics-content {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #6c757d;
+    }
+    .price-badge {
+        font-size: 1.1rem;
+        padding: 8px 15px;
+    }
+    .section-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block contenido_telefonica %}
+<div class="container-fluid">
+    <!-- Cabecera con información principal -->
+    <div class="card shadow-lg mb-4 info-card">
+        <div class="card-header venta-header text-white d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="section-icon bg-white text-secondary me-3">
+                    <i class="fas fa-home"></i>
+                </div>
+                <div>
+                    <h5 class="mb-0">Detalle de Venta Hogar</h5>
+                    <small class="opacity-75">#{{ venta.numero }}</small>
+                </div>
+            </div>
+            <div class="badge bg-secondary fs-6 px-3 py-2">
+                <i class="fas fa-check-circle me-1"></i>{{ venta.get_estado_venta_display }}
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Detalles del Plan -->
+            <div class="mb-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="section-icon bg-light text-secondary">
+                        <i class="fas fa-wifi"></i>
+                    </div>
+                    <h6 class="mb-0 text-secondary">Detalles del Plan Hogar</h6>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-secondary mb-3">Características</h6>
+                        <div class="characteristics-content">
+                            <ul class="list-unstyled mb-0">
+                                {% if plan_info.caracteristicas %}
+                                    {% for caracteristica in plan_info.caracteristicas %}
+                                        <li class="mb-2"><i class="fas fa-check-circle text-secondary me-2"></i>{{ caracteristica }}</li>
+                                    {% endfor %}
+                                {% else %}
+                                    <li class="mb-2"><i class="fas fa-check-circle text-secondary me-2"></i>Internet de alta velocidad</li>
+                                    <li class="mb-2"><i class="fas fa-check-circle text-secondary me-2"></i>Televisión digital</li>
+                                    <li class="mb-2"><i class="fas fa-check-circle text-secondary me-2"></i>Línea telefónica fija</li>
+                                    <li class="mb-2"><i class="fas fa-check-circle text-secondary me-2"></i>Instalación incluida</li>
+                                    <li><i class="fas fa-check-circle text-secondary me-2"></i>Soporte técnico 24/7</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-secondary mb-3">Precios</h6>
+                        <div class="characteristics-content">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Cargo Fijo Mensual:</span>
+                                <span class="badge bg-secondary price-badge">${{ plan_info.cfm|floatformat:0|default:"0" }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Cargo Fijo Mensual (sin IVA):</span>
+                                <span>${{ plan_info.cfm_sin_iva|floatformat:0|default:"0" }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Código del Plan:</span>
+                                <span>{{ plan_info.codigo }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información del Cliente -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow info-card h-100">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex align-items-center">
+                        <div class="section-icon bg-white text-primary me-3">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <h6 class="mb-0">Información del Cliente</h6>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <p class="mb-2"><strong>Nombre:</strong></p>
+                            <p class="text-muted">{{ venta.nombre_completo_hogar }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="mb-2"><strong>Documento:</strong></p>
+                            <p class="text-muted">{{ venta.get_tipo_documento_display }} {{ venta.documento }}</p>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <p class="mb-2"><strong>Teléfono:</strong></p>
+                            <p class="text-muted">{{ venta.telefono_legalizacion }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow info-card h-100">
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex align-items-center">
+                        <div class="section-icon bg-white text-success me-3">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <h6 class="mb-0">Información del Servicio</h6>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <p class="mb-2"><strong>Plan:</strong></p>
+                            <p class="text-muted">{{ venta.plan_adquiere.nombre_plan }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="mb-2"><strong>Fecha Instalación:</strong></p>
+                            <p class="text-muted">{{ venta.fecha_instalacion|date:"d/m/Y" }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="mb-2"><strong>Número de Orden:</strong></p>
+                            <p class="text-muted">{{ venta.numero_orden }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="mb-2"><strong>Agente:</strong></p>
+                            <p class="text-muted">{{ venta.agente.get_full_name|default:venta.agente.username }}</p>
+                        </div>
+                    </div>
+                    {% if venta.observacion %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <p class="mb-2"><strong>Observaciones:</strong></p>
+                            <p class="text-muted">{{ venta.observacion }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información Adicional -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow info-card">
+                <div class="card-header bg-info text-white">
+                    <div class="d-flex align-items-center">
+                        <div class="section-icon bg-white text-info me-3">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <h6 class="mb-0">Información Adicional</h6>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <p class="mb-2"><strong>Fecha de Creación:</strong></p>
+                            <p class="text-muted">{{ venta.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <p class="mb-2"><strong>Estado:</strong></p>
+                            <span class="badge bg-secondary">{{ venta.get_estado_venta_display }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <p class="mb-2"><strong>Tipo de Cliente:</strong></p>
+                            <p class="text-muted">{{ venta.get_tipo_cliente_display }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <p class="mb-2"><strong>Base de Origen:</strong></p>
+                            <p class="text-muted">{{ venta.base_origen|default:"N/A" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gestiones (Placeholder para futuras implementaciones) -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow info-card">
+                <div class="card-header bg-warning text-dark">
+                    <div class="d-flex align-items-center">
+                        <div class="section-icon bg-white text-warning me-3">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <h6 class="mb-0">Gestiones</h6>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Las gestiones para ventas de Hogar aún no están implementadas.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

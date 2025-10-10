@@ -79,7 +79,7 @@
 <div class="container-fluid mt-4">
     <!-- Estadísticas rápidas -->
     <div class="row mb-4">
-        <div class="col-xl-3 col-md-6">
+        <div class="col">
             <div class="stats-card" style="background: linear-gradient(135deg, rgb(187,43,163) 0%, rgb(187,43,163) 100%);">
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
@@ -92,7 +92,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
+        <div class="col">
             <div class="stats-card" style="background: linear-gradient(135deg, rgb(197,74,176) 0%, rgb(187,43,163) 100%);">
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
@@ -105,7 +105,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
+        <div class="col">
             <div class="stats-card" style="background: linear-gradient(135deg, rgb(20,24,92) 0%, rgb(20,24,92) 100%);">
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
@@ -118,7 +118,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
+        <div class="col">
             <div class="stats-card" style="background: linear-gradient(135deg, rgb(52,56,124) 0%, rgb(52,56,124) 100%);">
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
@@ -127,6 +127,19 @@
                     </div>
                     <div class="flex-shrink-0">
                         <i class="bi bi-arrow-up-circle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="stats-card" style="background: linear-gradient(135deg, rgb(84,88,156) 0%, rgb(84,88,156) 100%);">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="h5 mb-0">{{ total_hogar|default:0 }}</div>
+                        <div class="small">Hogar</div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-house fa-2x opacity-75"></i>
                     </div>
                 </div>
             </div>
@@ -172,6 +185,11 @@
                                 <li>
                                     <a class="dropdown-item" href="{% url 'telefonica:venta_crear_upgrade' %}">
                                         <i class="bi bi-arrow-up-circle me-2"></i>Upgrade
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'telefonica:venta_crear_hogar' %}">
+                                        <i class="bi bi-house me-2"></i>Hogar
                                     </a>
                                 </li>
                             </ul>
@@ -242,6 +260,7 @@
                                             <option value="portabilidad" {% if tipo_venta == "portabilidad" %}selected{% endif %}>📱 Portabilidad</option>
                                             <option value="prepago" {% if tipo_venta == "prepago" %}selected{% endif %}>📞 Pre a Pos</option>
                                             <option value="upgrade" {% if tipo_venta == "upgrade" %}selected{% endif %}>⬆️ Upgrade</option>
+                                            <option value="hogar" {% if tipo_venta == "hogar" %}selected{% endif %}>🏠 Hogar</option>
                                         </select>
                                     </div>
                                     <div class="col-md-3">
@@ -345,6 +364,10 @@
                                         {% elif venta.tipo_venta == 'prepago' %}
                                         <span class="badge badge-modern bg-info" style="font-size: 0.7rem;">
                                             <i class="fas fa-mobile me-1"></i>Prepos
+                                        </span>
+                                        {% elif venta.tipo_venta == 'hogar' %}
+                                        <span class="badge badge-modern bg-warning" style="font-size: 0.7rem;">
+                                            <i class="fas fa-home me-1"></i>Hogar
                                         </span>
                                         {% endif %}
                                     </td>

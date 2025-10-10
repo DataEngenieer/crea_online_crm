@@ -12,7 +12,7 @@ import pandas as pd
 import logging
 
 from .models import (
-    VentaPortabilidad, VentaPrePos, VentaUpgrade, 
+    VentaPortabilidad, VentaPrePos, VentaUpgrade, VentaHogar,
     Agendamiento, GestionAgendamiento, GestionAsesor, 
     GestionBackoffice, Escalamiento, Comision,
     Planes_portabilidad, ClientesPrePos, ClientesUpgrade
@@ -125,6 +125,29 @@ CAMPOS_DISPONIBLES = {
         ('fecha_solucion', 'Fecha Solución'),
         ('solucionado', 'Solucionado'),
     ],
+    'ventas_hogar': [
+        ('numero', 'Número'),
+        ('tipo_documento', 'Tipo Documento'),
+        ('documento', 'Documento'),
+        ('nombre_completo', 'Nombre Completo'),
+        ('telefono_legalizacion', 'Teléfono Legalización'),
+        ('tipo_cliente', 'Tipo Cliente'),
+        ('cliente_base__nombre_cliente', 'Cliente Base Nombre'),
+        ('cliente_base__documento', 'Cliente Base Documento'),
+        ('fecha_instalacion', 'Fecha Instalación'),
+        ('numero_orden', 'Número Orden'),
+        ('base_origen', 'Base Origen'),
+        ('usuario_greta', 'Usuario Greta'),
+        ('plan_nombre', 'Plan Nombre'),
+        ('plan_codigo', 'Plan Código'),
+        ('plan_cfm', 'Plan CFM'),
+        ('plan_cfm_sin_iva', 'Plan CFM sin IVA'),
+        ('estado_venta', 'Estado Venta'),
+        ('agente__username', 'Agente'),
+        ('fecha_creacion', 'Fecha Creación'),
+        ('fecha_actualizacion', 'Fecha Actualización'),
+        ('observacion', 'Observación'),
+    ],
     'planes': [
         ('codigo', 'Código'),
         ('nombre_plan', 'Nombre Plan'),
@@ -180,6 +203,7 @@ def reportes(request):
             ('ventas_portabilidad', 'Ventas Portabilidad'),
             ('ventas_prepos', 'Ventas PrePos'),
             ('ventas_upgrade', 'Ventas Upgrade'),
+            ('ventas_hogar', 'Ventas Hogar'),
             ('agendamientos', 'Agendamientos'),
             ('comisiones', 'Comisiones'),
             ('escalamientos', 'Escalamientos'),
@@ -227,6 +251,13 @@ def reportes(request):
             queryset = VentaUpgrade.objects.filter(
                 fecha_creacion__range=[fecha_inicio_obj, fecha_fin_obj]
             ).select_related('agente', 'cliente_base', 'plan_adquiere').defer('valor_plan_anterior')
+            total_registros = queryset.count()
+            datos = list(queryset[:100])
+            
+        elif tipo_reporte == 'ventas_hogar':
+            queryset = VentaHogar.objects.filter(
+                fecha_creacion__range=[fecha_inicio_obj, fecha_fin_obj]
+            ).select_related('agente', 'cliente_base', 'plan_adquiere')
             total_registros = queryset.count()
             datos = list(queryset[:100])
             
@@ -372,6 +403,11 @@ def exportar_excel(request):
             queryset = VentaUpgrade.objects.filter(
                 fecha_creacion__range=[fecha_inicio_obj, fecha_fin_obj]
             ).select_related('agente', 'cliente_base', 'plan_adquiere').defer('valor_plan_anterior')
+            
+        elif tipo_reporte == 'ventas_hogar':
+            queryset = VentaHogar.objects.filter(
+                fecha_creacion__range=[fecha_inicio_obj, fecha_fin_obj]
+            ).select_related('agente', 'cliente_base', 'plan_adquiere')
             
         elif tipo_reporte == 'agendamientos':
             queryset = Agendamiento.objects.filter(

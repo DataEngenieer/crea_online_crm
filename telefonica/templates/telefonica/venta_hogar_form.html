@@ -1,0 +1,409 @@
+{% extends 'telefonica/base_telefonica.html' %}
+{% load static %}
+{% load telefonica_extras %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'telefonica/css/venta_form.css' %}">
+<style>
+    :root {
+        --primary-color: #4361ee;
+        --primary-dark: #3a56d4;
+        --primary-light: #eef2ff;
+        --success-color: #06d6a0;
+        --success-dark: #05c091;
+        --success-light: #e6fff9;
+        --accent-color: #ff9f1c;
+        --accent-dark: #f78c00;
+        --danger-color: #ef476f;
+        --info-color: #118ab2;
+        --light-color: #f8f9fa;
+        --dark-color: #343a40;
+        --border-radius: 10px;
+        --input-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        --input-focus-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+    }
+    
+    .card {
+        border: none;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+    }
+    
+    .card-header.bg-gradient-primary {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    }
+    
+    .section-container {
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        background-color: #fff;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .section-container:hover {
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        transform: translateY(-3px);
+    }
+    
+    .border-right {
+        border-right: 4px solid var(--primary-light) !important;
+    }
+    
+    .border-left {
+        border-left: 4px solid var(--success-light) !important;
+    }
+    
+    .border-left-success {
+        border-left: 4px solid var(--success-color) !important;
+    }
+    
+    .border-left-info {
+        border-left: 4px solid var(--info-color) !important;
+    }
+    
+    .text-primary {
+        color: var(--primary-color) !important;
+    }
+    
+    .text-success {
+        color: var(--success-color) !important;
+    }
+    
+    .text-info {
+        color: var(--info-color) !important;
+    }
+    
+    .bg-light {
+        background-color: var(--light-color) !important;
+    }
+    
+    .input-group-custom {
+        box-shadow: var(--input-shadow);
+        border-radius: var(--border-radius);
+        transition: all 0.3s ease;
+    }
+    
+    .input-group-custom:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    }
+    
+    .input-group-custom:focus-within {
+        box-shadow: var(--input-focus-shadow);
+    }
+    
+    .input-group-text {
+        background-color: var(--primary-light);
+        border-color: var(--primary-color);
+        color: var(--primary-dark);
+        border-top-left-radius: var(--border-radius) !important;
+        border-bottom-left-radius: var(--border-radius) !important;
+        padding: 0.6rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 45px;
+    }
+    
+    .form-control, .form-select {
+        border: 1px solid #d8e2f3;
+        padding: 0.6rem 1rem;
+        color: var(--dark-color);
+        font-weight: 500;
+    }
+    
+    .custom-input, .custom-select {
+        border-top-right-radius: var(--border-radius) !important;
+        border-bottom-right-radius: var(--border-radius) !important;
+        border-left: none;
+        background-color: white;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: none;
+        background-color: white;
+    }
+    
+    .form-label {
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: var(--dark-color);
+        display: flex;
+        align-items: center;
+    }
+    
+    .form-label i {
+        margin-right: 0.5rem;
+        color: var(--primary-color);
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, var(--success-color) 0%, var(--success-dark) 100%);
+        border-color: var(--success-dark);
+        box-shadow: 0 4px 10px rgba(6, 214, 160, 0.3);
+    }
+    
+    .btn-success:hover {
+        background: linear-gradient(135deg, var(--success-dark) 0%, var(--success-color) 100%);
+        border-color: var(--success-color);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(6, 214, 160, 0.4);
+    }
+    
+    .alert-info {
+        background-color: var(--info-color);
+        border-color: var(--info-color);
+        color: white;
+    }
+    
+    .form-check-input:checked {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
+    }
+    
+    h5 {
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    
+    label {
+        font-weight: 500;
+        color: var(--dark-color);
+    }
+    
+    .rounded-circle {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block contenido_telefonica %}
+<div class="card shadow border-0">
+    <div class="card-header bg-gradient-primary text-white py-3">
+        <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-white p-2 me-3" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-home text-primary" style="font-size: 1.5rem; background: linear-gradient(135deg, var(--primary-light), rgb(0, 0, 0)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+            </div>
+            <div>
+                <h5 class="mb-0 font-weight-bold">{{ titulo }}</h5>
+                <p class="mb-0">Complete todos los campos del formulario para registrar una nueva venta de hogar. Los campos marcados con <span class="text-danger font-weight-bold">*</span> son obligatorios.</p>
+                
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+
+        <form method="post" enctype="multipart/form-data" id="ventaHogarForm">
+            {% csrf_token %}
+            
+            <div class="row">
+                <!-- Columna Izquierda: Datos del Cliente -->
+                <div class="col-md-6">
+                    <div class="section-container mb-4 h-100 border-right border-light" style="background: linear-gradient(to bottom, white, var(--primary-light) 200%);">
+                        <h5 class="mb-3 text-primary" style="display: flex; align-items: center;"><span class="icon-circle bg-primary text-white" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; box-shadow: 0 4px 6px rgba(67, 97, 238, 0.2);"><i class="fas fa-user"></i></span>Datos del Cliente</h5>
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.tipo_documento.id_for_label }}">
+                                    <i class="fas fa-id-badge me-1"></i> Tipo de Documento:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                                    {{ form.tipo_documento|attr:"class:form-select custom-select" }}
+                                </div>
+                                <div class="invalid-feedback" id="tipo-documento-error"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.documento.id_for_label }}">
+                                    <i class="fas fa-id-card me-1"></i> Número de Documento:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-hashtag"></i></span>
+                                    {{ form.documento|attr:"class:form-control custom-input,placeholder:Ingrese número de documento" }}
+                                </div>
+                                <div class="invalid-feedback" id="documento-error"></div>
+                            </div>
+                        </div>
+                        
+
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.nombre_completo.id_for_label }}">
+                                    <i class="fas fa-user me-1"></i> Nombre Completo:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    {{ form.nombre_completo|attr:"class:form-control custom-input,placeholder:Ingrese nombre completo" }}
+                                </div>
+                                <div class="invalid-feedback" id="nombre-completo-error"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.telefono_legalizacion.id_for_label }}">
+                                    <i class="fas fa-phone me-1"></i> Teléfono:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-mobile-alt"></i></span>
+                                    {{ form.telefono_legalizacion|attr:"class:form-control custom-input,placeholder:Teléfono" }}
+                                </div>
+                                <div class="invalid-feedback" id="telefono-legalizacion-error"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Columna Derecha: Datos del Hogar -->
+                <div class="col-md-6">
+                    <div class="section-container mb-4 h-100 border-left border-light" style="background: linear-gradient(to bottom, white, var(--success-light) 200%);">
+                        <h5 class="mb-3 text-success" style="display: flex; align-items: center;"><span class="icon-circle bg-success text-white" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; box-shadow: 0 4px 6px rgba(6, 214, 160, 0.2);"><i class="fas fa-home"></i></span>Datos del Hogar</h5>
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.plan_adquiere.id_for_label }}">
+                                    <i class="fas fa-list-alt me-1"></i> Plan Adquirido:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-list-alt"></i></span>
+                                    {{ form.plan_adquiere|attr:"class:form-select custom-select" }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.fecha_instalacion.id_for_label }}">
+                                    <i class="fas fa-calendar-check me-1"></i> Fecha de Instalación:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
+                                    {{ form.fecha_instalacion|attr:"class:form-control custom-input" }}
+                                </div>
+                                <div class="invalid-feedback" id="fecha-instalacion-error"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.numero_orden.id_for_label }}">
+                                    <i class="fas fa-receipt me-1"></i> Número de Orden:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-receipt"></i></span>
+                                    {{ form.numero_orden|attr:"class:form-control custom-input,placeholder:Número de orden" }}
+                                </div>
+                                <div class="invalid-feedback" id="numero-orden-error"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.observacion.id_for_label }}">
+                                    <i class="fas fa-comment me-1"></i> Observaciones:
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-comment"></i></span>
+                                    {{ form.observacion|attr:"class:form-control custom-input,placeholder:Observaciones adicionales" }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Botón de Envío -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="d-flex justify-content-center">
+                        <button type="submit" class="btn btn-success btn-lg px-5 py-3" style="border-radius: var(--border-radius); font-weight: 600; letter-spacing: 0.5px;">
+                            <i class="fas fa-save me-2"></i>Registrar Venta de Hogar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('ventaHogarForm');
+    const planesData = {{ planes_data|safe }};
+    
+    // Función para mostrar errores de validación
+    function mostrarErrores(errores) {
+        // Limpiar errores anteriores
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+        
+        // Mostrar nuevos errores
+        for (const [campo, mensajes] of Object.entries(errores)) {
+            const input = document.querySelector(`[name="${campo}"]`);
+            const errorDiv = document.getElementById(`${campo.replace('_', '-')}-error`);
+            
+            if (input && errorDiv) {
+                input.classList.add('is-invalid');
+                errorDiv.textContent = mensajes.join(', ');
+            }
+        }
+    }
+    
+    // Validación del formulario
+    form.addEventListener('submit', function(e) {
+        let esValido = true;
+        const errores = {};
+        
+        // Validar campos requeridos
+        const camposRequeridos = ['tipo_documento', 'documento', 'nombre_completo', 'telefono_legalizacion', 'plan_adquiere', 'fecha_instalacion', 'numero_orden'];
+        
+        camposRequeridos.forEach(campo => {
+            const input = document.querySelector(`[name="${campo}"]`);
+            if (input && !input.value.trim()) {
+                errores[campo] = ['Este campo es obligatorio.'];
+                esValido = false;
+            }
+        });
+        
+        // Validar formato de documento
+        const documento = document.querySelector('[name="documento"]').value;
+        if (documento && !/^\d{6,15}$/.test(documento)) {
+            errores['documento'] = ['El documento debe contener entre 6 y 15 dígitos.'];
+            esValido = false;
+        }
+        
+        // Validar formato de teléfono
+        const telefono = document.querySelector('[name="telefono_legalizacion"]').value;
+        if (telefono && !/^\d{10}$/.test(telefono)) {
+            errores['telefono_legalizacion'] = ['El teléfono debe contener exactamente 10 dígitos.'];
+            esValido = false;
+        }
+        
+        if (!esValido) {
+            e.preventDefault();
+            mostrarErrores(errores);
+        }
+    });
+    
+    // Actualizar CFM cuando se selecciona un plan
+    const planSelect = document.querySelector('[name="plan_adquiere"]');
+    if (planSelect) {
+        planSelect.addEventListener('change', function() {
+            const planId = this.value;
+            const planSeleccionado = planesData.find(plan => plan.id == planId);
+            
+            if (planSeleccionado) {
+                console.log('Plan seleccionado:', planSeleccionado.nombre_plan, 'CFM:', planSeleccionado.CFM);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

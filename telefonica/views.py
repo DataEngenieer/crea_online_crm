@@ -15,9 +15,9 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from datetime import datetime
 
-from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, ClientesUpgrade, ClientesPrePos, GestionAsesor, GestionBackoffice, Planes_portabilidad, Agendamiento, GestionAgendamiento, Comision, ESTADO_AGENDAMIENTO_CHOICES
+from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, VentaHogar, ClientesUpgrade, ClientesPrePos, GestionAsesor, GestionBackoffice, Planes_portabilidad, Agendamiento, GestionAgendamiento, Comision, ESTADO_AGENDAMIENTO_CHOICES
 from .forms import (
-    VentaPortabilidadForm, VentaPrePosForm, VentaUpgradeForm, 
+    VentaPortabilidadForm, VentaPrePosForm, VentaUpgradeForm, VentaHogarForm,
     GestionAsesorForm, GestionBackofficeForm, PlanesPortabilidadForm,
     CorreccionVentaForm, AgendamientoForm, GestionAgendamientoForm
 )
@@ -541,7 +541,7 @@ def detalle_venta(request, pk):
 
 @login_required
 def ventas_lista(request):
-    """Lista de todas las ventas (portabilidad, upgrade y prepos) con filtrado según el rol del usuario"""
+    """Lista de todas las ventas (portabilidad, upgrade, prepos y hogar) con filtrado según el rol del usuario"""
     user = request.user
     is_backoffice_user = user.groups.filter(name='backoffice').exists()
     is_admin = user.groups.filter(name__iexact='Administrador').exists()
@@ -554,12 +554,14 @@ def ventas_lista(request):
         # Excluir valor_plan_anterior temporalmente para compatibilidad con producción
         ventas_upgrade = VentaUpgrade.objects.defer('valor_plan_anterior').all().order_by('-fecha_creacion')
         ventas_prepos = VentaPrePos.objects.all().order_by('-fecha_creacion')
+        ventas_hogar = VentaHogar.objects.all().order_by('-fecha_creacion')
     else:
         # Asesores solo ven sus propias ventas
         ventas_portabilidad = VentaPortabilidad.objects.filter(agente=request.user).order_by('-fecha_creacion')
         # Excluir valor_plan_anterior temporalmente para compatibilidad con producción
         ventas_upgrade = VentaUpgrade.objects.defer('valor_plan_anterior').filter(agente=request.user).order_by('-fecha_creacion')
         ventas_prepos = VentaPrePos.objects.filter(agente=request.user).order_by('-fecha_creacion')
+        ventas_hogar = VentaHogar.objects.filter(agente=request.user).order_by('-fecha_creacion')
     
     # Filtrar por estado si se especifica (solo para portabilidad que tiene estado_venta)
     estado = request.GET.get('estado')
@@ -596,6 +598,15 @@ def ventas_lista(request):
             Q(plan_nombre__icontains=q) | 
             Q(plan_codigo__icontains=q)
         )
+        ventas_hogar = ventas_hogar.filter(
+            Q(documento__icontains=q) | 
+            Q(nombre_completo__icontains=q) | 
+            Q(numero__icontains=q) | 
+            Q(plan_adquiere__nombre_plan__icontains=q) | 
+            Q(plan_adquiere__codigo__icontains=q) | 
+            Q(plan_nombre__icontains=q) | 
+            Q(plan_codigo__icontains=q)
+        )
     
     # Filtrar por tipo de venta
     tipo_venta = request.GET.get('tipo_venta')
@@ -608,6 +619,7 @@ def ventas_lista(request):
             ventas_portabilidad = ventas_portabilidad.filter(agente=agente)
             ventas_upgrade = ventas_upgrade.filter(agente=agente)
             ventas_prepos = ventas_prepos.filter(agente=agente)
+            ventas_hogar = ventas_hogar.filter(agente=agente)
         except User.DoesNotExist:
             pass
     
@@ -617,6 +629,7 @@ def ventas_lista(request):
         ventas_portabilidad = ventas_portabilidad.filter(fecha_creacion__gte=fecha_desde)
         ventas_upgrade = ventas_upgrade.filter(fecha_creacion__gte=fecha_desde)
         ventas_prepos = ventas_prepos.filter(fecha_creacion__gte=fecha_desde)
+        ventas_hogar = ventas_hogar.filter(fecha_creacion__gte=fecha_desde)
     
     fecha_hasta = request.GET.get('fecha_hasta')
     if fecha_hasta and fecha_hasta != '':
@@ -625,6 +638,7 @@ def ventas_lista(request):
         ventas_portabilidad = ventas_portabilidad.filter(fecha_creacion__lt=fecha_hasta_dt)
         ventas_upgrade = ventas_upgrade.filter(fecha_creacion__lt=fecha_hasta_dt)
         ventas_prepos = ventas_prepos.filter(fecha_creacion__lt=fecha_hasta_dt)
+        ventas_hogar = ventas_hogar.filter(fecha_creacion__lt=fecha_hasta_dt)
     
     # Crear una lista combinada de todas las ventas
     todas_ventas = []
@@ -686,6 +700,25 @@ def ventas_lista(request):
                 'detalle_url': 'telefonica:detalle_venta_prepago'
             })
     
+    # Añadir ventas de hogar (si no se filtra por tipo o si el tipo es hogar)
+    if not tipo_venta or tipo_venta == 'hogar':
+        for venta in ventas_hogar:
+            todas_ventas.append({
+                'id': venta.id,
+                'numero': venta.numero,
+                'tipo_venta': 'hogar',
+                'nombre_completo': venta.nombre_completo,
+                'documento': venta.documento,
+                'telefono_legalizacion': venta.telefono_legalizacion,
+                'plan_adquiere': venta.plan_adquiere,
+                'plan_cfm': venta.plan_cfm,
+                'fecha_creacion': venta.fecha_creacion,
+                'estado_venta': venta.estado_venta,
+                'agente': venta.agente,
+                'backoffice': None,
+                'detalle_url': 'telefonica:detalle_venta_hogar'
+            })
+    
     # Ordenar todas las ventas por fecha de creación (más reciente primero)
     todas_ventas.sort(key=lambda x: x['fecha_creacion'], reverse=True)
     
@@ -693,7 +726,8 @@ def ventas_lista(request):
     total_portabilidad = ventas_portabilidad.count()
     total_upgrade = ventas_upgrade.count()
     total_prepago = ventas_prepos.count()
-    total_ventas = total_portabilidad + total_upgrade + total_prepago
+    total_hogar = ventas_hogar.count()
+    total_ventas = total_portabilidad + total_upgrade + total_prepago + total_hogar
     
     # Contar ventas por estado (solo para portabilidad que tiene estados definidos)
     ventas_pendientes = ventas_portabilidad.filter(estado_venta='pendiente_revision').count()
@@ -725,7 +759,8 @@ def ventas_lista(request):
         'ventas_digitadas': ventas_digitadas,
         'total_portabilidad': total_portabilidad,
         'total_upgrade': total_upgrade,
-        'total_prepago': total_prepago
+        'total_prepago': total_prepago,
+        'total_hogar': total_hogar
     })
 
 @login_required
@@ -1499,6 +1534,7 @@ def planes_portabilidad_lista(request):
     """
     Vista para listar los planes de portabilidad con filtros y paginación.
     Solo accesible para usuarios con rol backoffice o superusuarios.
+    Incluye administración específica para planes de hogar.
     """
     # Filtrar por estado si se especifica, por defecto mostrar solo activos
     estado = request.GET.get('estado', 'activo')
@@ -1510,6 +1546,18 @@ def planes_portabilidad_lista(request):
     
     if tipo_plan:
         planes = planes.filter(tipo_plan=tipo_plan)
+    
+    # Obtener estadísticas por tipo de plan para mostrar en el dashboard
+    stats_por_tipo = {}
+    for tipo in ['portabilidad', 'prepos', 'upgrade', 'Hogar']:
+        stats_por_tipo[tipo] = {
+            'total': Planes_portabilidad.objects.filter(tipo_plan=tipo).count(),
+            'activos': Planes_portabilidad.objects.filter(tipo_plan=tipo, estado='activo').count(),
+            'inactivos': Planes_portabilidad.objects.filter(tipo_plan=tipo, estado='inactivo').count(),
+        }
+    
+    # Obtener tipos de plan disponibles para el filtro
+    tipos_plan_disponibles = Planes_portabilidad.objects.values_list('tipo_plan', flat=True).distinct()
     
     # Paginación
     paginator = Paginator(planes, 9)  # 9 planes por página para mostrar en grid de 3x3
@@ -1523,7 +1571,11 @@ def planes_portabilidad_lista(request):
     
     return render(request, 'telefonica/planes_portabilidad_lista.html', {
         'planes': planes,
-        'titulo': 'Planes de Telefonica',
+        'titulo': 'Administrar Planes Telefonica',
+        'stats_por_tipo': stats_por_tipo,
+        'tipos_plan_disponibles': tipos_plan_disponibles,
+        'estado_actual': estado,
+        'tipo_plan_actual': tipo_plan,
     })
 
 
@@ -2112,3 +2164,112 @@ def descargar_confronta_temporal(request, pk):
 
 
 # Vista resubir_confronta eliminada - ya no es necesaria porque solo trabajamos con MinIO directamente
+
+
+@login_required
+def venta_crear_hogar(request, documento=None, nro_registro=None):
+    """Vista para crear una nueva venta de Hogar"""
+    if request.method == 'POST':
+        # Verificar si hay un documento oculto en el formulario
+        hidden_documento = request.POST.get('hidden_documento', None)
+        if hidden_documento:
+            # Crear una copia mutable del QueryDict
+            post_data = request.POST.copy()
+            # Reemplazar el valor del documento con el valor del campo oculto
+            post_data['documento'] = hidden_documento
+            form = VentaHogarForm(post_data, request.FILES, user=request.user)
+        else:
+            form = VentaHogarForm(request.POST, request.FILES, user=request.user)
+            
+        if form.is_valid():
+            venta = form.save(commit=False)
+            venta.agente = request.user
+            venta.estado_venta = 'enviada'
+            # Asignar valores predeterminados a campos requeridos que no están en el formulario
+            venta.base_origen = 'Web'
+            venta.usuario_greta = request.user.username
+            
+            # Para VentaHogar no hay base de clientes específica, siempre es fuera de base
+            venta.cliente_base = None
+            venta.tipo_cliente = 'fuera_base'
+            
+            venta.save()
+            messages.success(request, 'Venta de Hogar registrada exitosamente.')
+            return redirect('telefonica:detalle_venta_hogar', pk=venta.id)
+    else:
+        initial_data = {}
+        if documento:
+            initial_data = {'documento': documento}
+        form = VentaHogarForm(initial=initial_data, user=request.user)
+    
+    # Obtener planes activos de tipo hogar para JavaScript
+    planes = Planes_portabilidad.objects.filter(estado='activo', tipo_plan='hogar').values('id', 'nombre_plan', 'CFM')
+    planes_data = []
+    for plan in planes:
+        planes_data.append({
+            'id': plan['id'],
+            'nombre_plan': plan['nombre_plan'],
+            'CFM': float(plan['CFM'])  # Convertir Decimal a float para JSON
+        })
+    
+    context = {
+        'form': form,
+        'titulo': 'Nueva Venta de Hogar',
+        'subtitulo': 'Complete el formulario para registrar una nueva venta de Hogar.',
+        'planes_data': planes_data
+    }
+    return render(request, 'telefonica/venta_hogar_form.html', context)
+
+
+@login_required
+def detalle_venta_hogar(request, pk):
+    """
+    Vista para mostrar el detalle de una venta de hogar.
+    
+    Permite ver todos los datos de la venta, incluyendo el historial de gestiones
+    y realizar acciones según el rol del usuario.
+    """
+    # Obtener la venta o devolver 404 si no existe
+    venta = get_object_or_404(VentaHogar, pk=pk)
+    
+    # Verificar permisos: el usuario debe ser el agente de la venta, un backoffice o un superusuario
+    user = request.user
+    es_backoffice = user.groups.filter(name__iexact='backoffice').exists()
+    es_propietario = (venta.agente == user)
+    
+    if not (es_propietario or es_backoffice or user.is_superuser):
+        return HttpResponseForbidden("No tienes permisos para ver esta venta.")
+    
+    # Procesar formularios (gestiones no implementadas para VentaHogar)
+    if request.method == 'POST':
+        messages.info(request, 'Las gestiones para ventas Hogar aún no están implementadas.')
+    
+    # Obtener historial de gestiones (VentaHogar no tiene gestiones por ahora)
+    gestiones_asesor = []
+    gestiones_backoffice = []
+    
+    # Formularios para añadir gestiones
+    gestion_asesor_form = GestionAsesorForm()
+    gestion_backoffice_form = GestionBackofficeForm() if es_backoffice or user.is_superuser else None
+    
+    # Preparar información del plan para la plantilla
+    plan_info = {
+        'nombre': venta.plan_nombre,
+        'codigo': venta.plan_codigo,
+        'caracteristicas': venta.plan_caracteristicas.split('|') if venta.plan_caracteristicas else [],
+        'cfm': venta.plan_cfm,
+        'cfm_sin_iva': venta.plan_cfm_sin_iva
+    }
+    
+    context = {
+        'venta': venta,
+        'plan_info': plan_info,
+        'gestiones_asesor': gestiones_asesor,
+        'gestiones_backoffice': gestiones_backoffice,
+        'gestion_asesor_form': gestion_asesor_form,
+        'gestion_backoffice_form': gestion_backoffice_form,
+        'es_backoffice': es_backoffice,
+        'es_propietario': es_propietario,
+    }
+    
+    return render(request, 'telefonica/venta_detalle_hogar.html', context)

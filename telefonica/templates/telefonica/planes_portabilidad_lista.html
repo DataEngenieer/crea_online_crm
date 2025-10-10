@@ -253,6 +253,11 @@
                 
                 <input type="radio" class="btn-check" name="tipo_plan" id="tipo_upgrade" value="upgrade" {% if request.GET.tipo_plan == 'upgrade' %}checked{% endif %}>
                 <label class="btn btn-outline-warning btn-sm" for="tipo_upgrade">Upgrade</label>
+                
+                <input type="radio" class="btn-check" name="tipo_plan" id="tipo_hogar" value="Hogar" {% if request.GET.tipo_plan == 'Hogar' %}checked{% endif %}>
+                <label class="btn btn-outline-success btn-sm" for="tipo_hogar">
+                    <i class="fas fa-home me-1"></i>Hogar
+                </label>
             </div>
             <button type="submit" class="btn btn-primary btn-sm">
                 <i class="fas fa-search me-1"></i> Filtrar
@@ -264,6 +269,51 @@
     </div>
     
     <div class="plans-section">
+        <!-- Estadísticas por tipo de plan -->
+        {% if stats_por_tipo %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <h5 class="mb-3"><i class="fas fa-chart-bar me-2"></i>Estadísticas por Tipo de Plan</h5>
+                <div class="row">
+                    {% for tipo, stats in stats_por_tipo.items %}
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <div class="mb-2">
+                                    {% if tipo == 'Hogar' %}
+                                        <i class="fas fa-home fa-2x text-success"></i>
+                                    {% elif tipo == 'portabilidad' %}
+                                        <i class="fas fa-exchange-alt fa-2x text-primary"></i>
+                                    {% elif tipo == 'prepos' %}
+                                        <i class="fas fa-mobile-alt fa-2x text-info"></i>
+                                    {% elif tipo == 'upgrade' %}
+                                        <i class="fas fa-arrow-up fa-2x text-warning"></i>
+                                    {% endif %}
+                                </div>
+                                <h6 class="card-title">{{ tipo|title }}</h6>
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="text-primary fw-bold">{{ stats.total }}</div>
+                                        <small class="text-muted">Total</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="text-success fw-bold">{{ stats.activos }}</div>
+                                        <small class="text-muted">Activos</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="text-secondary fw-bold">{{ stats.inactivos }}</div>
+                                        <small class="text-muted">Inactivos</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
         <!-- Lista de planes en tarjetas -->
         <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
             {% for plan in planes %}

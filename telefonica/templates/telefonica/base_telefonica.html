@@ -116,6 +116,12 @@
                         <i class="bi bi-arrow-up-circle me-2"></i>Upgrade
                     </a>
                 </li>
+                <li>
+                    <a class="dropdown-item text-white {% if request.resolver_match.url_name == 'venta_crear_hogar' %}active{% endif %}" 
+                       href="{% url 'telefonica:venta_crear_hogar' %}">
+                        <i class="bi bi-house me-2"></i>Hogar
+                    </a>
+                </li>
             </ul>
         </div>
         
