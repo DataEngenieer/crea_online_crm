@@ -312,11 +312,11 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="{{ form.telefono.id_for_label }}" class="form-label">Teléfono *</label>
-                                {{ form.telefono|add_class:"form-control" }}
-                                {% if form.telefono.errors %}
+                                <label for="{{ form.numero_telefono.id_for_label }}" class="form-label">Teléfono *</label>
+                                {{ form.numero_telefono|add_class:"form-control" }}
+                                {% if form.numero_telefono.errors %}
                                     <div class="invalid-feedback d-block">
-                                        {{ form.telefono.errors.0 }}
+                                        {{ form.numero_telefono.errors.0 }}
                                     </div>
                                 {% endif %}
                             </div>
@@ -349,11 +349,11 @@
                     <div class="row">
                         <div class="col-12">
                             <div class="mb-3">
-                                <label for="{{ form.observaciones_generales.id_for_label }}" class="form-label">Observaciones Generales</label>
-                                {{ form.observaciones_generales|add_class:"form-control" }}
-                                {% if form.observaciones_generales.errors %}
+                                <label for="{{ form.observaciones.id_for_label }}" class="form-label">Observaciones Generales</label>
+                                {{ form.observaciones|add_class:"form-control" }}
+                                {% if form.observaciones.errors %}
                                     <div class="invalid-feedback d-block">
-                                        {{ form.observaciones_generales.errors.0 }}
+                                        {{ form.observaciones.errors.0 }}
                                     </div>
                                 {% endif %}
                             </div>
@@ -373,8 +373,8 @@
                         </div>
                         <h5>Arrastra y suelta tu archivo de audio aquí</h5>
                         <p class="text-muted mb-3">o haz clic para seleccionar un archivo</p>
-                        {{ form.archivo_audio|add_class:"form-control d-none" }}
-                        <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('{{ form.archivo_audio.id_for_label }}').click()">
+                        {{ speech_form.audio|add_class:"form-control d-none" }}
+                        <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('{{ speech_form.audio.id_for_label }}').click()">
                             <i class="fas fa-folder-open me-2"></i>Seleccionar Archivo
                         </button>
                         <div class="file-info" id="fileInfo">
@@ -385,9 +385,9 @@
                             </button>
                         </div>
                     </div>
-                    {% if form.archivo_audio.errors %}
+                    {% if speech_form.audio.errors %}
                         <div class="invalid-feedback d-block mt-2">
-                            {{ form.archivo_audio.errors.0 }}
+                            {{ speech_form.audio.errors.0 }}
                         </div>
                     {% endif %}
                 </div>
@@ -540,7 +540,7 @@
         <p class="text-muted">Por favor espere mientras se procesa la información.</p>
     </div>
 </div>
-{% endblock content %}
+{% endblock content_calidad %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -636,7 +636,7 @@ function calcularPuntuacionTotalUpgrade() {
 
 // Función para limpiar el archivo seleccionado
 function clearFile() {
-    const fileInput = document.getElementById('{{ form.archivo_audio.id_for_label }}');
+    const fileInput = document.getElementById('{{ speech_form.audio.id_for_label }}');
     const fileInfo = document.getElementById('fileInfo');
     
     fileInput.value = '';
@@ -657,7 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Configurar drag and drop para archivos de audio
     const uploadSection = document.getElementById('audioUploadSection');
-    const fileInput = document.getElementById('{{ form.archivo_audio.id_for_label }}');
+    const fileInput = document.getElementById('{{ speech_form.audio.id_for_label }}');
     const fileInfo = document.getElementById('fileInfo');
     const fileName = document.getElementById('fileName');
     

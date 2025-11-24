@@ -13,6 +13,7 @@ from django.views.decorators.http import require_http_methods
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from .models import Speech
+from .models_upgrade import AuditoriaUpgrade
 
 def generar_grafico_onda(audio_source):
     """
@@ -112,6 +113,25 @@ def obtener_grafico_onda(request, speech_id):
             'duration': speech.duracion_segundos,
             'audio_url': audio_url,
             'storage_type': 'minio' if speech.subido_a_minio else 'local'
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+def obtener_grafico_onda_upgrade(request, auditoria_id):
+    try:
+        auditoria = get_object_or_404(AuditoriaUpgrade, id=auditoria_id)
+        if not auditoria.subido_a_minio or not auditoria.minio_url:
+            return JsonResponse({'error': 'No hay archivo de audio disponible'}, status=404)
+        audio_source = auditoria.minio_url
+        image_base64 = generar_grafico_onda(audio_source)
+        if not image_base64:
+            return JsonResponse({'error': 'Error al generar la forma de onda'}, status=500)
+        return JsonResponse({
+            'success': True,
+            'waveform': f"data:image/png;base64,{image_base64}",
+            'duration': auditoria.duracion_segundos,
+            'audio_url': auditoria.minio_url,
+            'storage_type': 'minio'
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

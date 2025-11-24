@@ -2,7 +2,7 @@ from django.urls import path, include
 from . import views
 from . import views_prepago
 from . import views_upgrade
-from .views_audio import obtener_grafico_onda, control_voz, obtener_url_audio, resubir_a_minio
+from .views_audio import obtener_grafico_onda, control_voz, obtener_url_audio, resubir_a_minio, obtener_grafico_onda_upgrade
 
 from .api import buscar_usuarios
 from .decorators import grupo_requerido, ip_permitida
@@ -69,6 +69,7 @@ urlpatterns = [
     path('auditorias-upgrade/ajax/indicadores/<int:matriz_id>/', calidad_required(views_upgrade.ajax_obtener_indicadores_upgrade), name='ajax_obtener_indicadores_upgrade'),
     path('auditorias-upgrade/responder/<int:auditoria_id>/', calidad_required(views_upgrade.responder_auditoria_upgrade), name='responder_auditoria_upgrade'),
     path('dashboard-upgrade/', calidad_required(views_upgrade.dashboard_upgrade), name='dashboard_upgrade'),
+    path('auditorias-upgrade/<int:pk>/descargar-audio/', calidad_required(views_upgrade.descargar_audio_upgrade), name='descargar_audio_upgrade'),
     
     path('auditorias/<int:pk>/descargar-audio/', 
          calidad_required(views.descargar_audio_llamada), 
@@ -84,6 +85,9 @@ urlpatterns = [
     path('api/audio/grafico-onda/<int:speech_id>/', 
          calidad_required(obtener_grafico_onda), 
          name='obtener_grafico_onda'),
+    path('api/audio/grafico-onda-upgrade/<int:auditoria_id>/',
+         calidad_required(obtener_grafico_onda_upgrade),
+         name='obtener_grafico_onda_upgrade'),
     path('api/audio/control-voz/', 
          calidad_required(control_voz), 
          name='control_voz'),

@@ -1,0 +1,320 @@
+{% extends 'calidad/base_calidad.html' %}
+{% load static %}
+
+{% block title %}Auditoría Upgrade #{{ auditoria.id }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .waveform-container{width:100%;height:80px;background-color:#f8f9fc;border-radius:4px;margin-bottom:10px;position:relative;overflow:hidden;cursor:pointer}
+  .waveform-image{width:100%;height:100%;background-size:100% 100%;background-repeat:no-repeat;position:relative}
+  .progress-bar{position:absolute;top:0;left:0;height:100%;width:0;background-color:rgba(78,115,223,.2);pointer-events:none}
+  .audio-controls{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+  .time-display{font-size:.8rem;color:#6c757d}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const audio = document.getElementById('audioPlayer');
+  const playBtn = document.getElementById('playPauseBtn');
+  const currentEl = document.getElementById('currentTime');
+  const durationEl = document.getElementById('duration');
+  function fmt(t){const m=Math.floor(t/60);const s=Math.floor(t%60);return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+  if (audio && playBtn) {
+    playBtn.addEventListener('click', function(){ if(audio.paused){ audio.play(); playBtn.querySelector('i').classList.remove('fa-play'); playBtn.querySelector('i').classList.add('fa-pause'); } else { audio.pause(); playBtn.querySelector('i').classList.remove('fa-pause'); playBtn.querySelector('i').classList.add('fa-play'); } });
+    audio.addEventListener('loadedmetadata', function(){ if(durationEl) durationEl.textContent = fmt(audio.duration)});
+    audio.addEventListener('timeupdate', function(){ if(currentEl) currentEl.textContent = fmt(audio.currentTime)});
+    audio.addEventListener('ended', function(){ playBtn.querySelector('i').classList.remove('fa-pause'); playBtn.querySelector('i').classList.add('fa-play'); });
+  }
+  const waveformImage = document.getElementById('waveformImage');
+  const progressBar = document.getElementById('progressBar');
+  const waveformContainer = document.getElementById('waveformContainer');
+  if (waveformContainer) {
+    try {
+      fetch(`/calidad/api/audio/grafico-onda-upgrade/{{ auditoria.id }}/`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.waveform && waveformImage) {
+            waveformImage.style.backgroundImage = `url('${data.waveform}')`;
+          }
+        }).catch(()=>{});
+      waveformContainer.addEventListener('click', function(e){
+        if (!audio || !audio.duration) return;
+        const rect = this.getBoundingClientRect();
+        const pos = (e.clientX - rect.left) / rect.width;
+        audio.currentTime = pos * audio.duration;
+      });
+      audio.addEventListener('timeupdate', function(){
+        if (!audio.duration || !progressBar) return;
+        const p = (audio.currentTime / audio.duration) * 100;
+        progressBar.style.width = `${p}%`;
+      });
+    } catch(e) {}
+  }
+  const ctxTipologia = document.getElementById('tipologiaChart');
+  if (ctxTipologia) {
+    try {
+      const datos = JSON.parse('{{ estadisticas_tipologias_json|escapejs|default:"[]" }}');
+      if (datos.length > 0) {
+        const labels = datos.map(d => d.nombre);
+        const cumplidos = datos.map(d => d.cumplidos);
+        const nocumplidos = datos.map(d => d.no_cumplidos);
+        const perdidos = datos.map(d => d.puntos_perdidos);
+        new Chart(ctxTipologia.getContext('2d'), {
+          type: 'bar',
+          data: { labels, datasets: [
+            { label: 'Cumplidos', data: cumplidos, backgroundColor: 'rgba(40,167,69,0.7)' },
+            { label: 'No Cumplidos', data: nocumplidos, backgroundColor: 'rgba(220,53,69,0.7)' },
+            { label: 'Puntos Perdidos', data: perdidos, backgroundColor: 'rgba(255,193,7,0.7)', type: 'line', yAxisID: 'y1', tension: 0.3 }
+          ]},
+          options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true }, y1:{ position:'right', beginAtZero:true, grid:{ drawOnChartArea:false } } }, plugins:{ legend:{ position:'bottom' } } }
+        });
+      }
+    } catch(e) {}
+  }
+});
+</script>
+{% endblock %}
+
+{% block content_calidad %}
+<div class="container-fluid">
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Detalle de Auditoría Upgrade</h5>
+            <div class="d-flex gap-2">
+                <a href="{% url 'calidad:lista_auditorias_upgrade' %}" class="btn btn-outline-secondary">Volver</a>
+                {% if auditoria.subido_a_minio and auditoria.minio_url %}
+                <a href="{% url 'calidad:descargar_audio_upgrade' auditoria.pk %}" class="btn btn-primary">
+                    Descargar Audio
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="mb-2"><strong>Agente:</strong></div>
+                    <div>{{ auditoria.agente.get_full_name|default:auditoria.agente.username }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-2"><strong>Fecha llamada:</strong></div>
+                    <div>{{ auditoria.fecha_llamada }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-2"><strong>Tipo monitoreo:</strong></div>
+                    <div>{{ auditoria.get_tipo_monitoreo_display }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-2"><strong>Puntaje total:</strong></div>
+                    <div>{{ auditoria.puntaje_total }}%</div>
+                </div>
+            </div>
+            <hr>
+            <div class="mb-3">
+                <div class="mb-2"><strong>Observaciones:</strong></div>
+                <div>{{ auditoria.observaciones|default:"-" }}</div>
+            </div>
+        </div>
+    </div>
+
+    {% if audio_url %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="fas fa-music me-2"></i>Audio de la Llamada</h6>
+        </div>
+        <div class="card-body">
+            <audio id="audioPlayer" class="d-none">
+                <source src="{{ audio_url }}" type="audio/mpeg">
+            </audio>
+            <div class="waveform-container" id="waveformContainer">
+                <div class="waveform-image" id="waveformImage"></div>
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button id="playPauseBtn" class="btn btn-primary btn-circle"><i class="fas fa-play"></i></button>
+                <div class="small text-muted ms-auto"><span id="currentTime">00:00</span> / <span id="duration">00:00</span></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if auditoria.resumen_ia or auditoria.puntaje_ia %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="fas fa-robot me-2"></i>Análisis con Inteligencia Artificial</h6>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-9">
+                    <h6 class="text-dark">Resumen de la Interacción</h6>
+                    <p class="text-muted fst-italic">"{{ auditoria.resumen_ia|default:'No se generó un resumen.' }}"</p>
+                </div>
+                <div class="col-md-3 text-center">
+                    <h6 class="text-dark">Puntaje IA</h6>
+                    <div class="display-4 fw-bold text-primary">{{ auditoria.puntaje_ia|default:'N/A' }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0">Incumplimientos por Tipología</h6>
+        </div>
+        <div class="card-body">
+            {% if estadisticas_tipologias %}
+            <div style="height: 400px;">
+                <canvas id="tipologiaChart" height="400"></canvas>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-4">No hay datos de tipologías disponibles</div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if auditoria.transcripcion %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center bg-light">
+            <h6 class="mb-0"><i class="fas fa-file-alt me-2"></i>Transcripción de la Llamada</h6>
+        </div>
+        <div class="card-body">
+            <div class="p-3 border rounded bg-white" style="white-space: pre-wrap;">
+                {{ auditoria.transcripcion|linebreaksbr }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Indicadores Evaluados</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th style="width:30%">Categoría</th>
+                            <th style="width:40%">Indicador</th>
+                            <th style="width:10%">Ponderación</th>
+                            <th style="width:10%">Cumple</th>
+                            <th style="width:10%">Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in detalles %}
+                        <tr>
+                            <td>{{ d.indicador.categoria }}</td>
+                            <td>{{ d.indicador.indicador }}</td>
+                            <td>{{ d.indicador.ponderacion }}%</td>
+                            <td>
+                                {% if d.cumple %}
+                                <span class="badge bg-success">Cumple</span>
+                                {% else %}
+                                <span class="badge bg-danger">No cumple</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ d.observaciones|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Sin evaluaciones registradas.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if hay_incumplimientos %}
+    <div class="card mt-4">
+        <div class="card-header" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white;">
+            <h6 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Indicadores No Cumplidos</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4" style="width: 50%">Indicador</th>
+                            <th class="text-center" style="width: 15%">Categoría</th>
+                            <th class="text-center" style="width: 15%">Ponderación</th>
+                            <th class="text-center" style="width: 20%">Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for categoria, detalles_cat in categorias.items %}
+                            {% for detalle in detalles_cat %}
+                                {% if not detalle.cumple %}
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold">{{ detalle.indicador.indicador }}</div>
+                                        <div class="small text-muted"><span class="badge bg-danger bg-opacity-75">{{ detalle.puntaje_obtenido|floatformat:1 }}% de {{ detalle.indicador.ponderacion }}%</span></div>
+                                    </td>
+                                    <td class="text-center"><span class="badge bg-light text-dark">{{ categoria }}</span></td>
+                                    <td class="text-center">{{ detalle.indicador.ponderacion }}%</td>
+                                    <td class="text-center">
+                                        <span class="btn btn-outline-danger btn-sm disabled"><i class="fas fa-times-circle me-1"></i> No cumple</span>
+                                        {% if detalle.observaciones %}
+                                        <div class="small text-muted mt-1"><i class="fas fa-comment-alt me-1"></i> {{ detalle.observaciones }}</div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card mt-4">
+        <div class="card-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white;">
+            <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Indicadores Cumplidos</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4" style="width: 55%">Indicador</th>
+                            <th class="text-center" style="width: 15%">Categoría</th>
+                            <th class="text-center" style="width: 15%">Puntuación</th>
+                            <th class="text-center" style="width: 15%">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for categoria, detalles_cat in categorias.items %}
+                            {% for detalle in detalles_cat %}
+                                {% if detalle.cumple %}
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold">{{ detalle.indicador.indicador }}</div>
+                                        <div class="small text-muted"><span class="badge bg-success bg-opacity-75">{{ detalle.puntaje_obtenido|floatformat:1 }}% de {{ detalle.indicador.ponderacion }}%</span></div>
+                                    </td>
+                                    <td class="text-center"><span class="badge bg-light text-dark">{{ categoria }}</span></td>
+                                    <td class="text-center">{{ detalle.indicador.ponderacion }}%</td>
+                                    <td class="text-center"><span class="btn btn-outline-success btn-sm disabled"><i class="fas fa-check-circle me-1"></i> Cumple</span></td>
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if not hay_incumplimientos %}
+    <div class="alert alert-success mt-4" role="alert"><i class="fas fa-check-circle me-2"></i> ¡Todos los indicadores cumplen con los estándares de calidad!</div>
+    {% endif %}
+</div>
+{% endblock content_calidad %}

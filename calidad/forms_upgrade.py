@@ -53,7 +53,7 @@ class AuditoriaUpgradeForm(forms.ModelForm):
         # Filtrar solo agentes activos para upgrade
         self.fields['agente'].queryset = User.objects.filter(
             is_active=True,
-            groups__name__in=['Agentes', 'Supervisores']
+            groups__name__in=['asesor', 'supervisor']
         ).distinct().order_by('first_name', 'last_name')
         
         # Configurar el evaluador automáticamente si está en el contexto
@@ -93,13 +93,6 @@ class AuditoriaUpgradeForm(forms.ModelForm):
         
         if commit:
             auditoria.save()
-            
-            # Crear el registro Speech asociado con tipo de campaña upgrade
-            if not hasattr(auditoria, 'speech'):
-                Speech.objects.create(
-                    auditoria=auditoria,
-                    tipo_campana='upgrade'
-                )
         
         return auditoria
 

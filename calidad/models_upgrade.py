@@ -156,6 +156,13 @@ class AuditoriaUpgrade(models.Model):
     
     puntaje_ia = models.CharField(max_length=10, blank=True, null=True, help_text="Puntaje total de la evaluación de IA para upgrade")
     resumen_ia = models.TextField(blank=True, null=True, help_text="Resumen de la evaluación de calidad generado por IA para upgrade")
+
+    minio_url = models.URLField(max_length=500, blank=True, null=True)
+    minio_object_name = models.CharField(max_length=255, blank=True, null=True)
+    subido_a_minio = models.BooleanField(default=False)
+    duracion_segundos = models.FloatField(default=0)
+    tamano_archivo_mb = models.FloatField(default=0)
+    transcripcion = models.TextField(blank=True, null=True)
     
     def calcular_puntaje_total(self):
         """

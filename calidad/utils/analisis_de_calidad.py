@@ -9,12 +9,13 @@ class AnalizadorTranscripciones:
     """
     Clase para analizar transcripciones de llamadas utilizando un modelo de IA.
     """
-    def __init__(self, api_key: str = None, model: str = "deepseek-chat"):
+    def __init__(self, api_key: str = None, model: str = "deepseek-chat", matriz_model: type = MatrizCalidad):
         self.api_key = api_key or os.getenv('DEEPSEEK_API_KEY')
         if not self.api_key:
             raise ValueError("API key de DeepSeek no encontrada en las variables de entorno.")
         self.model = model
         self.api_url = "https://api.deepseek.com/v1/chat/completions"
+        self.matriz_model = matriz_model
 
     def evaluar_calidad_llamada(self, transcripcion: str) -> Dict[str, Any]:
         """
@@ -51,7 +52,7 @@ class AnalizadorTranscripciones:
         """
         from collections import defaultdict
 
-        indicadores_activos = MatrizCalidad.objects.filter(activo=True).order_by('categoria', 'id')
+        indicadores_activos = self.matriz_model.objects.filter(activo=True).order_by('categoria', 'id')
         
         if not indicadores_activos.exists():
             # Devuelve un mensaje de error o un prompt básico si no hay indicadores
@@ -238,3 +239,69 @@ def autocompletar_auditoria_desde_analisis(auditoria: Auditoria, analisis_json: 
 
     except Exception as e:
         print(f"[Auditoría {auditoria.id}] ❌ Error crítico al autocompletar la auditoría: {e}")
+
+
+def autocompletar_auditoria_upgrade_desde_analisis(auditoria, analisis_json: dict):
+    from ..models_upgrade import MatrizCalidadUpgrade, DetalleAuditoriaUpgrade
+
+    if not isinstance(analisis_json, dict) or 'evaluacion' not in analisis_json:
+        print(f"[Auditoría Upgrade {auditoria.id}] ❌ Análisis JSON inválido o vacío. No se puede autocompletar.")
+        return
+
+    try:
+        with transaction.atomic():
+            evaluaciones = analisis_json.get('evaluacion', [])
+
+            indicadores_activos = MatrizCalidadUpgrade.objects.filter(activo=True)
+            indicadores_db = {
+                item.indicador.strip().lower(): item
+                for item in indicadores_activos
+            }
+
+            indicadores_procesados = set()
+
+            for item_evaluado in evaluaciones:
+                nombre_indicador_raw = item_evaluado.get('indicador')
+                if not nombre_indicador_raw:
+                    continue
+                nombre_indicador_normalizado = nombre_indicador_raw.strip().lower()
+                indicadores_procesados.add(nombre_indicador_normalizado)
+
+                if nombre_indicador_normalizado in indicadores_db:
+                    indicador_obj = indicadores_db[nombre_indicador_normalizado]
+                    DetalleAuditoriaUpgrade.objects.update_or_create(
+                        auditoria=auditoria,
+                        indicador=indicador_obj,
+                        defaults={
+                            'cumple': item_evaluado.get('cumple', False),
+                            'observaciones': item_evaluado.get('evaluacion', '')
+                        }
+                    )
+                else:
+                    print(f"[Auditoría Upgrade {auditoria.id}] ⚠️ Indicador '{nombre_indicador_raw}' no encontrado en la Matriz Upgrade.")
+
+            indicadores_faltantes = 0
+            for indicador_obj in indicadores_activos:
+                nombre_normalizado = indicador_obj.indicador.strip().lower()
+                if nombre_normalizado not in indicadores_procesados:
+                    DetalleAuditoriaUpgrade.objects.update_or_create(
+                        auditoria=auditoria,
+                        indicador=indicador_obj,
+                        defaults={
+                            'cumple': False,
+                            'observaciones': 'No evaluado por la IA - Indicador faltante en la respuesta automática'
+                        }
+                    )
+                    indicadores_faltantes += 1
+                    print(f"[Auditoría Upgrade {auditoria.id}] ⚠️ Indicador faltante agregado: {indicador_obj.indicador}")
+
+            auditoria.puntaje_ia = analisis_json.get('puntaje_total', '')
+            auditoria.resumen_ia = analisis_json.get('resumen', '')
+            auditoria.save(update_fields=['puntaje_ia', 'resumen_ia'])
+
+            auditoria.calcular_puntaje_total()
+
+            print(f"[Auditoría Upgrade {auditoria.id}] ✅ Autocompletada con {len(evaluaciones)} indicadores de IA + {indicadores_faltantes} faltantes. Puntaje recalculado.")
+
+    except Exception as e:
+        print(f"[Auditoría Upgrade {auditoria.id}] ❌ Error crítico al autocompletar la auditoría: {e}")

@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse, HttpResponseRedirect
+from django.http import HttpResponse
 from django.db.models import Q, Count, Avg
 from django.utils import timezone
 from datetime import datetime, timedelta
@@ -13,7 +14,12 @@ from django.contrib.auth import get_user_model
 
 from .models_upgrade import AuditoriaUpgrade, DetalleAuditoriaUpgrade, MatrizCalidadUpgrade, RespuestaAuditoriaUpgrade
 from .forms_upgrade import AuditoriaUpgradeForm, DetalleAuditoriaUpgradeFormSet, RespuestaAuditoriaUpgradeForm
-from .models import Speech
+from .forms_speech import SpeechForm
+from .utils.whixperx import transcribir_audio
+from .utils.texto_de_speech import format_transcript_as_script
+from .utils.analisis_de_calidad import AnalizadorTranscripciones, autocompletar_auditoria_upgrade_desde_analisis
+from .utils.minio_utils import subir_a_minio
+from .utils.audio_utils import obtener_duracion_audio, obtener_tamano_archivo_mb
 
 User = get_user_model()
 
@@ -130,10 +136,20 @@ class AuditoriaUpgradeCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cr
         indicadores_por_tipologia = {}
         for indicador in indicadores:
             if indicador.categoria not in indicadores_por_tipologia:
-                indicadores_por_tipologia[indicador.categoria] = []
-            indicadores_por_tipologia[indicador.categoria].append(indicador)
+                indicadores_por_tipologia[indicador.categoria] = {
+                    'nombre': indicador.categoria,
+                    'color': 'primary',
+                    'indicadores': []
+                }
+            indicadores_por_tipologia[indicador.categoria]['indicadores'].append(indicador)
         
         context['indicadores_por_tipologia'] = indicadores_por_tipologia
+
+        # Formulario de audio para Speech Analytics
+        if self.request.method == 'POST':
+            context['speech_form'] = SpeechForm(self.request.POST, self.request.FILES)
+        else:
+            context['speech_form'] = SpeechForm()
         
         return context
     
@@ -141,8 +157,89 @@ class AuditoriaUpgradeCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cr
         form.instance.evaluador = self.request.user
         response = super().form_valid(form)
         
+        # Pipeline de Speech Analytics para Upgrade
+        tipo_monitoreo = form.cleaned_data.get('tipo_monitoreo')
+        if tipo_monitoreo == 'speech':
+            speech_form = SpeechForm(self.request.POST, self.request.FILES)
+            if speech_form.is_valid() and self.request.FILES.get('audio'):
+                audio_file = self.request.FILES.get('audio')
+                import tempfile, os, requests
+                temp_fd, temp_path = tempfile.mkstemp(suffix='.mp3', prefix=f'upgrade_{self.object.id}_')
+                try:
+                    with os.fdopen(temp_fd, 'wb') as tmp:
+                        for chunk in audio_file.chunks():
+                            tmp.write(chunk)
+
+                    duracion = obtener_duracion_audio(temp_path)
+                    tamano_mb = obtener_tamano_archivo_mb(temp_path)
+
+                    audio_file.seek(0)
+                    nombre_personalizado = f"auditoria_upgrade_{self.object.id}_audio"
+                    resultado = subir_a_minio(
+                        archivo=audio_file,
+                        nombre_personalizado=nombre_personalizado,
+                        carpeta="audios/upgrade",
+                        bucket_type="MINIO_BUCKET_NAME_LLAMADAS"
+                    )
+
+                    if not resultado.get('success'):
+                        messages.error(self.request, f"Error al subir a MinIO: {resultado.get('error', 'Error desconocido')}")
+                    else:
+                        self.object.minio_url = resultado['url']
+                        self.object.minio_object_name = resultado['object_name']
+                        self.object.subido_a_minio = True
+                        self.object.duracion_segundos = duracion
+                        self.object.tamano_archivo_mb = tamano_mb
+                        self.object.save(update_fields=['minio_url','minio_object_name','subido_a_minio','duracion_segundos','tamano_archivo_mb'])
+
+                        try:
+                            dl_response = requests.get(self.object.minio_url, stream=True)
+                            dl_response.raise_for_status()
+                            temp_fd2, temp_path2 = tempfile.mkstemp(suffix='.mp3', prefix=f'upgrade_dl_{self.object.id}_')
+                            with os.fdopen(temp_fd2, 'wb') as tmp2:
+                                for chunk in dl_response.iter_content(chunk_size=8192):
+                                    tmp2.write(chunk)
+
+                            resultado_transcripcion = transcribir_audio(temp_path2)
+                            prediccion = resultado_transcripcion
+                            if isinstance(resultado_transcripcion, dict) and 'resultado' in resultado_transcripcion:
+                                prediccion = resultado_transcripcion['resultado']
+
+                            texto_formateado = format_transcript_as_script(prediccion)
+                            if texto_formateado.startswith('[Error') or texto_formateado.startswith('[Advertencia]'):
+                                texto_formateado = format_transcript_as_script(temp_path2)
+
+                            if not texto_formateado or texto_formateado.strip() == '' or texto_formateado.startswith('[Error'):
+                                messages.warning(self.request, 'Transcripción inválida, se omitió análisis de IA.')
+                            else:
+                                try:
+                                    self.object.transcripcion = str(texto_formateado)
+                                    self.object.save(update_fields=['transcripcion'])
+                                except Exception:
+                                    pass
+                                analizador = AnalizadorTranscripciones(matriz_model=MatrizCalidadUpgrade)
+                                analisis_resultado = analizador.evaluar_calidad_llamada(str(texto_formateado))
+                                if 'error' in analisis_resultado:
+                                    messages.error(self.request, f"Error en análisis de IA: {analisis_resultado['error']}")
+                                else:
+                                    autocompletar_auditoria_upgrade_desde_analisis(self.object, analisis_resultado)
+                        finally:
+                            try:
+                                if 'temp_path2' in locals() and os.path.exists(temp_path2):
+                                    os.unlink(temp_path2)
+                            except Exception:
+                                pass
+                except Exception as e:
+                    messages.error(self.request, f'Error procesando audio: {str(e)}')
+                finally:
+                    try:
+                        if os.path.exists(temp_path):
+                            os.unlink(temp_path)
+                    except Exception:
+                        pass
+
         messages.success(
-            self.request, 
+            self.request,
             f'Auditoría upgrade creada exitosamente para {form.instance.agente.get_full_name()}'
         )
         
@@ -186,21 +283,59 @@ class AuditoriaUpgradeDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Obtener detalles de la auditoría
-        context['detalles'] = self.object.respuestas_upgrade.select_related(
-            'indicador'
-        ).order_by('indicador__categoria', 'indicador__indicador')
+        detalles_qs = self.object.respuestas_upgrade.select_related('indicador').order_by(
+            'indicador__categoria', 'indicador__indicador'
+        )
+        context['detalles'] = detalles_qs
         
-        # Obtener indicadores no cumplidos
-        context['indicadores_no_cumplidos'] = self.object.get_indicadores_no_cumplidos()
+        categorias = {}
+        hay_incumplimientos = False
+        estadisticas = {}
+        for d in detalles_qs:
+            cat = d.indicador.categoria
+            if cat not in categorias:
+                categorias[cat] = []
+            puntaje_obtenido = d.indicador.ponderacion if d.cumple else 0
+            categorias[cat].append({
+                'indicador': d.indicador,
+                'cumple': d.cumple,
+                'observaciones': d.observaciones,
+                'puntaje_obtenido': puntaje_obtenido,
+            })
+            if not d.cumple:
+                hay_incumplimientos = True
+            if cat not in estadisticas:
+                estadisticas[cat] = {
+                    'nombre': cat,
+                    'cumplidos': 0,
+                    'no_cumplidos': 0,
+                    'puntos_perdidos': 0,
+                }
+            if d.cumple:
+                estadisticas[cat]['cumplidos'] += 1
+            else:
+                estadisticas[cat]['no_cumplidos'] += 1
+                try:
+                    estadisticas[cat]['puntos_perdidos'] += float(d.indicador.ponderacion)
+                except Exception:
+                    pass
         
-        # Verificar si el usuario actual es el agente evaluado
+        context['categorias'] = categorias
+        context['hay_incumplimientos'] = hay_incumplimientos
+        context['estadisticas_tipologias'] = list(estadisticas.values())
+        try:
+            import json
+            context['estadisticas_tipologias_json'] = json.dumps(context['estadisticas_tipologias'])
+        except Exception:
+            context['estadisticas_tipologias_json'] = '[]'
+        
         context['es_agente_evaluado'] = self.request.user == self.object.agente
-        
-        # Obtener respuestas del asesor si existen
         context['respuestas_asesor'] = RespuestaAuditoriaUpgrade.objects.filter(
             auditoria=self.object
         ).select_related('detalle_auditoria__indicador')
+        
+        context['audio_url'] = self.object.minio_url if self.object.subido_a_minio and self.object.minio_url else None
+        context['transcripcion'] = self.object.transcripcion
         
         return context
 
@@ -410,3 +545,22 @@ def ajax_obtener_indicadores_upgrade(request):
     return JsonResponse({
         'indicadores': list(indicadores)
     })
+
+
+@login_required
+def descargar_audio_upgrade(request, pk):
+    auditoria = get_object_or_404(AuditoriaUpgrade, pk=pk)
+    if not auditoria.subido_a_minio or not auditoria.minio_url:
+        messages.error(request, 'No hay archivo de audio para descargar')
+        return redirect('calidad:detalle_auditoria_upgrade', pk=auditoria.pk)
+    try:
+        import requests
+        r = requests.get(auditoria.minio_url, stream=True)
+        r.raise_for_status()
+        response = HttpResponse(r.content, content_type='application/octet-stream')
+        filename = auditoria.minio_object_name.split('/')[-1] if auditoria.minio_object_name else 'audio_upgrade.mp3'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    except Exception as e:
+        messages.error(request, f'Error al descargar el archivo: {str(e)}')
+        return redirect('calidad:detalle_auditoria_upgrade', pk=auditoria.pk)
