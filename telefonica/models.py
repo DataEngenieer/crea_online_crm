@@ -86,7 +86,7 @@ class VentaPortabilidad(models.Model):
         ('PP', 'Pasaporte'),
     ]
 
-    numero = models.CharField(verbose_name=_("Número"), null=False, blank=False)
+    numero = models.CharField(max_length=30, verbose_name=_("Número"), null=False, blank=False)
 
     tipo_documento = models.CharField(
         max_length=10, 
@@ -367,7 +367,7 @@ class VentaHogar(models.Model):
         ('enviada', 'Enviada'),
     ]
 
-    numero = models.CharField(verbose_name=_("Número"), null=False, blank=False)
+    numero = models.CharField(max_length=30, verbose_name=_("Número"), null=False, blank=False)
     cliente_base = models.ForeignKey(ClientesPrePos, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Cliente Base"))
     tipo_cliente = models.CharField(max_length=20, choices=TIPO_CLIENTE_BASE_CHOICES, default='fuera_base', verbose_name=_("Tipo de Cliente"))
 
@@ -444,7 +444,7 @@ class VentaPrePos(models.Model):
         ('enviada', 'Enviada'),
     ]
 
-    numero = models.CharField(verbose_name=_("Número"), null=False, blank=False)
+    numero = models.CharField(max_length=30, verbose_name=_("Número"), null=False, blank=False)
     cliente_base = models.ForeignKey(ClientesPrePos, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Cliente Base"))
     tipo_cliente = models.CharField(max_length=20, choices=TIPO_CLIENTE_BASE_CHOICES, default='fuera_base', verbose_name=_("Tipo de Cliente"))
 
@@ -566,7 +566,7 @@ class VentaUpgrade(models.Model):
         ('enviada', 'Enviada'),
     ]
 
-    numero = models.CharField(verbose_name=_("Número"), null=False, blank=False)
+    numero = models.CharField(max_length=30, verbose_name=_("Número"), null=False, blank=False)
     tipo_cliente = models.CharField(max_length=20, choices=TIPO_CLIENTE_CHOICES, verbose_name=_("Tipo de Cliente"))
 
     tipo_documento = models.CharField(

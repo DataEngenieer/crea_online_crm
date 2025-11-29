@@ -58,7 +58,7 @@ class Migration(migrations.Migration):
             name='VentaPortabilidad',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('numero', models.CharField(verbose_name='Número')),
+                ('numero', models.CharField(max_length=30, verbose_name='Número')),
                 ('tipo_cliente', models.CharField(choices=[('dentro_base', 'Dentro de la Base'), ('fuera_base', 'Fuera de la Base')], max_length=20, verbose_name='Tipo de Cliente')),
                 ('tipo_documento', models.CharField(choices=[('CC', 'CC'), ('CE', 'CE'), ('NIT', 'NIT'), ('PP', 'Pasaporte')], default='CC', max_length=10, verbose_name='Tipo de Documento')),
                 ('documento', models.CharField(max_length=15, verbose_name='Documento')),
@@ -157,7 +157,7 @@ class Migration(migrations.Migration):
             name='VentaPrePos',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('numero', models.CharField(verbose_name='Número')),
+                ('numero', models.CharField(max_length=30, verbose_name='Número')),
                 ('tipo_cliente', models.CharField(choices=[('dentro_base', 'Dentro de la Base'), ('fuera_base', 'Fuera de la Base')], max_length=20, verbose_name='Tipo de Cliente')),
                 ('tipo_documento', models.CharField(choices=[('CC', 'CC'), ('CE', 'CE'), ('NIT', 'NIT'), ('PP', 'Pasaporte')], default='CC', max_length=10, verbose_name='Tipo de Documento')),
                 ('documento', models.CharField(max_length=15, verbose_name='Documento')),
@@ -184,7 +184,7 @@ class Migration(migrations.Migration):
             name='VentaUpgrade',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('numero', models.CharField(verbose_name='Número')),
+                ('numero', models.CharField(max_length=30, verbose_name='Número')),
                 ('tipo_cliente', models.CharField(choices=[('dentro_base', 'Dentro de la Base'), ('fuera_base', 'Fuera de la Base')], max_length=20, verbose_name='Tipo de Cliente')),
                 ('tipo_documento', models.CharField(choices=[('CC', 'CC'), ('CE', 'CE'), ('NIT', 'NIT'), ('PP', 'Pasaporte')], default='CC', max_length=10, verbose_name='Tipo de Documento')),
                 ('documento', models.CharField(max_length=15, verbose_name='Documento')),

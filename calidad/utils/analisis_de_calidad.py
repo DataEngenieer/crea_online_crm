@@ -4,6 +4,9 @@ import requests
 from typing import Dict, Any
 from django.db import transaction
 from ..models import Auditoria, MatrizCalidad, DetalleAuditoria
+import re
+import unicodedata
+import difflib
 
 class AnalizadorTranscripciones:
     """
@@ -176,10 +179,21 @@ def autocompletar_auditoria_desde_analisis(auditoria: Auditoria, analisis_json: 
             
             # Obtener todos los indicadores activos
             indicadores_activos = MatrizCalidad.objects.filter(activo=True)
-            
-            # Se crea un diccionario de búsqueda normalizando las claves (minúsculas y sin espacios extra)
+
+            def _normalizar_nombre(texto: str) -> str:
+                if not isinstance(texto, str):
+                    return ""
+                s = texto.strip().lower()
+                s = re.sub(r"\s*\(\s*\d+(?:[\.,]\d+)?\s*%\s*\)\s*$", "", s)
+                s = unicodedata.normalize('NFD', s)
+                s = ''.join(ch for ch in s if unicodedata.category(ch) != 'Mn')
+                s = re.sub(r"[^\w\s]", " ", s)
+                s = s.replace('_', ' ')
+                s = re.sub(r"\s+", " ", s).strip()
+                return s
+
             indicadores_db = {
-                item.indicador.strip().lower(): item 
+                _normalizar_nombre(item.indicador): item
                 for item in indicadores_activos
             }
             
@@ -187,18 +201,21 @@ def autocompletar_auditoria_desde_analisis(auditoria: Auditoria, analisis_json: 
             indicadores_procesados = set()
 
             # Procesar las evaluaciones devueltas por la IA
-            import re
             for item_evaluado in evaluaciones:
                 nombre_indicador_raw = item_evaluado.get('indicador')
                 if not nombre_indicador_raw:
                     continue
                 
-                nombre_indicador_normalizado = nombre_indicador_raw.strip().lower()
-                nombre_indicador_normalizado = re.sub(r"\s*\(\s*\d+\s*%\s*\)\s*$", "", nombre_indicador_normalizado)
+                nombre_indicador_normalizado = _normalizar_nombre(nombre_indicador_raw)
                 indicadores_procesados.add(nombre_indicador_normalizado)
 
-                if nombre_indicador_normalizado in indicadores_db:
-                    indicador_obj = indicadores_db[nombre_indicador_normalizado]
+                indicador_obj = indicadores_db.get(nombre_indicador_normalizado)
+                if not indicador_obj:
+                    posibles = list(indicadores_db.keys())
+                    candidatos = difflib.get_close_matches(nombre_indicador_normalizado, posibles, n=1, cutoff=0.9)
+                    if candidatos:
+                        indicador_obj = indicadores_db[candidatos[0]]
+                if indicador_obj:
                     DetalleAuditoria.objects.update_or_create(
                         auditoria=auditoria,
                         indicador=indicador_obj,
@@ -213,7 +230,7 @@ def autocompletar_auditoria_desde_analisis(auditoria: Auditoria, analisis_json: 
             # Verificar indicadores faltantes y crearlos con cumple=False
             indicadores_faltantes = 0
             for indicador_obj in indicadores_activos:
-                nombre_normalizado = indicador_obj.indicador.strip().lower()
+                nombre_normalizado = _normalizar_nombre(indicador_obj.indicador)
                 if nombre_normalizado not in indicadores_procesados:
                     DetalleAuditoria.objects.update_or_create(
                         auditoria=auditoria,
@@ -255,8 +272,21 @@ def autocompletar_auditoria_upgrade_desde_analisis(auditoria, analisis_json: dic
             evaluaciones = analisis_json.get('evaluacion', [])
 
             indicadores_activos = MatrizCalidadUpgrade.objects.filter(activo=True)
+
+            def _normalizar_nombre(texto: str) -> str:
+                if not isinstance(texto, str):
+                    return ""
+                s = texto.strip().lower()
+                s = re.sub(r"\s*\(\s*\d+(?:[\.,]\d+)?\s*%\s*\)\s*$", "", s)
+                s = unicodedata.normalize('NFD', s)
+                s = ''.join(ch for ch in s if unicodedata.category(ch) != 'Mn')
+                s = re.sub(r"[^\w\s]", " ", s)
+                s = s.replace('_', ' ')
+                s = re.sub(r"\s+", " ", s).strip()
+                return s
+
             indicadores_db = {
-                item.indicador.strip().lower(): item
+                _normalizar_nombre(item.indicador): item
                 for item in indicadores_activos
             }
 
@@ -266,11 +296,16 @@ def autocompletar_auditoria_upgrade_desde_analisis(auditoria, analisis_json: dic
                 nombre_indicador_raw = item_evaluado.get('indicador')
                 if not nombre_indicador_raw:
                     continue
-                nombre_indicador_normalizado = nombre_indicador_raw.strip().lower()
+                nombre_indicador_normalizado = _normalizar_nombre(nombre_indicador_raw)
                 indicadores_procesados.add(nombre_indicador_normalizado)
 
-                if nombre_indicador_normalizado in indicadores_db:
-                    indicador_obj = indicadores_db[nombre_indicador_normalizado]
+                indicador_obj = indicadores_db.get(nombre_indicador_normalizado)
+                if not indicador_obj:
+                    posibles = list(indicadores_db.keys())
+                    candidatos = difflib.get_close_matches(nombre_indicador_normalizado, posibles, n=1, cutoff=0.9)
+                    if candidatos:
+                        indicador_obj = indicadores_db[candidatos[0]]
+                if indicador_obj:
                     DetalleAuditoriaUpgrade.objects.update_or_create(
                         auditoria=auditoria,
                         indicador=indicador_obj,
@@ -284,7 +319,7 @@ def autocompletar_auditoria_upgrade_desde_analisis(auditoria, analisis_json: dic
 
             indicadores_faltantes = 0
             for indicador_obj in indicadores_activos:
-                nombre_normalizado = indicador_obj.indicador.strip().lower()
+                nombre_normalizado = _normalizar_nombre(indicador_obj.indicador)
                 if nombre_normalizado not in indicadores_procesados:
                     DetalleAuditoriaUpgrade.objects.update_or_create(
                         auditoria=auditoria,

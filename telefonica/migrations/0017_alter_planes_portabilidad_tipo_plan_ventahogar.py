@@ -40,7 +40,7 @@ class Migration(migrations.Migration):
                         verbose_name="ID",
                     ),
                 ),
-                ("numero", models.CharField(verbose_name="Número")),
+                ("numero", models.CharField(max_length=30, verbose_name="Número")),
                 (
                     "tipo_cliente",
                     models.CharField(

@@ -328,9 +328,9 @@ class MatrizCalidad(models.Model):
     ponderacion = models.DecimalField(
         max_digits=5, 
         decimal_places=2,
-        validators=[MinValueValidator(0.01), MaxValueValidator(100)],
+        validators=[MinValueValidator(-100), MaxValueValidator(100)],
         verbose_name='Ponderación (%)',
-        help_text='Peso del indicador en la evaluación total (0.01 - 100)'
+        help_text='Peso del indicador en la evaluación total (-100 a 100)'
     )
     
     # Relación con el usuario que crea/actualiza el registro
