@@ -187,12 +187,14 @@ def autocompletar_auditoria_desde_analisis(auditoria: Auditoria, analisis_json: 
             indicadores_procesados = set()
 
             # Procesar las evaluaciones devueltas por la IA
+            import re
             for item_evaluado in evaluaciones:
                 nombre_indicador_raw = item_evaluado.get('indicador')
                 if not nombre_indicador_raw:
                     continue
                 
                 nombre_indicador_normalizado = nombre_indicador_raw.strip().lower()
+                nombre_indicador_normalizado = re.sub(r"\s*\(\s*\d+\s*%\s*\)\s*$", "", nombre_indicador_normalizado)
                 indicadores_procesados.add(nombre_indicador_normalizado)
 
                 if nombre_indicador_normalizado in indicadores_db:
