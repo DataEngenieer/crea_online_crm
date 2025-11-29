@@ -8,6 +8,7 @@ class SpeechForm(forms.ModelForm):
         fields = ['audio']
 
 class MatrizCalidadForm(forms.ModelForm):
+    ponderacion = forms.DecimalField(max_digits=5, decimal_places=2, min_value=-100, max_value=100)
     class Meta:
         model = MatrizCalidad
         fields = [
@@ -26,15 +27,17 @@ class MatrizCalidadForm(forms.ModelForm):
             }),
             'ponderacion': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'min': '0.01',
+                'min': '-100',
                 'max': '100',
                 'step': '0.01',
-                'placeholder': '0.01 - 100'
+                'placeholder': '-100 a 100'
             }),
         }
 
     def clean_ponderacion(self):
         ponderacion = self.cleaned_data.get('ponderacion')
-        if ponderacion is not None and (ponderacion <= 0 or ponderacion > 100):
-            raise forms.ValidationError('La ponderación debe estar entre 0.01 y 100')
+        if ponderacion is None:
+            raise forms.ValidationError('La ponderación es requerida')
+        if ponderacion < -100 or ponderacion > 100:
+            raise forms.ValidationError('La ponderación debe estar entre -100 y 100')
         return ponderacion

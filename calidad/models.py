@@ -492,7 +492,7 @@ class Auditoria(models.Model):
             puntaje_total = resultado['puntaje_total'] or Decimal('0.00')
             total_ponderacion = resultado['total_ponderacion']
             porcentaje = (puntaje_total / total_ponderacion) * Decimal('100.00')
-            return porcentaje.quantize(Decimal('0.01'))  # Redondear a 2 decimales
+            return porcentaje.quantize(Decimal('0.01'))
         except (TypeError, ZeroDivisionError):
             return Decimal('0.00')
         
