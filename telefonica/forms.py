@@ -5,6 +5,18 @@ from .models import VentaPortabilidad, VentaPrePos, VentaUpgrade, VentaHogar, Cl
 
 
 class VentaPortabilidadForm(forms.ModelForm):
+    ORIGEN_VENTA_CHOICES = [
+        ('Base de datos', 'Base de datos'),
+        ('Referido campaña', 'Referido campaña'),
+        ('Campaña Facebook', 'Campaña Facebook'),
+        ('SMS', 'SMS'),
+    ]
+
+    base_origen = forms.ChoiceField(
+        choices=ORIGEN_VENTA_CHOICES,
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'})
+    )
     # Campo personalizado para subida directa a MinIO
     confronta = forms.FileField(
         required=False,
@@ -17,7 +29,7 @@ class VentaPortabilidadForm(forms.ModelForm):
         fields = [
             'tipo_documento', 'documento', 'fecha_expedicion', 'nombre_completo',
             'telefono_legalizacion', 'plan_adquiere', 'numero_a_portar', 'nip', 'fecha_entrega',
-            'fecha_ventana_cambio', 'numero_orden', 'observacion'
+            'fecha_ventana_cambio', 'numero_orden', 'base_origen', 'observacion'
         ]
         widgets = {
             'tipo_documento': forms.Select(attrs={'class': 'form-select', 'autocomplete': 'off'}),
@@ -41,6 +53,8 @@ class VentaPortabilidadForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Obtener solo los planes activos de tipo portabilidad para el selector
         self.fields['plan_adquiere'].queryset = Planes_portabilidad.objects.filter(estado='activo', tipo_plan='portabilidad')
+        if not self.initial.get('base_origen'):
+            self.fields['base_origen'].initial = 'Base de datos'
     
     def clean_numero_orden(self):
         """Validar que el número de orden no esté duplicado en VentaPortabilidad"""

@@ -268,6 +268,19 @@
                                 <div class="invalid-feedback" id="telefono-legalizacion-error"></div>
                             </div>
                         </div>
+
+                        <div class="mb-3">
+                            <div class="form-group">
+                                <label for="{{ form.base_origen.id_for_label }}">
+                                    <i class="fas fa-bullhorn me-1"></i> Origen de Venta: <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text"><i class="fas fa-bullhorn"></i></span>
+                                    {{ form.base_origen|attr:"class:form-select custom-select,required:required" }}
+                                </div>
+                                <div class="invalid-feedback" id="base-origen-error"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -436,6 +449,8 @@
 
 {% block extra_js %}
 {{ block.super }}
+{# Datos en JSON seguro para evitar errores de parseo #}
+{{ planes_data|json_script:"planes-data" }}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Elementos del DOM
@@ -447,8 +462,8 @@
         console.log('Plan select element:', planSelect);
         console.log('CFM display element:', cfmDisplay);
         
-        // Datos de los planes desde el contexto de Django
-        const planesData = {{ planes_data|safe }};
+        // Datos de los planes desde el contexto de Django (JSON seguro)
+        const planesData = JSON.parse(document.getElementById('planes-data').textContent);
         console.log('Planes data:', planesData);
         console.log('Type of planes data:', typeof planesData);
         
