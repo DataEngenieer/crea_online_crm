@@ -550,18 +550,18 @@ def ventas_lista(request):
     # Filtrar ventas según el rol del usuario
     if is_backoffice_user or is_admin or is_superuser:
         # Backoffice, administradores y superusuarios pueden ver todas las ventas
-        ventas_portabilidad = VentaPortabilidad.objects.all().order_by('-fecha_creacion')
+        ventas_portabilidad = VentaPortabilidad.objects.select_related('agente', 'backoffice', 'plan_adquiere').all().order_by('-fecha_creacion')
         # Excluir valor_plan_anterior temporalmente para compatibilidad con producción
-        ventas_upgrade = VentaUpgrade.objects.defer('valor_plan_anterior').all().order_by('-fecha_creacion')
-        ventas_prepos = VentaPrePos.objects.all().order_by('-fecha_creacion')
-        ventas_hogar = VentaHogar.objects.all().order_by('-fecha_creacion')
+        ventas_upgrade = VentaUpgrade.objects.select_related('agente', 'plan_adquiere').defer('valor_plan_anterior').all().order_by('-fecha_creacion')
+        ventas_prepos = VentaPrePos.objects.select_related('agente', 'plan_adquiere').all().order_by('-fecha_creacion')
+        ventas_hogar = VentaHogar.objects.select_related('agente', 'plan_adquiere').all().order_by('-fecha_creacion')
     else:
         # Asesores solo ven sus propias ventas
-        ventas_portabilidad = VentaPortabilidad.objects.filter(agente=request.user).order_by('-fecha_creacion')
+        ventas_portabilidad = VentaPortabilidad.objects.select_related('agente', 'backoffice', 'plan_adquiere').filter(agente=request.user).order_by('-fecha_creacion')
         # Excluir valor_plan_anterior temporalmente para compatibilidad con producción
-        ventas_upgrade = VentaUpgrade.objects.defer('valor_plan_anterior').filter(agente=request.user).order_by('-fecha_creacion')
-        ventas_prepos = VentaPrePos.objects.filter(agente=request.user).order_by('-fecha_creacion')
-        ventas_hogar = VentaHogar.objects.filter(agente=request.user).order_by('-fecha_creacion')
+        ventas_upgrade = VentaUpgrade.objects.select_related('agente', 'plan_adquiere').defer('valor_plan_anterior').filter(agente=request.user).order_by('-fecha_creacion')
+        ventas_prepos = VentaPrePos.objects.select_related('agente', 'plan_adquiere').filter(agente=request.user).order_by('-fecha_creacion')
+        ventas_hogar = VentaHogar.objects.select_related('agente', 'plan_adquiere').filter(agente=request.user).order_by('-fecha_creacion')
     
     # Filtrar por estado si se especifica (solo para portabilidad que tiene estado_venta)
     estado = request.GET.get('estado')
