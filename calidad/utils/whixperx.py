@@ -13,10 +13,16 @@ def _make_request_with_retry(method, url, max_retries=3, backoff_factor=2, **kwa
     for attempt in range(max_retries):
         try:
             response = requests.request(method, url, **kwargs)
+            if response.status_code == 402:
+                print("❌ Error de Replicate: Se requiere pago (créditos agotados).")
+                raise RequestException("Replicate: Payment Required (Créditos agotados). Por favor, recarga tu cuenta en replicate.com", response=response)
             response.raise_for_status()
             return response
         except RequestException as e:
             print(f"Error en la petición ({attempt + 1}/{max_retries}): {e}")
+            if response := getattr(e, 'response', None):
+                if response.status_code == 402:
+                     raise  # No reintentar si es falta de pago
             if attempt < max_retries - 1:
                 sleep_time = backoff_factor * (2 ** attempt)
                 print(f"Reintentando en {sleep_time} segundos...")

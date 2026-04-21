@@ -684,39 +684,6 @@ class AuditoriaCreateView(CalidadBaseView, CreateView):
                     print(f"Error al obtener URL del archivo: {str(e)}")
                     print("El campo audio no tiene un archivo asociado correctamente")
                 
-                # Verificar información del archivo según el entorno
-                if not is_production and speech.audio and hasattr(speech.audio, 'path'):
-                    print(f"Ruta absoluta del archivo: {speech.audio.path}")
-                    print(f"Directorio padre: {os.path.dirname(speech.audio.path)}")
-                    print(f"Archivo existe: {os.path.exists(speech.audio.path)}")
-                    if os.path.exists(speech.audio.path):
-                        print(f"Tamaño del archivo: {os.path.getsize(speech.audio.path) / (1024 * 1024):.2f} MB")
-                        print(f"Permisos del archivo: {oct(os.stat(speech.audio.path).st_mode)[-3:]}")
-                elif is_production:
-                    print("[PRODUCCIÓN] Archivo almacenado en MinIO, no hay ruta local")
-                    print(f"URL de MinIO: {speech.minio_url}")
-                    print(f"Objeto MinIO: {speech.minio_object_name}")
-                else:
-                    print("[DESARROLLO] El campo audio no tiene atributo 'path' o está vacío")
-                
-                # Verificar configuración de MEDIA
-                from django.conf import settings
-                print(f"MEDIA_ROOT configurado: {settings.MEDIA_ROOT}")
-                print(f"MEDIA_URL configurado: {settings.MEDIA_URL}")
-                
-                # Log de información de DEBUG solo en desarrollo
-                if settings.DEBUG:
-                    logger = logging.getLogger(__name__)
-                    logger.info(f"DEBUG activado: {settings.DEBUG}")
-                
-                # Verificar si el directorio de medios existe
-                media_audio_dir = os.path.join(settings.MEDIA_ROOT, 'auditorias', 'audio')
-                print(f"Directorio de audio existe: {os.path.exists(media_audio_dir)}")
-                print(f"Ruta del directorio de audio: {media_audio_dir}")
-                
-                if os.path.exists(media_audio_dir):
-                    print(f"Permisos del directorio: {oct(os.stat(media_audio_dir).st_mode)[-3:]}")
-                    print(f"Archivos en el directorio: {len(os.listdir(media_audio_dir))}")
                 print(f"=== FIN INFORMACIÓN DE GUARDADO ===")
                 
                 # Crear registro de uso para facturación

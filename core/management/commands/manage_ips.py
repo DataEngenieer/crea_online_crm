@@ -170,7 +170,7 @@ class Command(BaseCommand):
         self.stdout.write(f'Consultando información de {ip_address}...')
         
         try:
-            response = requests.get(f'https://api.ipquery.io/{ip_address}', timeout=10)
+            response = requests.get(f'https://api.ipquery.io/{ip_address}', timeout=10, verify=False)
             
             if response.status_code == 200:
                 data = response.json()

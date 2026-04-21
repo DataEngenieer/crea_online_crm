@@ -114,7 +114,7 @@ class IPRestrictionMiddleware(MiddlewareMixin):
         """
         try:
             # Hacer petición a la API de ipquery.io
-            response = requests.get(f'https://api.ipquery.io/{ip_address}', timeout=5)
+            response = requests.get(f'https://api.ipquery.io/{ip_address}', timeout=5, verify=False)
             
             if response.status_code == 200:
                 return response.json()

@@ -150,7 +150,7 @@ class LoginAuditoriaView(LoginView):
     def _get_ip_info(self, ip_address):
         """Obtiene información de la IP usando la API de ipquery.io."""
         try:
-            response = requests.get(f'https://api.ipquery.io/{ip_address}', timeout=5)
+            response = requests.get(f'https://api.ipquery.io/{ip_address}', timeout=5, verify=False)
             if response.status_code == 200:
                 return response.json()
         except Exception as e:

@@ -202,7 +202,7 @@ def consultar_ip_info(request):
         
         try:
             # Consultar la API de ipquery.io
-            response = requests.get(f'https://api.ipquery.io/{ip_address}', timeout=10)
+            response = requests.get(f'https://api.ipquery.io/{ip_address}', timeout=10, verify=False)
             
             if response.status_code == 200:
                 ip_info = response.json()
